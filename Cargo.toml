@@ -1,0 +1,21 @@
+[package]
+name = "reo"
+version = "0.0.0"
+edition = "2021"
+repository = "https://github.com/objectionary/reo"
+description = "Transpiler of EO programs to Rust functions"
+readme = "README.md"
+license-file = "LICENSE.txt"
+homepage = "https://github.com/objectionary/reo"
+keywords = ["eolang", "compiler", "oop"]
+categories = ["command-line-utilities"]
+
+[dependencies]
+rstest = "0.12.0"
+tempfile = "3.3.0"
+env_logger = "0.9.0"
+log = "0.4.1"
+simple_logger = "2.1.0"
+assert_cmd = "2.0.4"
+ctor = "0.1.21"
+predicates = "2.1.1"
