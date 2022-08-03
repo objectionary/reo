@@ -7,6 +7,7 @@ install: |
 merge:
   script: |
     cargo test --color=never
+    cargo fmt --check --color=never
 release:
   script: |-
     [[ "${tag}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit -1
