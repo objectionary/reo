@@ -18,8 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use std::{fs, io};
 use std::path::Path;
+use std::{fs, io};
 
 pub struct Xmir {
     xml: String,
