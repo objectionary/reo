@@ -20,16 +20,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-[] > app
-  fibonacci 7 > @
++package org.eolang.reo
 
-[x] > fibonacci
-  if. > @
-    x.lt 2
-    1
-    plus.
-      fibonacci
-        x.minus 1
-      fibonacci
-        x.minus 2
+[] > fibonacci
+
+  f 5 > @
+
+  [x] > f
+    if. > @
+      x.lt 2
+      1
+      plus.
+        f
+          x.minus 1
+        f
+          x.minus 2
 

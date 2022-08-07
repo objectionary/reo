@@ -18,17 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#![deny(warnings)]
 
-pub mod data;
-pub mod xmir;
-pub mod universe;
-
-#[cfg(test)]
-use simple_logger::SimpleLogger;
-
-#[cfg(test)]
-#[ctor::ctor]
-fn init() {
-    SimpleLogger::new().init().unwrap();
+#[test]
+fn simple() {
+    // assert_eq!(1, total);
 }

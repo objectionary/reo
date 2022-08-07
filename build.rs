@@ -26,6 +26,6 @@ fn main() {
         .arg("--file")
         .arg("test-pom.xml")
         .arg("compile")
-        .output()
+        .spawn()
         .unwrap();
 }

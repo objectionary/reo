@@ -18,17 +18,54 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#![deny(warnings)]
+pub struct Data {
+    bytes: Vec<u8>
+}
 
-pub mod data;
-pub mod xmir;
-pub mod universe;
+impl Data {
+    pub fn empty() -> Self {
+        Self::from_bytes(Vec::new())
+    }
 
-#[cfg(test)]
-use simple_logger::SimpleLogger;
+    // From INT.
+    pub fn from_bytes(bytes: Vec<u8>) -> Self {
+        Data { bytes }
+    }
 
-#[cfg(test)]
-#[ctor::ctor]
-fn init() {
-    SimpleLogger::new().init().unwrap();
+    // From INT.
+    pub fn from_int(d: u64) -> Self {
+        Self::from_bytes(d.to_be_bytes().to_vec())
+    }
+
+    // From FLOAT.
+    pub fn from_float(d: f64) -> Self  {
+        Self::from_bytes(d.to_be_bytes().to_vec())
+    }
+
+    // From STRING.
+    pub fn from_string(d: String) -> Self {
+        Self::from_bytes(d.as_bytes().to_vec())
+    }
+
+    pub fn as_int(&self) -> u64 {
+        let a : &[u8; 8] = &self.bytes.clone().try_into().unwrap();
+        u64::from_be_bytes(*a)
+    }
+
+    pub fn as_float(&self) -> f64 {
+        let a : &[u8; 8] = &self.bytes.clone().try_into().unwrap();
+        f64::from_be_bytes(*a)
+    }
+
+    pub fn as_string(&self) -> String {
+        String::from_utf8(self.bytes.clone()).unwrap()
+    }
+
+}
+
+#[test]
+fn simple_int() {
+    let i = 42;
+    let d = Data::from_int(42);
+    assert_eq!(i, d.as_int());
 }

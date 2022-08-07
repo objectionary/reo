@@ -16,7 +16,7 @@ It's an experimental transpiler of
 To build it, install [Rust](https://www.rust-lang.org/tools/install) and then:
 
 ```bash
-$ cargo build --release
+$ cargo build -vv --release
 ```
 
 If everything goes well, an executable binary will be in `target/release/reo`:
