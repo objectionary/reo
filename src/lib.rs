@@ -18,10 +18,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#![deny(warnings)]
+// #![deny(warnings)]
 
 pub mod data;
-pub mod xmir;
+pub mod gmi;
 pub mod universe;
 
 #[cfg(test)]
