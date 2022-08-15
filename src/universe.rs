@@ -22,6 +22,7 @@ use crate::data::Data;
 use std::collections::HashMap;
 use std::fmt;
 use std::str::FromStr;
+use log::trace;
 
 struct Edge {
     from: u32,
@@ -61,7 +62,7 @@ pub struct Universe {
     edges: HashMap<u32, Edge>
 }
 
-impl fmt::Display for Universe {
+impl fmt::Debug for Universe {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut lines = vec![];
         for (i, v) in self.vertices.iter() {
@@ -77,7 +78,7 @@ impl fmt::Display for Universe {
                 self.edges
                     .iter()
                     .filter(|(_, e)| e.from == *i)
-                    .map(|(j, e)| format!("\n\t{} {}➞ ν{}", e.a, j, e.to))
+                    .map(|(j, e)| format!("\n\t{} ε{}➞ ν{}", e.a, j, e.to))
                     .collect::<Vec<String>>()
                     .join("")
             ));
@@ -96,16 +97,22 @@ impl Universe {
 
     // Generates the next available ID for vertices and edges.
     pub fn next_id(&mut self) -> u32 {
-        let mut i = *self.vertices.keys().max().unwrap();
+        let max = self.vertices.keys().max();
+        let mut i = 0;
+        if let Some(m) = max {
+            i = i.max(*m);
+        }
         if let Some(k) = self.edges.keys().max() {
             i = i.max(*k)
         }
+        trace!("#next_id() -> {}", i);
         i + 1
     }
 
     // Add a new vertex to the universe.
     pub fn add(&mut self, v: u32) {
         self.vertices.insert(v, Vertex::empty());
+        trace!("#add({}): new vertex added", v);
     }
 
     // Makes an edge `e` from vertex `v1` to vertex `v2` and puts `a` label on it. If the
@@ -113,8 +120,11 @@ impl Universe {
     // and labels it as `"ρ"`.
     pub fn bind(&mut self, e: u32, v1: u32, v2: u32, a: &str) {
         self.edges.insert(e, Edge::new(v1, v2, a.to_string(), "".to_string()));
+        trace!("#bind({}, {}, {}, \"{}\"): edge added", e, v1, v2, a);
         if a != "ρ" {
-            self.edges.insert(e, Edge::new(v2, v1, "ρ".to_string(), "".to_string()));
+            let e1 = self.next_id();
+            self.edges.insert(e1, Edge::new(v2, v1, "ρ".to_string(), "".to_string()));
+            trace!("#bind({}, {}, {}, \"{}\"): backward ρ-edge added", e, v1, v2, a);
         }
     }
 
@@ -122,6 +132,7 @@ impl Universe {
     pub fn reff(&mut self, e1: u32, v1: u32, k: &str, a: &str) {
         let v2 = self.find(v1, k).unwrap();
         self.edges.insert(e1, Edge::new(v1, v2, a.to_string(), k.to_string()));
+        trace!("#reff({}, {}, \"{}\", \"{}\"): edge added", e1, v1, k, a);
     }
 
     // Deletes the edge `e1` and replaces it with a new edge `e2` coming
@@ -132,19 +143,24 @@ impl Universe {
         let a = self.edges.get(&e1).unwrap().a.clone();
         let k = self.edges.get(&e1).unwrap().k.clone();
         self.edges.remove(&e1);
+        trace!("#copy({}, {}, {}): edge {} removed", e1, v3, e2, e1);
         self.edges.insert(e2, Edge::new(v1, v3, a.to_string(), k.to_string()));
+        trace!("#copy({}, {}, {}): edge {} added", e1, v3, e2, e2);
         let e3 = self.next_id();
         self.edges.insert(e3, Edge::new(v3, v2, "π".to_string(), "".to_string()));
+        trace!("#copy({}, {}, {}): π-edge {} added", e1, v3, e2, e3);
     }
 
     // Set atom lambda.
     pub fn atom(&mut self, v: u32, m: Lambda) {
-        self.vertices.get_mut(&v).unwrap().lambda = m
+        self.vertices.get_mut(&v).unwrap().lambda = m;
+        trace!("#atom({}, ...): lambda set", v);
     }
 
     // Set vertex data.
     pub fn data(&mut self, v: u32, d: Data) {
-        self.vertices.get_mut(&v).unwrap().data = d;
+        self.vertices.get_mut(&v).unwrap().data = d.clone();
+        trace!("#data({}, \"{}\"): data set", v, d.as_hex());
     }
 }
 
@@ -193,9 +209,18 @@ fn rand(uni: &mut Universe) -> Result<u32, Error> {
     uni.add(d);
     let e3 = uni.next_id();
     uni.bind(e3, i, d, "Δ");
-    let rnd = rand::random::<u64>();
+    let rnd = rand::random::<i64>();
     uni.data(d, Data::from_int(rnd));
     Ok(i)
+}
+
+#[test]
+fn generates_unique_ids() {
+    let mut uni = Universe::empty();
+    let first = uni.next_id();
+    assert_eq!(first, uni.next_id());
+    uni.add(first);
+    assert_ne!(first, uni.next_id());
 }
 
 #[test]
@@ -213,7 +238,7 @@ fn generates_random_int() {
     let e3 = uni.next_id();
     uni.reff(e3, 0, "ν2", "x");
     uni.atom(v1, rand);
-    println!("Universe:\n{}", uni);
+    println!("{uni:?}");
     assert_ne!(
         uni.dataize(0, "x.Δ").unwrap().as_int(),
         uni.dataize(0, "x.Δ").unwrap().as_int()

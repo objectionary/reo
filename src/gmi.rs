@@ -26,6 +26,7 @@ use std::str::FromStr;
 use lazy_static::lazy_static;
 use regex::Regex;
 use crate::data::Data;
+use itertools::Itertools;
 
 /// Collection of GMIs, which can be deployed to a `Universe`.
 pub struct Gmi {
@@ -50,13 +51,9 @@ impl Gmi {
     }
 
     pub fn deploy_to(&mut self, uni: &mut Universe) -> Result<()> {
-        lazy_static! {
-            static ref RE: Regex = Regex::new(
-                "^([A-Z]+)\\((?:(?: *, *)?\"([^\"]+)\")*\\);.*$"
-            ).unwrap();
-        }
         let txt = &self.text.clone();
-        for (pos, t) in txt.split("\n").enumerate() {
+        let lines = txt.split("\n").map(|t| t.trim()).filter(|t| !t.is_empty());
+        for (pos, t) in lines.enumerate() {
             self.deploy_one(t, uni).context(
                 format!("Failure at the line no.{}: \"{}\"", pos, t)
             )?;
@@ -64,13 +61,14 @@ impl Gmi {
         Ok(())
     }
 
+    /// Deploy a sing command to the universe.
     fn deploy_one(&mut self, line: &str, uni: &mut Universe) -> Result<()> {
         lazy_static! {
             static ref LINE: Regex = Regex::new(
-                "^([A-Z]+)\\(((?:(?: *, *)?\"(?:[^\"]+)\")*\\)); *(?:#.*)$"
+                "^([A-Z]+) *\\( *((?:(?: *, *)?(?:'|\")(?:[^'\"]+)(?:'|\"))* *\\)) *; *(?:#.*)?$"
             ).unwrap();
             static ref ARGS: Regex = Regex::new(
-                "(?: *, *)?\"([^\"]+)\""
+                "(?: *, *)?(?:'|\")([^\"'']+)(?:'|\")"
             ).unwrap();
             static ref LOC: Regex = Regex::new(
                 "(^|\\.)\\$"
@@ -96,7 +94,6 @@ impl Gmi {
                 let e1 = self.parse(&args[0], uni)?;
                 let v1 = self.parse(&args[1], uni)?;
                 let k = LOC.replace_all(&args[2], "$1");
-                println!("k: {}", &k);
                 let a = &args[3];
                 uni.reff(e1, v1, &k, a);
             },
@@ -108,12 +105,7 @@ impl Gmi {
             },
             "DATA" => {
                 let v = self.parse(&args[0], uni)?;
-                let d : &str = &args[1];
-                let bytes : Vec<u8> = (0..d.len())
-                    .step_by(2)
-                    .map(|i| u8::from_str_radix(&d[i..i + 2], 16).unwrap())
-                    .collect();
-                uni.data(v, Data::from_bytes(bytes));
+                uni.data(v, Self::parse_data(&args[1])?);
             },
             _cmd => {
                 return Err(anyhow!("Unknown GMI: {}", _cmd))
@@ -122,15 +114,66 @@ impl Gmi {
         Ok(())
     }
 
+    /// Parse data
+    fn parse_data(s: &str) -> Result<Data> {
+        lazy_static! {
+            static ref DATA_STRIP: Regex = Regex::new(
+                "[^0-9A-Fa-f]"
+            ).unwrap();
+            static ref DATA: Regex = Regex::new(
+                "^[0-9A-Fa-f]{2}([0-9A-Fa-f]{2})*$"
+            ).unwrap();
+        }
+        let d : &str = &DATA_STRIP.replace_all(s, "");
+        let data = if DATA.is_match(d) {
+            let bytes : Vec<u8> = (0..d.len())
+                .step_by(2)
+                .map(|i| u8::from_str_radix(&d[i..i + 2], 16).unwrap())
+                .collect();
+            Data::from_bytes(bytes)
+        } else {
+            let (t, tail) = d.splitn(2, "/")
+                .collect_tuple()
+                .context(format!("Strange data format: \"{}\"", d))?;
+            match t {
+                "string" => Data::from_string(tail.to_string()),
+                "int" => Data::from_int(i64::from_str(tail)?),
+                "float" => Data::from_float(f64::from_str(tail)?),
+                "bool" => Data::from_bool(tail == "true"),
+                _ => {
+                    return Err(anyhow!("Unknown type of data \"{}\"", t))
+                }
+            }
+        };
+        Ok(data)
+    }
+
     /// Parses `v2` or `e5` into 2 and 5.
     fn parse(&mut self, s: &str, uni: &mut Universe) -> Result<u32> {
-        let tail = &s[1..];
-        if &s[0..1] == "$" {
+        let tail : String = s.chars().skip(1).collect::<Vec<_>>()
+            .into_iter().collect();
+        if s.chars().next().unwrap() == '$' {
             Ok(*self.vars.entry(tail.to_string()).or_insert(uni.next_id()))
         } else {
-            Ok(u32::from_str(tail).context(format!("Parsing of \"{}\" failed", s))?)
+            Ok(u32::from_str(tail.as_str()).context(format!("Parsing of \"{}\" failed", s))?)
         }
     }
+}
+
+#[test]
+fn deploys_simple_commands() {
+    let uni : &mut Universe = &mut Universe::empty();
+    uni.add(0);
+    Gmi::from_string(
+        "
+        ADD('ν1'); # just first vertex
+        BIND('ε1', 'ν0', 'ν1', 'foo'); # just first vertex
+        ADD('ν2'); # its data vertex
+        BIND ( 'ε2', 'ν1', 'ν2', 'Δ' );
+        DATA('ν2', 'd0 bf d1 80 d0 b8 d0 b2 d0 b5 d1 82');
+        ".to_string()
+    ).unwrap().deploy_to(uni).unwrap();
+    assert_eq!("привет", uni.dataize(0, "foo.Δ").unwrap().as_string());
 }
 
 #[test]

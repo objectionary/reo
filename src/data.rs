@@ -22,6 +22,12 @@ pub struct Data {
     bytes: Vec<u8>
 }
 
+impl Clone for Data {
+    fn clone(&self) -> Self {
+        Data::from_bytes(self.bytes.clone())
+    }
+}
+
 impl Data {
     pub fn empty() -> Self {
         Self::from_bytes(Vec::new())
@@ -33,8 +39,13 @@ impl Data {
     }
 
     /// From INT.
-    pub fn from_int(d: u64) -> Self {
+    pub fn from_int(d: i64) -> Self {
         Self::from_bytes(d.to_be_bytes().to_vec())
+    }
+
+    /// From BOOL.
+    pub fn from_bool(d: bool) -> Self  {
+        Self::from_bytes(if d { [1] } else { [0] }.to_vec())
     }
 
     /// From FLOAT.
@@ -45,6 +56,11 @@ impl Data {
     /// From STRING.
     pub fn from_string(d: String) -> Self {
         Self::from_bytes(d.as_bytes().to_vec())
+    }
+
+    /// From STR.
+    pub fn from_str(d: &str) -> Self {
+        Self::from_bytes(d.to_string().as_bytes().to_vec())
     }
 
     /// It's empty and no data?
@@ -67,8 +83,10 @@ impl Data {
     }
 
     pub fn as_hex(&self) -> String {
-        // TODO this is wrong
-        String::from_utf8(self.bytes.clone()).unwrap()
+        self.bytes.iter()
+            .map(|b| format!("{:02x}", b).to_string())
+            .collect::<Vec<String>>()
+            .join("-")
     }
 
 }
@@ -78,4 +96,11 @@ fn simple_int() {
     let i = 42;
     let d = Data::from_int(42);
     assert_eq!(i, d.as_int());
+}
+
+#[test]
+fn prints_bytes() {
+    let txt = "привет";
+    let d = Data::from_str(txt);
+    assert_eq!("d0-bf-d1-80-d0-b8-d0-b2-d0-b5-d1-82", d.as_hex());
 }

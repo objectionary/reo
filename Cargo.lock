@@ -371,6 +371,7 @@ dependencies = [
  "assert_cmd",
  "ctor",
  "env_logger",
+ "itertools",
  "lazy_static",
  "log",
  "predicates",
