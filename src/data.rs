@@ -27,24 +27,29 @@ impl Data {
         Self::from_bytes(Vec::new())
     }
 
-    // From INT.
+    /// From BYTES.
     pub fn from_bytes(bytes: Vec<u8>) -> Self {
         Data { bytes }
     }
 
-    // From INT.
+    /// From INT.
     pub fn from_int(d: u64) -> Self {
         Self::from_bytes(d.to_be_bytes().to_vec())
     }
 
-    // From FLOAT.
+    /// From FLOAT.
     pub fn from_float(d: f64) -> Self  {
         Self::from_bytes(d.to_be_bytes().to_vec())
     }
 
-    // From STRING.
+    /// From STRING.
     pub fn from_string(d: String) -> Self {
         Self::from_bytes(d.as_bytes().to_vec())
+    }
+
+    /// It's empty and no data?
+    pub fn is_empty(&self) -> bool {
+        self.bytes.len() == 0
     }
 
     pub fn as_int(&self) -> u64 {
@@ -58,6 +63,11 @@ impl Data {
     }
 
     pub fn as_string(&self) -> String {
+        String::from_utf8(self.bytes.clone()).unwrap()
+    }
+
+    pub fn as_hex(&self) -> String {
+        // TODO this is wrong
         String::from_utf8(self.bytes.clone()).unwrap()
     }
 
