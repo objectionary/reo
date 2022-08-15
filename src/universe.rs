@@ -19,6 +19,7 @@
 // SOFTWARE.
 
 use crate::data::Data;
+use std::collections::VecDeque;
 use std::collections::HashMap;
 use std::fmt;
 use anyhow::{anyhow, Context, Result};
@@ -170,22 +171,40 @@ impl Universe {
     // Find a vertex by locator.
     fn find(&mut self, v: u32, loc: &str) -> Result<u32> {
         let mut vtx = v;
-        for k in loc.split(".") {
-            if k.starts_with("ν") {
-                vtx = u32::from_str(&k[2..])?
-            } else if k == "𝜉" {
-                vtx = vtx;
-            } else if k == "Φ" {
-                vtx = 0;
-            } else {
-                let to = self.edges.values()
-                    .find(|e| e.from == vtx && e.a == k)
-                    .context(format!("Can't find .{} from ν{}", k, vtx))?
-                    .to;
-                if !self.vertices.contains_key(&to) {
-                    return Err(anyhow!("Can't move to ν{}.{}, ν{} is absent", vtx, k, to));
+        let mut sectors = VecDeque::new();
+        loc.split(".").for_each(|k| sectors.push_back(k));
+        loop {
+            if let Some(k) = sectors.pop_front() {
+                if k.starts_with("ν") {
+                    vtx = u32::from_str(&k[2..])?
+                } else if k == "𝜉" {
+                    vtx = vtx;
+                } else if k == "Φ" {
+                    vtx = 0;
+                } else {
+                    let to = match self.edges.values().find(|e| e.from == vtx && e.a == k) {
+                        Some(e) => e.to,
+                        None => {
+                            let to = match self.edges.values().find(|e| e.from == vtx && e.a == "φ") {
+                                Some(e) => e.to,
+                                None => match self.vertices.get(&vtx).context(format!("Can't find ν{}", vtx))?.lambda {
+                                    Some(m) => m(self)?,
+                                    None => {
+                                        return Err(anyhow!("Can't continue as ν{}.{}", vtx, k));
+                                    }
+                                }
+                            };
+                            sectors.push_front(k);
+                            to
+                        }
+                    };
+                    if !self.vertices.contains_key(&to) {
+                        return Err(anyhow!("Can't move to ν{}.{}, ν{} is absent", vtx, k, to));
+                    }
+                    vtx = to;
                 }
-                vtx = to;
+            } else {
+                break;
             }
         }
         Ok(vtx)
@@ -195,13 +214,14 @@ impl Universe {
     pub fn dataize(&mut self, v: u32, loc: &str) -> Result<Data> {
         let id = self.find(v, loc)?;
         let v = self.vertex(id).context(format!("ν{} is absent", id))?;
-        let data = v.data.clone().unwrap();
+        let data = v.data.clone().context(format!("There is no data in ν{}", id))?;
         Ok(data)
     }
 }
 
 #[cfg(test)]
 fn rand(uni: &mut Universe) -> Result<u32> {
+    trace!("#rand()...");
     let e = uni.next_id();
     uni.reff(e, 0, "𝜉.int", "i");
     let i = uni.next_id();
@@ -243,7 +263,7 @@ fn generates_random_int() {
     uni.atom(v2, rand);
     println!("{uni:?}");
     assert_ne!(
-        uni.dataize(0, "x.Δ").unwrap().as_int().unwrap(),
-        uni.dataize(0, "x.Δ").unwrap().as_int().unwrap()
+        uni.dataize(0, "Φ.x.Δ").unwrap().as_int().unwrap(),
+        uni.dataize(0, "Φ.x.Δ").unwrap().as_int().unwrap()
     );
 }
