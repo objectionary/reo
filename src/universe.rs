@@ -21,6 +21,7 @@
 use crate::data::Data;
 use std::collections::HashMap;
 use std::fmt;
+use anyhow::{anyhow, Context, Result};
 use std::str::FromStr;
 use log::trace;
 
@@ -41,18 +42,18 @@ impl Edge {
 
 pub type Error = String;
 
-pub type Lambda = fn(&mut Universe) -> Result<u32, Error>;
+pub type Lambda = fn(&mut Universe) -> Result<u32>;
 
 struct Vertex {
-    data: Data,
-    lambda: Lambda
+    data: Option<Data>,
+    lambda: Option<Lambda>
 }
 
 impl Vertex {
     pub fn empty() -> Self {
         Vertex {
-            data: Data::empty(),
-            lambda: |_| -> Result<u32, Error> { Ok(0) }
+            data: None,
+            lambda: None
         }
     }
 }
@@ -66,22 +67,18 @@ impl fmt::Debug for Universe {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut lines = vec![];
         for (i, v) in self.vertices.iter() {
-            let data = if v.data.is_empty() {
-                "".to_string()
-            } else {
-                format!("Δ ➞ {},", v.data.as_hex())
-            };
-            lines.push(format!(
-                "ν{} -> ⟦{}{}⟧",
-                i,
-                data.as_str(),
-                self.edges
-                    .iter()
-                    .filter(|(_, e)| e.from == *i)
-                    .map(|(j, e)| format!("\n\t{} ε{}➞ ν{}", e.a, j, e.to))
-                    .collect::<Vec<String>>()
-                    .join("")
-            ));
+            let mut attrs = self.edges
+                .iter()
+                .filter(|(_, e)| e.from == *i)
+                .map(|(j, e)| format!("\n\t{} ε{}➞ ν{}", e.a, j, e.to))
+                .collect::<Vec<String>>();
+            if let Some(d) = &v.data {
+                attrs.push(format!("{}", d.as_hex()));
+            }
+            if let Some(_) = &v.lambda {
+                attrs.push("λ".to_string());
+            }
+            lines.push(format!("ν{} -> ⟦{}⟧", i, attrs.join(", ")));
         }
         f.write_str(lines.join("\n").as_str())
     }
@@ -153,13 +150,13 @@ impl Universe {
 
     // Set atom lambda.
     pub fn atom(&mut self, v: u32, m: Lambda) {
-        self.vertices.get_mut(&v).unwrap().lambda = m;
+        self.vertices.get_mut(&v).unwrap().lambda = Some(m);
         trace!("#atom({}, ...): lambda set", v);
     }
 
     // Set vertex data.
     pub fn data(&mut self, v: u32, d: Data) {
-        self.vertices.get_mut(&v).unwrap().data = d.clone();
+        self.vertices.get_mut(&v).unwrap().data = Some(d.clone());
         trace!("#data({}, \"{}\"): data set", v, d.as_hex());
     }
 }
@@ -171,34 +168,40 @@ impl Universe {
     }
 
     // Find a vertex by locator.
-    fn find(&mut self, v: u32, loc: &str) -> Result<u32, String> {
+    fn find(&mut self, v: u32, loc: &str) -> Result<u32> {
         let mut vtx = v;
-        loc.split(".").for_each( |k| {
+        for k in loc.split(".") {
             if k.starts_with("ν") {
-                vtx = u32::from_str(&k[2..]).unwrap()
+                vtx = u32::from_str(&k[2..])?
             } else if k == "𝜉" {
                 vtx = vtx;
             } else if k == "Φ" {
                 vtx = 0;
             } else {
-                vtx = self.edges.values().find(
-                    |e| e.from == vtx && e.a == k
-                ).ok_or(format!("Can't find .{} from ν{}", k, vtx)).unwrap().to
+                let to = self.edges.values()
+                    .find(|e| e.from == vtx && e.a == k)
+                    .context(format!("Can't find .{} from ν{}", k, vtx))?
+                    .to;
+                if !self.vertices.contains_key(&to) {
+                    return Err(anyhow!("Can't move to ν{}.{}, ν{} is absent", vtx, k, to));
+                }
+                vtx = to;
             }
-        });
+        }
         Ok(vtx)
     }
 
     // Dataize by locator.
-    pub fn dataize(&mut self, v: u32, loc: &str) -> Result<&Data, String> {
+    pub fn dataize(&mut self, v: u32, loc: &str) -> Result<Data> {
         let id = self.find(v, loc)?;
-        let v = self.vertex(id).ok_or(format!("ν{} is absent", id))?;
-        Ok(&(*v).data)
+        let v = self.vertex(id).context(format!("ν{} is absent", id))?;
+        let data = v.data.clone().unwrap();
+        Ok(data)
     }
 }
 
 #[cfg(test)]
-fn rand(uni: &mut Universe) -> Result<u32, Error> {
+fn rand(uni: &mut Universe) -> Result<u32> {
     let e = uni.next_id();
     uni.reff(e, 0, "𝜉.int", "i");
     let i = uni.next_id();
@@ -236,11 +239,11 @@ fn generates_random_int() {
     let e2 = uni.next_id();
     uni.bind(e2, 0, v2, "rand");
     let e3 = uni.next_id();
-    uni.reff(e3, 0, "ν2", "x");
-    uni.atom(v1, rand);
+    uni.reff(e3, 0, "Φ.rand", "x");
+    uni.atom(v2, rand);
     println!("{uni:?}");
     assert_ne!(
-        uni.dataize(0, "x.Δ").unwrap().as_int(),
-        uni.dataize(0, "x.Δ").unwrap().as_int()
+        uni.dataize(0, "x.Δ").unwrap().as_int().unwrap(),
+        uni.dataize(0, "x.Δ").unwrap().as_int().unwrap()
     );
 }

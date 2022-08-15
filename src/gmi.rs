@@ -118,7 +118,7 @@ impl Gmi {
     fn parse_data(s: &str) -> Result<Data> {
         lazy_static! {
             static ref DATA_STRIP: Regex = Regex::new(
-                "[^0-9A-Fa-f]"
+                "[ \t\n\r\\-]"
             ).unwrap();
             static ref DATA: Regex = Regex::new(
                 "^[0-9A-Fa-f]{2}([0-9A-Fa-f]{2})*$"
@@ -173,15 +173,15 @@ fn deploys_simple_commands() {
         DATA('ν2', 'd0 bf d1 80 d0 b8 d0 b2 d0 b5 d1 82');
         ".to_string()
     ).unwrap().deploy_to(uni).unwrap();
-    assert_eq!("привет", uni.dataize(0, "foo.Δ").unwrap().as_string());
+    assert_eq!("привет", uni.dataize(0, "foo.Δ").unwrap().as_string().unwrap());
 }
 
 #[test]
 fn deploys_fibonacci() -> Result<()> {
     let uni : &mut Universe = &mut Universe::empty();
     uni.add(0);
-    Gmi::from_file("target/eo/gmi/org/eolang/reo/fibonacci.gmi")?
-        .deploy_to(uni)?;
-    assert_eq!(8, uni.dataize(0, "fibonacci.f").unwrap().as_int());
+    Gmi::from_file("target/eo/gmi/org/eolang/reo/fibonacci.gmi")?.deploy_to(uni)?;
+    println!("{uni:?}");
+    assert_eq!(8, uni.dataize(0, "fibonacci.f.Δ")?.as_int()?);
     Ok(())
 }
