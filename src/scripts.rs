@@ -18,19 +18,20 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+use crate::data::Data;
 use crate::universe::Universe;
-use anyhow::Result;
-use crate::da;
-use crate::scripts::copy_of_int;
 
-/// EO atom `int.plus`
-pub fn int_plus(uni: &mut Universe, v: u32) -> Result<u32> {
-    let rho = da!(uni, format!("ν{}.ρ", v)).as_int()?;
-    let x = da!(uni, format!("ν{}.α0", v)).as_int()?;
-    Ok(copy_of_int(uni, rho + x))
-}
-
-#[test]
-fn simple() {
-    // assert_eq!(1, total);
+pub fn copy_of_int(uni: &mut Universe, data: i64) -> u32 {
+    let e = uni.next_id();
+    uni.reff(e, 0, "𝜉.int", "i");
+    let i = uni.next_id();
+    uni.add(i);
+    let e2 = uni.next_id();
+    uni.copy(e, i, e2);
+    let d = uni.next_id();
+    uni.add(d);
+    let e3 = uni.next_id();
+    uni.bind(e3, i, d, "Δ");
+    uni.data(d, Data::from_int(data));
+    i
 }

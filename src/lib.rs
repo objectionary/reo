@@ -23,6 +23,9 @@
 pub mod data;
 pub mod gmi;
 pub mod universe;
+pub mod org;
+pub mod macros;
+pub mod scripts;
 
 #[cfg(test)]
 use simple_logger::SimpleLogger;

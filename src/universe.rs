@@ -25,6 +25,7 @@ use std::fmt;
 use anyhow::{anyhow, Context, Result};
 use std::str::FromStr;
 use log::trace;
+use crate::scripts::copy_of_int;
 
 struct Edge {
     from: u32,
@@ -43,11 +44,11 @@ impl Edge {
 
 pub type Error = String;
 
-pub type Lambda = fn(&mut Universe) -> Result<u32>;
+pub type Lambda = fn(&mut Universe, v: u32) -> Result<u32>;
 
 struct Vertex {
     data: Option<Data>,
-    lambda: Option<Lambda>
+    lambda: Option<String>
 }
 
 impl Vertex {
@@ -61,7 +62,8 @@ impl Vertex {
 
 pub struct Universe {
     vertices: HashMap<u32, Vertex>,
-    edges: HashMap<u32, Edge>
+    edges: HashMap<u32, Edge>,
+    atoms: HashMap<String, Lambda>
 }
 
 impl fmt::Debug for Universe {
@@ -89,11 +91,12 @@ impl Universe {
     pub fn empty() -> Self {
         Universe {
             vertices: HashMap::new(),
-            edges: HashMap::new()
+            edges: HashMap::new(),
+            atoms: HashMap::new()
         }
     }
 
-    // Generates the next available ID for vertices and edges.
+    /// Generates the next available ID for vertices and edges.
     pub fn next_id(&mut self) -> u32 {
         let max = self.vertices.keys().max();
         let mut i = 0;
@@ -107,6 +110,13 @@ impl Universe {
         i + 1
     }
 
+    /// Registers a new atom.
+    pub fn register(&mut self, name: &str, m: Lambda) {
+        self.atoms.insert(name.to_string(), m);
+    }
+}
+
+impl Universe {
     // Add a new vertex to the universe.
     pub fn add(&mut self, v: u32) {
         self.vertices.insert(v, Vertex::empty());
@@ -118,11 +128,11 @@ impl Universe {
     // and labels it as `"ρ"`.
     pub fn bind(&mut self, e: u32, v1: u32, v2: u32, a: &str) {
         self.edges.insert(e, Edge::new(v1, v2, a.to_string(), "".to_string()));
-        trace!("#bind({}, {}, {}, \"{}\"): edge added", e, v1, v2, a);
+        trace!("#bind({}, {}, {}, '{}'): edge added", e, v1, v2, a);
         if a != "ρ" {
             let e1 = self.next_id();
             self.edges.insert(e1, Edge::new(v2, v1, "ρ".to_string(), "".to_string()));
-            trace!("#bind({}, {}, {}, \"{}\"): backward ρ-edge added", e, v1, v2, a);
+            trace!("#bind({}, {}, {}, '{}'): backward ρ-edge added", e, v1, v2, a);
         }
     }
 
@@ -130,7 +140,7 @@ impl Universe {
     pub fn reff(&mut self, e1: u32, v1: u32, k: &str, a: &str) {
         let v2 = self.find(v1, k).unwrap();
         self.edges.insert(e1, Edge::new(v1, v2, a.to_string(), k.to_string()));
-        trace!("#reff({}, {}, \"{}\", \"{}\"): edge added", e1, v1, k, a);
+        trace!("#reff({}, {}, '{}', '{}'): edge added", e1, v1, k, a);
     }
 
     // Deletes the edge `e1` and replaces it with a new edge `e2` coming
@@ -150,15 +160,23 @@ impl Universe {
     }
 
     // Set atom lambda.
-    pub fn atom(&mut self, v: u32, m: Lambda) {
-        self.vertices.get_mut(&v).unwrap().lambda = Some(m);
+    pub fn atom(&mut self, v: u32, m: &str) {
+        self.vertices.get_mut(&v).unwrap().lambda = Some(m.to_string());
         trace!("#atom({}, ...): lambda set", v);
     }
 
     // Set vertex data.
     pub fn data(&mut self, v: u32, d: Data) {
         self.vertices.get_mut(&v).unwrap().data = Some(d.clone());
-        trace!("#data({}, \"{}\"): data set", v, d.as_hex());
+        trace!("#data({}, '{}'): data set", v, d.as_hex());
+    }
+
+    /// Dataize by absolute locator.
+    pub fn dataize(&mut self, loc: &str) -> Result<Data> {
+        let id = self.find(0, loc)?;
+        let v = self.vertex(id).context(format!("ν{} is absent", id))?;
+        let data = v.data.clone().context(format!("There is no data in ν{}", id))?;
+        Ok(data)
     }
 }
 
@@ -187,8 +205,8 @@ impl Universe {
                         None => {
                             let to = match self.edges.values().find(|e| e.from == vtx && e.a == "φ") {
                                 Some(e) => e.to,
-                                None => match self.vertices.get(&vtx).context(format!("Can't find ν{}", vtx))?.lambda {
-                                    Some(m) => m(self)?,
+                                None => match self.vertices.get(&vtx).context(format!("Can't find ν{}", vtx))?.lambda.clone() {
+                                    Some(m) => self.atoms.get(m.as_str()).context(format!("No atom '{}'", m))?(self, vtx)?,
                                     None => {
                                         return Err(anyhow!("Can't continue as ν{}.{}", vtx, k));
                                     }
@@ -209,31 +227,12 @@ impl Universe {
         }
         Ok(vtx)
     }
-
-    // Dataize by locator.
-    pub fn dataize(&mut self, v: u32, loc: &str) -> Result<Data> {
-        let id = self.find(v, loc)?;
-        let v = self.vertex(id).context(format!("ν{} is absent", id))?;
-        let data = v.data.clone().context(format!("There is no data in ν{}", id))?;
-        Ok(data)
-    }
 }
 
 #[cfg(test)]
-fn rand(uni: &mut Universe) -> Result<u32> {
-    trace!("#rand()...");
-    let e = uni.next_id();
-    uni.reff(e, 0, "𝜉.int", "i");
-    let i = uni.next_id();
-    uni.add(i);
-    let e2 = uni.next_id();
-    uni.copy(e, i, e2);
-    let d = uni.next_id();
-    uni.add(d);
-    let e3 = uni.next_id();
-    uni.bind(e3, i, d, "Δ");
+fn rand(uni: &mut Universe, _v: u32) -> Result<u32> {
     let rnd = rand::random::<i64>();
-    uni.data(d, Data::from_int(rnd));
+    let i = copy_of_int(uni, rnd);
     Ok(i)
 }
 
@@ -260,10 +259,11 @@ fn generates_random_int() {
     uni.bind(e2, 0, v2, "rand");
     let e3 = uni.next_id();
     uni.reff(e3, 0, "Φ.rand", "x");
-    uni.atom(v2, rand);
+    uni.register("rand", rand);
+    uni.atom(v2, "rand");
     println!("{uni:?}");
     assert_ne!(
-        uni.dataize(0, "Φ.x.Δ").unwrap().as_int().unwrap(),
-        uni.dataize(0, "Φ.x.Δ").unwrap().as_int().unwrap()
+        uni.dataize("Φ.x.Δ").unwrap().as_int().unwrap(),
+        uni.dataize("Φ.x.Δ").unwrap().as_int().unwrap()
     );
 }

@@ -21,12 +21,16 @@
 use crate::universe::Universe;
 use std::fs;
 use std::collections::HashMap;
+use std::path::Path;
 use anyhow::{anyhow, Context, Result};
 use std::str::FromStr;
 use lazy_static::lazy_static;
 use regex::Regex;
 use crate::data::Data;
 use itertools::Itertools;
+use glob::glob;
+use crate::da;
+use crate::org::eolang::register;
 
 /// Collection of GMIs, which can be deployed to a `Universe`.
 pub struct Gmi {
@@ -36,8 +40,11 @@ pub struct Gmi {
 
 impl Gmi {
     /// Read them from a file.
-    pub fn from_file(file: &str) -> Result<Gmi> {
-        return Gmi::from_string(fs::read_to_string(file)?);
+    pub fn from_file(file: &Path) -> Result<Gmi> {
+        return Gmi::from_string(
+            fs::read_to_string(file)
+                .context(format!("Can't read from \"{}\"", file.display()))?
+        );
     }
 
     /// Read them from a string.
@@ -55,7 +62,7 @@ impl Gmi {
         let lines = txt.split("\n").map(|t| t.trim()).filter(|t| !t.is_empty());
         for (pos, t) in lines.enumerate() {
             self.deploy_one(t, uni).context(
-                format!("Failure at the line no.{}: \"{}\"", pos, t)
+                format!("Failure at the line no.{}: '{}'", pos, t)
             )?;
         }
         Ok(())
@@ -74,7 +81,7 @@ impl Gmi {
                 "(^|\\.)\\$"
             ).unwrap();
         }
-        let cap = LINE.captures(line).context(format!("Can't parse \"{}\"", line))?;
+        let cap = LINE.captures(line).context(format!("Can't parse '{}'", line))?;
         let args : Vec<&str> = ARGS.captures_iter(&cap[2])
             .map(|c| c.get(1).unwrap().as_str())
             .collect();
@@ -107,6 +114,11 @@ impl Gmi {
                 let v = self.parse(&args[0], uni)?;
                 uni.data(v, Self::parse_data(&args[1])?);
             },
+            "ATOM" => {
+                let v = self.parse(&args[0], uni)?;
+                let m = &args[1];
+                uni.atom(v, m);
+            },
             _cmd => {
                 return Err(anyhow!("Unknown GMI: {}", _cmd))
             }
@@ -134,14 +146,14 @@ impl Gmi {
         } else {
             let (t, tail) = d.splitn(2, "/")
                 .collect_tuple()
-                .context(format!("Strange data format: \"{}\"", d))?;
+                .context(format!("Strange data format: '{}'", d))?;
             match t {
                 "string" => Data::from_string(tail.to_string()),
                 "int" => Data::from_int(i64::from_str(tail)?),
                 "float" => Data::from_float(f64::from_str(tail)?),
                 "bool" => Data::from_bool(tail == "true"),
                 _ => {
-                    return Err(anyhow!("Unknown type of data \"{}\"", t))
+                    return Err(anyhow!("Unknown type of data '{}'", t))
                 }
             }
         };
@@ -155,7 +167,7 @@ impl Gmi {
         if s.chars().next().unwrap() == '$' {
             Ok(*self.vars.entry(tail.to_string()).or_insert(uni.next_id()))
         } else {
-            Ok(u32::from_str(tail.as_str()).context(format!("Parsing of \"{}\" failed", s))?)
+            Ok(u32::from_str(tail.as_str()).context(format!("Parsing of '{}' failed", s))?)
         }
     }
 }
@@ -173,15 +185,46 @@ fn deploys_simple_commands() {
         DATA('ν2', 'd0 bf d1 80 d0 b8 d0 b2 d0 b5 d1 82');
         ".to_string()
     ).unwrap().deploy_to(uni).unwrap();
-    assert_eq!("привет", uni.dataize(0, "foo.Δ").unwrap().as_string().unwrap());
+    assert_eq!("привет", da!(uni, "Φ.foo").as_string().unwrap());
 }
 
 #[test]
-fn deploys_fibonacci() -> Result<()> {
+fn deploys_and_runs() -> Result<()> {
+    for f in glob("eo-tests/**/*.eo")? {
+        let p = f?;
+        let path = p.as_path();
+        let app = path.file_name()
+            .context(format!("Can't find file name in '{}'", path.display()))?
+            .to_str()
+            .context(format!("Can't turn path '{}' into string", path.display()))?
+            .split(".")
+            .nth(0)
+            .context(format!("Can't find body name in '{}'", path.display()))?;
+        let pkg = path.parent()
+            .context(format!("Can't get parent from '{}'", path.display()))?
+            .to_str()
+            .context(format!("Can't get str from '{}'", path.display()))?
+            .splitn(2, "/")
+            .nth(1)
+            .context(format!("Can't take path from '{}'", path.display()))?;
+        deploys_and_runs_one_app(
+            app,
+            Path::new(format!("target/eo/gmi/{}/{}.gmi", pkg, app).as_str())
+        )?;
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+fn deploys_and_runs_one_app(name: &str, path: &Path) -> Result<()> {
     let uni : &mut Universe = &mut Universe::empty();
     uni.add(0);
-    Gmi::from_file("target/eo/gmi/org/eolang/reo/fibonacci.gmi")?.deploy_to(uni)?;
+    register(uni);
+    Gmi::from_file(path)?.deploy_to(uni)?;
     println!("{uni:?}");
-    assert_eq!(8, uni.dataize(0, "fibonacci.f.Δ")?.as_int()?);
+    assert_eq!(
+        da!(uni, format!("Φ.{}.expected", name)).as_int()?,
+        da!(uni, format!("Φ.{}", name)).as_int()?
+    );
     Ok(())
 }

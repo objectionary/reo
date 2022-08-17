@@ -70,12 +70,12 @@ impl Data {
         self.bytes.len() == 0
     }
 
-    pub fn as_int(&self) -> Result<u64> {
+    pub fn as_int(&self) -> Result<i64> {
         let a : &[u8; 8] = &self.bytes
             .as_slice()
             .try_into()
             .context(format!("There is no data, can't make INT"))?;
-        Ok(u64::from_be_bytes(*a))
+        Ok(i64::from_be_bytes(*a))
     }
 
     pub fn as_float(&self) -> Result<f64> {

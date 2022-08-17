@@ -18,19 +18,4 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use crate::universe::Universe;
-use anyhow::Result;
-use crate::da;
-use crate::scripts::copy_of_int;
-
-/// EO atom `int.plus`
-pub fn int_plus(uni: &mut Universe, v: u32) -> Result<u32> {
-    let rho = da!(uni, format!("ν{}.ρ", v)).as_int()?;
-    let x = da!(uni, format!("ν{}.α0", v)).as_int()?;
-    Ok(copy_of_int(uni, rho + x))
-}
-
-#[test]
-fn simple() {
-    // assert_eq!(1, total);
-}
+pub mod eolang;

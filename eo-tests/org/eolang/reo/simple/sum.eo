@@ -20,20 +20,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-+package org.eolang.reo
++package org.eolang.reo.simple
 
-[] > fibonacci
+[] > sum
 
-  8 > expected
+  43 > expected
 
-  f 6 > @
-
-  [x] > f
-    if. > @
-      x.lt 2
-      1
-      plus.
-        f
-          x.minus 1
-        f
-          x.minus 2
+  42.plus 1 > @
