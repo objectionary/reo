@@ -30,7 +30,7 @@ use crate::data::Data;
 use itertools::Itertools;
 use glob::glob;
 use crate::da;
-use crate::org::eolang::register;
+use crate::scripts::setup;
 
 /// Collection of GMIs, which can be deployed to a `Universe`.
 pub struct Gmi {
@@ -57,6 +57,12 @@ impl Gmi {
         );
     }
 
+    /// Set root.
+    pub fn set_root(&mut self, v0: u32) {
+        self.vars.insert("v0".to_string(), v0);
+    }
+
+    /// Deploy this collection of GMIs to the Universe.
     pub fn deploy_to(&mut self, uni: &mut Universe) -> Result<()> {
         let txt = &self.text.clone();
         let lines = txt.split("\n").map(|t| t.trim()).filter(|t| !t.is_empty());
@@ -148,6 +154,7 @@ impl Gmi {
                 .collect_tuple()
                 .context(format!("Strange data format: '{}'", d))?;
             match t {
+                "bytes" => Data::from_hex(tail.to_string()),
                 "string" => Data::from_string(tail.to_string()),
                 "int" => Data::from_int(i64::from_str(tail)?),
                 "float" => Data::from_float(f64::from_str(tail)?),
@@ -173,7 +180,7 @@ impl Gmi {
 }
 
 #[test]
-fn deploys_simple_commands() {
+fn deploys_simple_commands()  -> Result<()> {
     let uni : &mut Universe = &mut Universe::empty();
     uni.add(0);
     Gmi::from_string(
@@ -185,46 +192,42 @@ fn deploys_simple_commands() {
         DATA('ν2', 'd0 bf d1 80 d0 b8 d0 b2 d0 b5 d1 82');
         ".to_string()
     ).unwrap().deploy_to(uni).unwrap();
-    assert_eq!("привет", da!(uni, "Φ.foo").as_string().unwrap());
-}
-
-#[test]
-fn deploys_and_runs() -> Result<()> {
-    for f in glob("eo-tests/**/*.eo")? {
-        let p = f?;
-        let path = p.as_path();
-        let app = path.file_name()
-            .context(format!("Can't find file name in '{}'", path.display()))?
-            .to_str()
-            .context(format!("Can't turn path '{}' into string", path.display()))?
-            .split(".")
-            .nth(0)
-            .context(format!("Can't find body name in '{}'", path.display()))?;
-        let pkg = path.parent()
-            .context(format!("Can't get parent from '{}'", path.display()))?
-            .to_str()
-            .context(format!("Can't get str from '{}'", path.display()))?
-            .splitn(2, "/")
-            .nth(1)
-            .context(format!("Can't take path from '{}'", path.display()))?;
-        deploys_and_runs_one_app(
-            app,
-            Path::new(format!("target/eo/gmi/{}/{}.gmi", pkg, app).as_str())
-        )?;
-    }
+    assert_eq!("привет", da!(uni, "Φ.foo").as_string()?);
     Ok(())
 }
 
 #[cfg(test)]
-fn deploys_and_runs_one_app(name: &str, path: &Path) -> Result<()> {
-    let uni : &mut Universe = &mut Universe::empty();
-    uni.add(0);
-    register(uni);
-    Gmi::from_file(path)?.deploy_to(uni)?;
-    println!("{uni:?}");
-    assert_eq!(
-        da!(uni, format!("Φ.{}.expected", name)).as_int()?,
-        da!(uni, format!("Φ.{}", name)).as_int()?
-    );
+fn all_apps() -> Result<Vec<String>> {
+    let mut apps = Vec::new();
+    for f in glob("eo-tests/**/*.eo")? {
+        let p = f?;
+        let path = p.as_path();
+        let app = path
+            .to_str()
+            .context(format!("Can't get str from '{}'", path.display()))?
+            .splitn(2, "/")
+            .nth(1)
+            .context(format!("Can't take path from '{}'", path.display()))?
+            .split(".")
+            .collect::<Vec<&str>>()
+            .split_last()
+            .context(format!("Can't take split_last from '{}'", path.display()))?
+            .1
+            .join(".")
+            .replace("/", ".");
+        println!("{app:?}");
+        apps.push(app.to_string());
+    }
+    Ok(apps)
+}
+
+#[test]
+fn deploys_and_runs_all_apps() -> Result<()> {
+    let mut uni = setup(Path::new("target/eo/gmi"))?;
+    for app in all_apps()? {
+        let expected = da!(uni, format!("Φ.{}.expected", app)).as_int()?;
+        let actual = da!(uni, format!("Φ.{}", app)).as_int()?;
+        assert_eq!(expected, actual);
+    }
     Ok(())
 }

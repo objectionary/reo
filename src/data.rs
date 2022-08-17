@@ -40,6 +40,12 @@ impl Data {
         Data { bytes }
     }
 
+    /// From BYTES as HEX.
+    pub fn from_hex(hex: String) -> Self {
+        let s = hex.replace("-", "");
+        Self::from_bytes(hex::decode(s).unwrap())
+    }
+
     /// From INT.
     pub fn from_int(d: i64) -> Self {
         Self::from_bytes(d.to_be_bytes().to_vec())
@@ -115,6 +121,7 @@ fn prints_bytes() {
     let txt = "привет";
     let d = Data::from_str(txt);
     assert_eq!("d0-bf-d1-80-d0-b8-d0-b2-d0-b5-d1-82", d.as_hex());
+    assert_eq!(txt, Data::from_hex(d.as_hex()).as_string().unwrap());
 }
 
 #[test]

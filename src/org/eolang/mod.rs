@@ -19,12 +19,3 @@
 // SOFTWARE.
 
 mod int;
-
-use crate::org::eolang::int::int_plus;
-use crate::universe::Universe;
-
-/// Register all atoms in the universe.
-pub fn register(uni: &mut Universe) {
-    uni.register("int.plus", int_plus);
-}
-

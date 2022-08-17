@@ -174,19 +174,14 @@ impl Universe {
     /// Dataize by absolute locator.
     pub fn dataize(&mut self, loc: &str) -> Result<Data> {
         let id = self.find(0, loc)?;
-        let v = self.vertex(id).context(format!("ν{} is absent", id))?;
+        let v = self.vertices.get(&id).context(format!("ν{} is absent", id))?;
         let data = v.data.clone().context(format!("There is no data in ν{}", id))?;
         Ok(data)
     }
 }
 
 impl Universe {
-    // Get one vertex.
-    fn vertex(&self, v: u32) -> Option<&Vertex> {
-        self.vertices.get(&v)
-    }
-
-    // Find a vertex by locator.
+    /// Find a vertex in the universe by its locator.
     fn find(&mut self, v: u32, loc: &str) -> Result<u32> {
         let mut vtx = v;
         let mut sectors = VecDeque::new();
@@ -231,9 +226,7 @@ impl Universe {
 
 #[cfg(test)]
 fn rand(uni: &mut Universe, _v: u32) -> Result<u32> {
-    let rnd = rand::random::<i64>();
-    let i = copy_of_int(uni, rnd);
-    Ok(i)
+    Ok(copy_of_int(uni, rand::random::<i64>()))
 }
 
 #[test]
