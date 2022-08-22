@@ -93,7 +93,7 @@ impl Data {
     }
 
     pub fn as_string(&self) -> Result<String> {
-        Ok(String::from_utf8(self.bytes.clone())?)
+        String::from_utf8(self.bytes.clone())
     }
 
     pub fn as_hex(&self) -> String {
