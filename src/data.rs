@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, Error};
 
 pub struct Data {
     bytes: Vec<u8>
@@ -93,7 +93,7 @@ impl Data {
     }
 
     pub fn as_string(&self) -> Result<String> {
-        String::from_utf8(self.bytes.clone())
+        String::from_utf8(self.bytes.clone()).map_err(|e| Error::from(e) ) 
     }
 
     pub fn as_hex(&self) -> String {
