@@ -21,6 +21,7 @@
 #[macro_export]
 macro_rules! da {
     ($uni:expr, $loc:expr) => {
-        $uni.dataize(format!("{}.Δ", $loc).as_str()).unwrap()
+        $uni.dataize(format!("{}", $loc).as_str())
+            .expect(format!("Can't dataize {}", $loc).as_str())
     };
 }

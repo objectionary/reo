@@ -1,0 +1,118 @@
+// Copyright (c) 2022 Yegor Bugayenko
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
+use std::collections::VecDeque;
+use std::str::FromStr;
+use anyhow::{anyhow, Context, Result};
+use log::trace;
+use crate::data::Data;
+use crate::universe::{Edge, Universe};
+
+impl Universe {
+    /// Dataize by absolute locator.
+    pub fn dataize(&mut self, loc: &str) -> Result<Data> {
+        let id = self.find(0, loc)?;
+        let v = self.vertices.get(&id).context(format!("ν{} is absent", id))?;
+        let data = v.data.clone().context(format!("There is no data in ν{}", id))?;
+        Ok(data)
+    }
+
+    /// Find a vertex in the universe by its locator.
+    pub fn find(&mut self, v: u32, loc: &str) -> Result<u32> {
+        let mut vtx = v;
+        let mut sectors = VecDeque::new();
+        loc.split('.').for_each(|k| sectors.push_back(k));
+        loop {
+            if let Some(k) = sectors.pop_front() {
+                if k.starts_with("ν") {
+                    vtx = u32::from_str(&k[2..])?;
+                    continue;
+                }
+                if k == "𝜉" {
+                    vtx = vtx;
+                    continue;
+                }
+                if k == "Φ" {
+                    vtx = 0;
+                    continue;
+                }
+                if k == "" {
+                    return Err(anyhow!("The locator is empty"));
+                }
+                let to = match self.edge(vtx, k) {
+                    Some(e) => e.to,
+                    None => {
+                        let to = match self.edge(vtx, "φ") {
+                            Some(e) => e.to,
+                            None => match self.vertices.get(&vtx).context(format!("Can't find ν{}", vtx))?.lambda.clone() {
+                                Some(m) => m(self, vtx)?,
+                                None => {
+                                    if k == "Δ" {
+                                        return Ok(vtx);
+                                    }
+                                    return Err(anyhow!("Can't continue as ν{}.{}", vtx, k));
+                                }
+                            }
+                        };
+                        sectors.push_front(k);
+                        to
+                    }
+                };
+                if !self.vertices.contains_key(&to) {
+                    return Err(anyhow!("Can't move to ν{}.{}, ν{} is absent", vtx, k, to));
+                }
+                vtx = to;
+            } else {
+                break;
+            }
+        }
+        Ok(vtx)
+    }
+
+    /// Find `k`-labeled edge departing from `v`.
+    ///
+    /// @todo #1 This method is very slow. Let's find a way how to build
+    ///  some index, so that the speed of this search will be higher.
+    fn edge(&self, v: u32, k: &str) -> Option<&Edge> {
+        self.edges.values().find(|e| e.from == v && e.a == k)
+    }
+
+}
+
+#[test]
+fn search_atom_works() -> Result<()> {
+    let mut uni = Universe::empty();
+    uni.add(0)?;
+    let v1 = uni.next_id();
+    uni.add(v1)?;
+    let e1 = uni.next_id();
+    uni.bind(e1, 0, v1, "a")?;
+    let v2 = uni.next_id();
+    uni.add(v2)?;
+    let e2 = uni.next_id();
+    uni.bind(e2, 0, v2, "b")?;
+    let v3 = uni.next_id();
+    uni.add(v3)?;
+    let e4 = uni.next_id();
+    uni.bind(e4, v2, v3, "c")?;
+    uni.atom(v1, "S/Φ.b")?;
+    assert_eq!(uni.find(v1, "Φ.a.c")?, v3);
+    Ok(())
+}

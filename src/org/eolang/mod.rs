@@ -19,3 +19,12 @@
 // SOFTWARE.
 
 mod int;
+mod array;
+
+use crate::universe::Universe;
+
+/// Register all known atoms in the Universe.
+pub fn register(uni: &mut Universe) {
+    int::register(uni);
+    array::register(uni);
+}

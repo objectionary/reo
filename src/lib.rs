@@ -24,6 +24,7 @@ pub mod data;
 pub mod gmi;
 pub mod universe;
 pub mod org;
+pub mod setup;
 pub mod macros;
 pub mod scripts;
 

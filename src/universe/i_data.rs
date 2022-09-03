@@ -18,24 +18,25 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+use crate::data::Data;
+use anyhow::{anyhow, Context, Result};
+use log::trace;
 use crate::universe::Universe;
-use anyhow::Result;
-use crate::da;
-use crate::scripts::copy_of_int;
 
-/// Register all known atoms in the Universe.
-pub fn register(uni: &mut Universe) {
-    uni.register("org.eolang.int.plus", int_plus);
-}
-
-/// EO atom `int.plus`.
-pub fn int_plus(uni: &mut Universe, v: u32) -> Result<u32> {
-    let rho = da!(uni, format!("ν{}.ρ", v)).as_int()?;
-    let x = da!(uni, format!("ν{}.α0", v)).as_int()?;
-    copy_of_int(uni, rho + x)
+impl Universe {
+    /// Set vertex data.
+    pub fn data(&mut self, v: u32, d: Data) -> Result<()> {
+        self.vertices.get_mut(&v).context(format!("Can't find ν{}", v))?.data = Some(d.clone());
+        trace!("#data(ν{}, '{}'): data set", v, d.as_hex());
+        Ok(())
+    }
 }
 
 #[test]
-fn simple() {
-    // assert_eq!(1, total);
+fn sets_simple_data() -> Result<()> {
+    let mut uni = Universe::empty();
+    let data = 42;
+    uni.data(0, Data::from_int(data))?;
+    assert_eq!(data, uni.dataize("Φ")?.as_int());
+    Ok(())
 }

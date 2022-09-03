@@ -29,8 +29,9 @@ use regex::Regex;
 use crate::data::Data;
 use itertools::Itertools;
 use glob::glob;
+use log::trace;
 use crate::da;
-use crate::scripts::setup;
+use crate::setup::setup;
 
 /// Collection of GMIs, which can be deployed to a `Universe`.
 pub struct Gmi {
@@ -67,6 +68,7 @@ impl Gmi {
         let txt = &self.text.clone();
         let lines = txt.split("\n").map(|t| t.trim()).filter(|t| !t.is_empty());
         for (pos, t) in lines.enumerate() {
+            trace!("#deploy_to: deploying line no.{} '{}'...", pos + 1, t);
             self.deploy_one(t, uni).context(
                 format!("Failure at the line no.{}: '{}'", pos, t)
             )?;
@@ -94,42 +96,42 @@ impl Gmi {
         match &cap[1] {
             "ADD" => {
                 let v = self.parse(&args[0], uni)?;
-                uni.add(v);
+                uni.add(v).context(
+                    format!("Failed to ADD({})", &args[0])
+                )
             },
             "BIND" => {
                 let e = self.parse(&args[0], uni)?;
                 let v1 = self.parse(&args[1], uni)?;
                 let v2 = self.parse(&args[2], uni)?;
                 let a = &args[3];
-                uni.bind(e, v1, v2, a);
-            },
-            "REF" => {
-                let e1 = self.parse(&args[0], uni)?;
-                let v1 = self.parse(&args[1], uni)?;
-                let k = LOC.replace_all(&args[2], "$1");
-                let a = &args[3];
-                uni.reff(e1, v1, &k, a);
+                uni.bind(e, v1, v2, a).context(
+                    format!("Failed to BIND({}, {}, {})", &args[0], &args[1], &args[2])
+                )
             },
             "COPY" => {
                 let e1 = self.parse(&args[0], uni)?;
                 let v3 = self.parse(&args[1], uni)?;
                 let e2 = self.parse(&args[2], uni)?;
-                uni.copy(e1, v3, e2);
+                uni.copy(e1, v3, e2).context(
+                    format!("Failed to COPY({}, {}, {})", &args[0], &args[1], &args[2])
+                )
             },
             "DATA" => {
                 let v = self.parse(&args[0], uni)?;
-                uni.data(v, Self::parse_data(&args[1])?);
+                uni.data(v, Self::parse_data(&args[1])?).context(
+                    format!("Failed to DATA({})", &args[0])
+                )
             },
             "ATOM" => {
                 let v = self.parse(&args[0], uni)?;
                 let m = &args[1];
-                uni.atom(v, m);
+                uni.atom(v, m).context(
+                    format!("Failed to ATOM({})", &args[0])
+                )
             },
-            _cmd => {
-                return Err(anyhow!("Unknown GMI: {}", _cmd))
-            }
+            _cmd => Err(anyhow!("Unknown GMI: {}", _cmd))
         }
-        Ok(())
     }
 
     /// Parse data
@@ -155,10 +157,11 @@ impl Gmi {
                 .context(format!("Strange data format: '{}'", d))?;
             match t {
                 "bytes" => Data::from_hex(tail.to_string()),
-                "string" => Data::from_string(tail.to_string()),
+                "string" => Data::from_string(Self::unescape(tail)),
                 "int" => Data::from_int(i64::from_str(tail)?),
                 "float" => Data::from_float(f64::from_str(tail)?),
                 "bool" => Data::from_bool(tail == "true"),
+                "array" => Data::from_bool(true),
                 _ => {
                     return Err(anyhow!("Unknown type of data '{}'", t))
                 }
@@ -177,21 +180,26 @@ impl Gmi {
             Ok(u32::from_str(tail.as_str()).context(format!("Parsing of '{}' failed", s))?)
         }
     }
+
+    /// Goes through the string and replaces `\u0027` (for example)
+    /// with corresponding chars.
+    fn unescape(s: &str) -> String {
+        // todo!
+        s.to_string()
+    }
 }
 
 #[test]
 fn deploys_simple_commands()  -> Result<()> {
     let uni : &mut Universe = &mut Universe::empty();
-    uni.add(0);
+    uni.add(0)?;
     Gmi::from_string(
         "
-        ADD('ν1'); # just first vertex
-        BIND('ε1', 'ν0', 'ν1', 'foo'); # just first vertex
-        ADD('ν2'); # its data vertex
-        BIND ( 'ε2', 'ν1', 'ν2', 'Δ' );
-        DATA('ν2', 'd0 bf d1 80 d0 b8 d0 b2 d0 b5 d1 82');
+        ADD('ν1');
+        BIND('ε1', 'ν0', 'ν1', 'foo');
+        DATA('ν1', 'd0 bf d1 80 d0 b8 d0 b2 d0 b5 d1 82');
         ".to_string()
-    ).unwrap().deploy_to(uni).unwrap();
+    )?.deploy_to(uni)?;
     assert_eq!("привет", da!(uni, "Φ.foo").as_string()?);
     Ok(())
 }
@@ -223,7 +231,9 @@ fn all_apps() -> Result<Vec<String>> {
 
 #[test]
 fn deploys_and_runs_all_apps() -> Result<()> {
-    let mut uni = setup(Path::new("target/eo/gmi"))?;
+    let mut uni = Universe::empty();
+    uni.add(0)?;
+    setup(&mut uni, Path::new("target/eo/gmi"))?;
     for app in all_apps()? {
         let expected = da!(uni, format!("Φ.{}.expected", app)).as_int()?;
         let actual = da!(uni, format!("Φ.{}", app)).as_int()?;

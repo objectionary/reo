@@ -19,20 +19,22 @@
 // SOFTWARE.
 
 use crate::universe::Universe;
-use anyhow::Result;
-use crate::da;
-use crate::scripts::copy_of_int;
+use anyhow::{anyhow, Result};
 
 /// Register all known atoms in the Universe.
 pub fn register(uni: &mut Universe) {
-    uni.register("org.eolang.int.plus", int_plus);
+    uni.register("org.eolang.array.length", array_length);
+    uni.register("org.eolang.array.at", array_at);
 }
 
-/// EO atom `int.plus`.
-pub fn int_plus(uni: &mut Universe, v: u32) -> Result<u32> {
-    let rho = da!(uni, format!("ν{}.ρ", v)).as_int()?;
-    let x = da!(uni, format!("ν{}.α0", v)).as_int()?;
-    copy_of_int(uni, rho + x)
+/// EO atom `array.length`.
+pub fn array_length(_uni: &mut Universe, _v: u32) -> Result<u32> {
+    Err(anyhow!("Not implemented yet"))
+}
+
+/// EO atom `array.at`.
+pub fn array_at(_uni: &mut Universe, _v: u32) -> Result<u32> {
+    Err(anyhow!("Not implemented yet"))
 }
 
 #[test]

@@ -23,6 +23,7 @@ use std::process::Command;
 fn main() {
     println!("cargo:rerun-if-changed=eo-tests");
     println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed=target/eo");
     Command::new("mvn")
         .arg("--file")
         .arg("test-pom.xml")
