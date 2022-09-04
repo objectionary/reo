@@ -28,9 +28,8 @@ mod dataize;
 use crate::data::Data;
 use std::collections::HashMap;
 use std::fmt;
-use anyhow::{anyhow, Context, Result};
-use std::str::FromStr;
-use log::trace;
+use anyhow::Result;
+use log::error;
 
 struct Edge {
     from: u32,
@@ -116,7 +115,12 @@ impl Universe {
 
     /// Generates the next available ID for vertices and edges.
     pub fn next_id(&mut self) -> u32 {
-        self.tick += 1;
+        loop {
+            self.tick += 1;
+            if !self.vertices.contains_key(&self.tick) && !self.edges.contains_key(&self.tick) {
+                break;
+            }
+        }
         self.tick
     }
 
@@ -124,18 +128,36 @@ impl Universe {
     pub fn register(&mut self, name: &str, m: Lambda) {
         self.atoms.insert(name.to_string(), m);
     }
+
+    /// Validate the Universe and return all found data
+    /// inconsistencies. This is mostly used for testing.
+    pub fn inconsistencies(&self) -> Vec<String> {
+        let mut errors = Vec::new();
+        for e in self.edges.iter() {
+            if !self.vertices.contains_key(&e.1.to) {
+                errors.push(format!("Edge ε{} arrives to lost ν{}", e.0, e.1.to));
+            }
+            if !self.vertices.contains_key(&e.1.from) {
+                errors.push(format!("Edge ε{} departs from lost ν{}", e.0, e.1.from));
+            }
+        }
+        for e in errors.to_vec() {
+            error!("{}", e)
+        }
+        errors
+    }
 }
 
 #[cfg(test)]
 fn rand(uni: &mut Universe, _v: u32) -> Result<u32> {
-    let v = uni.next_id();
-    uni.add(v)?;
-    let int = uni.find(0, "int")?;
-    let e = uni.next_id();
-    uni.bind(e, 0,  v, "i")?;
-    uni.bind(e, v, int, "π")?;
-    uni.data(v, Data::from_int(rand::random::<i64>()))?;
-    Ok(v)
+    let v2 = uni.find(0, "int")?;
+    let e1 = uni.next_id();
+    uni.bind(e1, 0, v2, format!("i{}", e1).as_str())?;
+    let v3 = uni.next_id();
+    let e2 = uni.next_id();
+    uni.copy(e1, v3, e2)?;
+    uni.data(v3, Data::from_int(rand::random::<i64>()))?;
+    Ok(v3)
 }
 
 #[test]
@@ -144,6 +166,15 @@ fn generates_unique_ids() -> Result<()> {
     let first = uni.next_id();
     let second = uni.next_id();
     assert_ne!(first, second);
+    Ok(())
+}
+
+#[test]
+fn safely_generates_unique_ids() -> Result<()> {
+    let mut uni = Universe::empty();
+    uni.add(1)?;
+    let v = uni.next_id();
+    uni.add(v)?;
     Ok(())
 }
 
@@ -163,10 +194,8 @@ fn generates_random_int() -> Result<()> {
     uni.bind(e3, 0, v2, "x")?;
     uni.register("rand", rand);
     uni.atom(v2, "rand")?;
-    println!("{uni:?}");
-    assert_ne!(
-        uni.dataize("Φ.x.Δ").unwrap().as_int().unwrap(),
-        uni.dataize("Φ.x.Δ").unwrap().as_int().unwrap()
-    );
+    let first = uni.dataize("Φ.x.Δ")?.as_int()?;
+    let second = uni.dataize("Φ.x.Δ")?.as_int()?;
+    assert_ne!(first, second);
     Ok(())
 }

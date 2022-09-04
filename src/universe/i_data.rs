@@ -19,7 +19,7 @@
 // SOFTWARE.
 
 use crate::data::Data;
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use log::trace;
 use crate::universe::Universe;
 
@@ -36,7 +36,9 @@ impl Universe {
 fn sets_simple_data() -> Result<()> {
     let mut uni = Universe::empty();
     let data = 42;
+    uni.add(0)?;
     uni.data(0, Data::from_int(data))?;
-    assert_eq!(data, uni.dataize("Φ")?.as_int());
+    assert_eq!(data, uni.dataize("Φ")?.as_int()?);
+    assert!(uni.inconsistencies().is_empty());
     Ok(())
 }

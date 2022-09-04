@@ -23,18 +23,23 @@ use std::str::FromStr;
 use anyhow::{anyhow, Context, Result};
 use log::trace;
 use crate::data::Data;
-use crate::universe::{Edge, Universe};
+use crate::universe::Universe;
 
 impl Universe {
-    /// Dataize by absolute locator.
+    /// Dataize by absolute locator. The search always starts from the
+    /// root node of the tree. It is recommended to start the locator
+    /// from "Φ". If you need to find any vertex starting from non-root
+    /// one, use `find` method.
     pub fn dataize(&mut self, loc: &str) -> Result<Data> {
-        let id = self.find(0, loc)?;
+        let id = self.find(0, loc).context(format!("Failed to find {}", loc))?;
         let v = self.vertices.get(&id).context(format!("ν{} is absent", id))?;
         let data = v.data.clone().context(format!("There is no data in ν{}", id))?;
         Ok(data)
     }
 
-    /// Find a vertex in the universe by its locator.
+    /// Find a vertex in the Universe by its locator. The search
+    /// starts from the vertex `v`, but the locator may jump to
+    /// the root vertex, if it starts with "Φ".
     pub fn find(&mut self, v: u32, loc: &str) -> Result<u32> {
         let mut vtx = v;
         let mut sectors = VecDeque::new();
@@ -57,12 +62,16 @@ impl Universe {
                     return Err(anyhow!("The locator is empty"));
                 }
                 let to = match self.edge(vtx, k) {
-                    Some(e) => e.to,
+                    Some(v) => v,
                     None => {
                         let to = match self.edge(vtx, "φ") {
-                            Some(e) => e.to,
+                            Some(v) => v,
                             None => match self.vertices.get(&vtx).context(format!("Can't find ν{}", vtx))?.lambda.clone() {
-                                Some(m) => m(self, vtx)?,
+                                Some(m) => {
+                                    let to = m(self, vtx)?;
+                                    trace!("#dataize({}, '{}'): atom returned {}", v, loc, to);
+                                    to
+                                },
                                 None => {
                                     if k == "Δ" {
                                         return Ok(vtx);
@@ -86,14 +95,14 @@ impl Universe {
         Ok(vtx)
     }
 
-    /// Find `k`-labeled edge departing from `v`.
+    /// Find `k`-labeled edge departing from `v` and return the number
+    /// of the vertex it points to.
     ///
     /// @todo #1 This method is very slow. Let's find a way how to build
     ///  some index, so that the speed of this search will be higher.
-    fn edge(&self, v: u32, k: &str) -> Option<&Edge> {
-        self.edges.values().find(|e| e.from == v && e.a == k)
+    pub fn edge(&self, v: u32, k: &str) -> Option<u32> {
+        Some(self.edges.values().find(|e| e.from == v && e.a == k)?.to)
     }
-
 }
 
 #[test]

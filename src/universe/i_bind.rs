@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 use log::trace;
 use crate::universe::{Edge, Universe};
 
@@ -36,17 +36,25 @@ impl Universe {
         if self.edges.contains_key(&e1) {
             return Err(anyhow!("Edge ε{} already exists", e1));
         }
-        if let Some(e) = self.edge(v1, a) {
-            return Err(anyhow!("Edge '{}' already exists in ν{}, arriving to ν{}", a, v1, e.to));
+        if let Some(v) = self.edge(v1, a) {
+            return Err(anyhow!("Edge '{}' already exists in ν{}, arriving to ν{}", a, v1, v));
         }
         self.edges.insert(e1, Edge::new(v1, v2, a.to_string()));
         if a != "ρ" && a != "𝜎" {
-            let e2 = self.next_id();
-            self.bind(e1, v2, v1, "ρ")?;
-            let e3 = self.next_id();
-            self.bind(e3, v2, v1, "𝜎")?;
+            if self.edge(v2, "ρ").is_none() {
+                let e2 = self.next_id();
+                self.bind(e2, v2, v1, "ρ")?;
+            }
+            if self.edge(v2, "𝜎").is_none() {
+                let e3 = self.next_id();
+                self.bind(e3, v2, v1, "𝜎")?;
+            }
         }
-        trace!("#bind(ε{}, ν{}, ν{}, '{}'): edge added", e1, v1, v2, a);
+        trace!(
+            "#bind(ε{}, ν{}, ν{}, '{}'): edge added ν{}-ε{}({})>ν{}",
+            e1, v1, v2, a,
+            v1, e1, a, v2
+        );
         Ok(())
     }
 }
@@ -61,8 +69,51 @@ fn binds_simple_vertices() -> Result<()> {
     let e1 = uni.next_id();
     let k = "hello";
     uni.bind(e1, v1, v2, k)?;
+    assert!(uni.inconsistencies().is_empty());
     assert_eq!(v2, uni.find(v1, k)?);
     assert_eq!(v1, uni.find(v2, "ρ")?);
     assert_eq!(v1, uni.find(v2, "𝜎")?);
+    Ok(())
+}
+
+#[test]
+fn pre_defined_ids() -> Result<()> {
+    let mut uni = Universe::empty();
+    uni.add(1)?;
+    uni.add(2)?;
+    let k = "a-привет";
+    uni.bind(1, 1, 2, k)?;
+    assert!(uni.inconsistencies().is_empty());
+    assert_eq!(2, uni.find(1, k)?);
+    Ok(())
+}
+
+#[test]
+fn binds_two_names() -> Result<()> {
+    let mut uni = Universe::empty();
+    let v1 = uni.next_id();
+    uni.add(v1)?;
+    let v2 = uni.next_id();
+    uni.add(v2)?;
+    let e1 = uni.next_id();
+    uni.bind(e1, v1, v2, "first")?;
+    let e1 = uni.next_id();
+    uni.bind(e1, v1, v2, "second")?;
+    assert!(uni.inconsistencies().is_empty());
+    assert_eq!(v2, uni.find(v1, "first")?);
+    Ok(())
+}
+
+#[test]
+fn binds_to_root() -> Result<()> {
+    let mut uni = Universe::empty();
+    uni.add(0)?;
+    let v1 = uni.next_id();
+    uni.add(v1)?;
+    let e1 = uni.next_id();
+    uni.bind(e1, 0, v1, "x")?;
+    assert!(uni.inconsistencies().is_empty());
+    assert!(uni.edge(0, "ρ").is_none());
+    assert!(uni.edge(0, "𝜎").is_none());
     Ok(())
 }

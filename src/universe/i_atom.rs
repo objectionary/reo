@@ -34,22 +34,23 @@ pub fn search(uni: &mut Universe, v: u32) -> Result<u32> {
 }
 
 impl Universe {
-    /// Set atom lambda.
-    pub fn atom(&mut self, v: u32, m: &str) -> Result<()> {
-        let vtx = self.vertices.get_mut(&v).context(format!("Can't find ν{}", v))?;
+    /// Set atom lambda `m` to the vertex `v1`. The atom has to be
+    /// registered in the Universe with the method `register`.
+    pub fn atom(&mut self, v1: u32, m: &str) -> Result<()> {
+        let vtx = self.vertices.get_mut(&v1).context(format!("Can't find ν{}", v1))?;
         if m.starts_with("S/") {
             vtx.lambda = Some(search);
             vtx.search = m.chars().skip(2).collect();
-            trace!("#atom(ν{}, '{}'): lambda SEARCH set to '{}'", v, m, vtx.search);
+            trace!("#atom(ν{}, '{}'): lambda SEARCH set to '{}'", v1, m, vtx.search);
         } else {
             vtx.lambda = Some(
                 match self.atoms.get(m) {
                     Some(a) => {
-                        trace!("#atom(ν{}, '{}'): lambda found and set", v, m);
+                        trace!("#atom(ν{}, '{}'): lambda found and set", v1, m);
                         *a
                     },
                     None => {
-                        trace!("#atom(ν{}, '{}'): lambda NOT found but set", v, m);
+                        trace!("#atom(ν{}, '{}'): lambda NOT found but set to NIY", v1, m);
                         not_implemented_yet
                     }
                 }
@@ -69,7 +70,10 @@ fn evaluates_dummy_atom() -> Result<()> {
     let mut uni = Universe::empty();
     uni.register("dummy", dummy);
     let v1 = uni.next_id();
+    uni.add(0)?;
+    uni.add(v1)?;
     uni.atom(v1, "dummy")?;
+    assert!(uni.inconsistencies().is_empty());
     assert_eq!(0, uni.find(v1, "Δ")?);
     Ok(())
 }

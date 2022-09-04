@@ -28,10 +28,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use crate::data::Data;
 use itertools::Itertools;
-use glob::glob;
 use log::trace;
-use crate::da;
-use crate::setup::setup;
 
 /// Collection of GMIs, which can be deployed to a `Universe`.
 pub struct Gmi {
@@ -170,12 +167,12 @@ impl Gmi {
         Ok(data)
     }
 
-    /// Parses `v2` or `e5` into 2 and 5.
+    /// Parses `ε2` or `ν5` into `2` and `5` respectively.
     fn parse(&mut self, s: &str, uni: &mut Universe) -> Result<u32> {
-        let tail : String = s.chars().skip(1).collect::<Vec<_>>()
-            .into_iter().collect();
-        if s.chars().next().unwrap() == '$' {
-            Ok(*self.vars.entry(tail.to_string()).or_insert(uni.next_id()))
+        let head = s.chars().next().context(format!("Empty identifier"))?;
+        let tail : String = s.chars().skip(1).collect::<Vec<_>>().into_iter().collect();
+        if head == '$' {
+            Ok(*self.vars.entry(tail.to_string()).or_insert_with(|| uni.next_id()))
         } else {
             Ok(u32::from_str(tail.as_str()).context(format!("Parsing of '{}' failed", s))?)
         }
@@ -189,14 +186,23 @@ impl Gmi {
     }
 }
 
+#[cfg(test)]
+use glob::glob;
+
+#[cfg(test)]
+use crate::setup::setup;
+
+#[cfg(test)]
+use crate::da;
+
 #[test]
 fn deploys_simple_commands()  -> Result<()> {
     let uni : &mut Universe = &mut Universe::empty();
-    uni.add(0)?;
     Gmi::from_string(
         "
+        ADD('ν0');
         ADD('ν1');
-        BIND('ε1', 'ν0', 'ν1', 'foo');
+        BIND('ε2', 'ν0', 'ν1', 'foo');
         DATA('ν1', 'd0 bf d1 80 d0 b8 d0 b2 d0 b5 d1 82');
         ".to_string()
     )?.deploy_to(uni)?;
@@ -230,6 +236,7 @@ fn all_apps() -> Result<Vec<String>> {
 }
 
 #[test]
+#[ignore]
 fn deploys_and_runs_all_apps() -> Result<()> {
     let mut uni = Universe::empty();
     uni.add(0)?;

@@ -18,15 +18,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 use log::trace;
 use crate::universe::{Universe, Vertex};
 
 impl Universe {
-    /// Add a new vertex to the universe.
-    pub fn add(&mut self, v: u32) -> Result<()> {
-        self.vertices.insert(v, Vertex::empty());
-        trace!("#add(ν{}): new vertex added", v);
+    /// Add a new vertex `v1` to the universe.
+    pub fn add(&mut self, v1: u32) -> Result<()> {
+        if self.vertices.contains_key(&v1) {
+            return Err(anyhow!("Vertex ν{} already exists", v1));
+        }
+        self.vertices.insert(v1, Vertex::empty());
+        trace!("#add(ν{}): new vertex added", v1);
         Ok(())
     }
 }
@@ -36,6 +39,7 @@ fn adds_simple_vertex() -> Result<()> {
     let mut uni = Universe::empty();
     let v1 = uni.next_id();
     uni.add(v1)?;
+    assert!(uni.inconsistencies().is_empty());
     assert_eq!(v1, uni.find(v1, "𝜉")?);
     Ok(())
 }
