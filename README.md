@@ -1,4 +1,4 @@
-<img src="https://www.yegor256.com/images/books/elegant-objects/cactus.svg" height="100px" />
+<img alt="logo" src="https://www.yegor256.com/images/books/elegant-objects/cactus.svg" height="100px" />
 
 [![EO principles respected here](https://www.elegantobjects.org/badge.svg)](https://www.elegantobjects.org)
 [![We recommend IntelliJ IDEA](https://www.elegantobjects.org/intellij-idea.svg)](https://www.jetbrains.com/idea/)
@@ -10,13 +10,52 @@
 ![Lines of code](https://img.shields.io/tokei/lines/github/objectionary/reo)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/objectionary/reo/blob/master/LICENSE.txt)
 
+**ATTENTION**: It's a very early draft currently in active development!
+Most probably it doesn't work. Don't try to contribute, unless you know
+what you are doing.
+
 It's an experimental transpiler of
 [EO](https://www.eolang.org) programs to Rust functions.
 
-To build it, install [Rust](https://www.rust-lang.org/tools/install) and then:
+First, install
+[Rust](https://www.rust-lang.org/tools/install),
+[npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm),
+[Java SE](https://www.oracle.com/java/technologies/downloads/),
+and [eolang](https://www.npmjs.com/package/eolang) package.
+Then, install `reo` package:
 
 ```bash
-$ cargo build -vv --release
+$ cargo install reo
+```
+
+Then, create a simple EO program in `app.eo` file:
+
+```
+[] > app
+  QQ.io.stdout
+    "Hello, world!\n"
+```
+
+Then, compile it to XMIR using [eoc]:
+
+```
+$ eoc optimize
+```
+
+Finally, run it:
+
+```
+$ reo dataize app
+```
+
+You should see the "Hello, world!" being printed out.
+
+## How to Contribute
+
+First, install [Rust](https://www.rust-lang.org/tools/install) and then:
+
+```bash
+$ cargo test -vv --release
 ```
 
 If everything goes well, an executable binary will be in `target/release/reo`:
@@ -24,3 +63,8 @@ If everything goes well, an executable binary will be in `target/release/reo`:
 ```bash
 $ target/release/reo --help
 ```
+
+Then, fork repository, make changes, send us a [pull request](https://www.yegor256.com/2014/04/15/github-guidelines.html).
+We will review your changes and apply them to the `master` branch shortly,
+provided they don't violate our quality standards. To avoid frustration,
+before sending us your pull request please run `cargo test` again.
