@@ -18,30 +18,28 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-mod i_copy;
+mod dataize;
+mod i_add;
 mod i_atom;
 mod i_bind;
+mod i_copy;
 mod i_data;
-mod i_add;
-mod dataize;
 
 use crate::data::Data;
-use std::collections::HashMap;
-use std::fmt;
 use anyhow::Result;
 use log::error;
+use std::collections::HashMap;
+use std::fmt;
 
 struct Edge {
     from: u32,
     to: u32,
-    a: String
+    a: String,
 }
 
 impl Edge {
     fn new(from: u32, to: u32, a: String) -> Edge {
-        Edge {
-            from, to, a
-        }
+        Edge { from, to, a }
     }
 }
 
@@ -52,7 +50,7 @@ pub type Lambda = fn(&mut Universe, v: u32) -> Result<u32>;
 struct Vertex {
     data: Option<Data>,
     lambda: Option<Lambda>,
-    search: String
+    search: String,
 }
 
 impl Vertex {
@@ -60,7 +58,7 @@ impl Vertex {
         Vertex {
             data: None,
             lambda: None,
-            search: "".to_string()
+            search: "".to_string(),
         }
     }
 
@@ -69,7 +67,7 @@ impl Vertex {
         Vertex {
             data: self.data.clone(),
             lambda: self.lambda.clone(),
-            search: self.search.clone()
+            search: self.search.clone(),
         }
     }
 }
@@ -78,14 +76,15 @@ pub struct Universe {
     vertices: HashMap<u32, Vertex>,
     edges: HashMap<u32, Edge>,
     atoms: HashMap<String, Lambda>,
-    tick: u32
+    tick: u32,
 }
 
 impl fmt::Debug for Universe {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut lines = vec![];
         for (i, v) in self.vertices.iter() {
-            let mut attrs = self.edges
+            let mut attrs = self
+                .edges
                 .iter()
                 .filter(|(_, e)| e.from == *i)
                 .map(|(j, e)| format!("\n\t{} ε{}➞ ν{}", e.a, j, e.to))
@@ -109,7 +108,7 @@ impl Universe {
             vertices: HashMap::new(),
             edges: HashMap::new(),
             atoms: HashMap::new(),
-            tick: 0
+            tick: 0,
         }
     }
 

@@ -19,14 +19,17 @@
 // SOFTWARE.
 
 use crate::data::Data;
+use crate::universe::Universe;
 use anyhow::{Context, Result};
 use log::trace;
-use crate::universe::Universe;
 
 impl Universe {
     /// Set vertex data.
     pub fn data(&mut self, v: u32, d: Data) -> Result<()> {
-        self.vertices.get_mut(&v).context(format!("Can't find ν{}", v))?.data = Some(d.clone());
+        self.vertices
+            .get_mut(&v)
+            .context(format!("Can't find ν{}", v))?
+            .data = Some(d.clone());
         trace!("#data(ν{}, '{}'): data set", v, d.as_hex());
         Ok(())
     }

@@ -18,37 +18,38 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+use crate::gmi::Gmi;
+use crate::org::eolang::register;
 use crate::universe::Universe;
-use std::collections::HashMap;
-use std::path::Path;
 use anyhow::{Context, Result};
 use glob::glob;
 use log::trace;
-use crate::gmi::Gmi;
-use crate::org::eolang::register;
+use std::collections::HashMap;
+use std::path::Path;
 
 /// Deploy a directory of `*.gmi` files to a new `Universe`.
 pub fn setup(uni: &mut Universe, dir: &Path) -> Result<()> {
     register(uni);
-    let mut pkgs : HashMap<String, u32> = HashMap::new();
+    let mut pkgs: HashMap<String, u32> = HashMap::new();
     for f in glob(format!("{}/**/*.gmi", dir.display()).as_str())? {
         let p = f?;
         let path = p.as_path();
         trace!("#setup: deploying {}...", path.display());
-        let pkg = path.parent()
+        let pkg = path
+            .parent()
             .context(format!("Can't get parent from '{}'", path.display()))?
             .to_str()
             .context(format!("Can't turn path '{}' to str", path.display()))?
             .replace("/", ".");
         let mut gmi = Gmi::from_file(path).context(format!("Can't read {}", path.display()))?;
-        let mut root : u32 = 0;
+        let mut root: u32 = 0;
         let mut pk = "".to_owned();
         for p in pkg.split(".") {
             pk.push_str(format!(".{}", p).as_str());
             match pkgs.get(&pk) {
                 Some(v) => {
                     root = *v;
-                },
+                }
                 None => {
                     let v = uni.next_id();
                     uni.add(v)?;
@@ -60,8 +61,8 @@ pub fn setup(uni: &mut Universe, dir: &Path) -> Result<()> {
             }
         }
         gmi.set_root(root);
-        gmi.deploy_to(uni).context(format!("Failed to deploy '{}'", path.display()))?;
+        gmi.deploy_to(uni)
+            .context(format!("Failed to deploy '{}'", path.display()))?;
     }
     Ok(())
 }
-

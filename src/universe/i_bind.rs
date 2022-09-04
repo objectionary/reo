@@ -18,9 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+use crate::universe::{Edge, Universe};
 use anyhow::{anyhow, Result};
 use log::trace;
-use crate::universe::{Edge, Universe};
 
 impl Universe {
     /// Makes an edge `e1` from vertex `v1` to vertex `v2` and puts `a` label on it. If the
@@ -37,7 +37,12 @@ impl Universe {
             return Err(anyhow!("Edge ε{} already exists", e1));
         }
         if let Some(v) = self.edge(v1, a) {
-            return Err(anyhow!("Edge '{}' already exists in ν{}, arriving to ν{}", a, v1, v));
+            return Err(anyhow!(
+                "Edge '{}' already exists in ν{}, arriving to ν{}",
+                a,
+                v1,
+                v
+            ));
         }
         self.edges.insert(e1, Edge::new(v1, v2, a.to_string()));
         if a != "ρ" && a != "𝜎" {
@@ -52,8 +57,14 @@ impl Universe {
         }
         trace!(
             "#bind(ε{}, ν{}, ν{}, '{}'): edge added ν{}-ε{}({})>ν{}",
-            e1, v1, v2, a,
-            v1, e1, a, v2
+            e1,
+            v1,
+            v2,
+            a,
+            v1,
+            e1,
+            a,
+            v2
         );
         Ok(())
     }

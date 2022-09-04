@@ -21,7 +21,7 @@
 use anyhow::{Context, Result};
 
 pub struct Data {
-    bytes: Vec<u8>
+    bytes: Vec<u8>,
 }
 
 impl Clone for Data {
@@ -52,12 +52,12 @@ impl Data {
     }
 
     /// From BOOL.
-    pub fn from_bool(d: bool) -> Self  {
+    pub fn from_bool(d: bool) -> Self {
         Self::from_bytes(if d { [1] } else { [0] }.to_vec())
     }
 
     /// From FLOAT.
-    pub fn from_float(d: f64) -> Self  {
+    pub fn from_float(d: f64) -> Self {
         Self::from_bytes(d.to_be_bytes().to_vec())
     }
 
@@ -77,7 +77,8 @@ impl Data {
     }
 
     pub fn as_int(&self) -> Result<i64> {
-        let a : &[u8; 8] = &self.bytes
+        let a: &[u8; 8] = &self
+            .bytes
             .as_slice()
             .try_into()
             .context(format!("There is no data, can't make INT"))?;
@@ -85,7 +86,8 @@ impl Data {
     }
 
     pub fn as_float(&self) -> Result<f64> {
-        let a : &[u8; 8] = &self.bytes
+        let a: &[u8; 8] = &self
+            .bytes
             .as_slice()
             .try_into()
             .context(format!("There is no data, can't make FLOAT"))?;
@@ -93,20 +95,20 @@ impl Data {
     }
 
     pub fn as_string(&self) -> Result<String> {
-        String::from_utf8(self.bytes.clone())
+        Ok(String::from_utf8(self.bytes.clone())?)
     }
 
     pub fn as_hex(&self) -> String {
         if self.bytes.is_empty() {
             "--".to_string()
         } else {
-            self.bytes.iter()
+            self.bytes
+                .iter()
                 .map(|b| format!("{:02x}", b).to_string())
                 .collect::<Vec<String>>()
                 .join("-")
         }
     }
-
 }
 
 #[test]

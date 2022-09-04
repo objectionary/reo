@@ -18,9 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+use crate::universe::{Edge, Universe, Vertex};
 use anyhow::{Context, Result};
 use log::trace;
-use crate::universe::{Edge, Universe, Vertex};
 
 impl Universe {
     /// Deletes the edge `e1` and replaces it with a new edge `e2` coming
@@ -29,7 +29,11 @@ impl Universe {
         let edge = self.edges.get(&e1).context(format!("Can't find ε{}", e1))?;
         let v1 = edge.from;
         let v2 = edge.to;
-        let vtx2 = (*self.vertices.get(&v2).context(format!("Can't find ν{}", v2))?).clone();
+        let vtx2 = (*self
+            .vertices
+            .get(&v2)
+            .context(format!("Can't find ν{}", v2))?)
+        .clone();
         self.vertices.insert(v3, vtx2);
         let a = edge.a.clone();
         self.edges.remove(&e1);
@@ -38,16 +42,33 @@ impl Universe {
         for e in self.edges.values_mut().filter(|e| e.from == v2) {
             e.from = v3;
         }
-        self.vertices.get_mut(&v2).context(format!("Can't find ν{}", v2))?.lambda =
-            self.vertices.get(&v3).context(format!("Can't find ν{}", v3))?.lambda;
-        self.vertices.get_mut(&v3).context(format!("Can't find ν{}", v3))?.lambda = None;
+        self.vertices
+            .get_mut(&v2)
+            .context(format!("Can't find ν{}", v2))?
+            .lambda = self
+            .vertices
+            .get(&v3)
+            .context(format!("Can't find ν{}", v3))?
+            .lambda;
+        self.vertices
+            .get_mut(&v3)
+            .context(format!("Can't find ν{}", v3))?
+            .lambda = None;
         let e3 = self.next_id();
         self.edges.insert(e3, Edge::new(v3, v2, "π".to_string()));
         trace!(
             "#copy(ε{}, ν{}, ε{}): ν{}-ε{}>ν{} restructured as ν{}-ε{}>ν{}-ε{}(π)>ν{}",
-            e1, v3, e2,
-            v1, e1, v2,
-            v1, e2, v3, e3, v2
+            e1,
+            v3,
+            e2,
+            v1,
+            e1,
+            v2,
+            v1,
+            e2,
+            v3,
+            e3,
+            v2
         );
         Ok(())
     }

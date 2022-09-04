@@ -18,9 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+use crate::universe::Universe;
 use anyhow::{anyhow, Context, Result};
 use log::trace;
-use crate::universe::Universe;
 
 /// Atom that always throws an error.
 pub fn not_implemented_yet(_uni: &mut Universe, _v: u32) -> Result<u32> {
@@ -29,7 +29,12 @@ pub fn not_implemented_yet(_uni: &mut Universe, _v: u32) -> Result<u32> {
 
 /// Atom that searches.
 pub fn search(uni: &mut Universe, v: u32) -> Result<u32> {
-    let loc = uni.vertices.get(&v).context(format!("Can't find ν{}", v))?.search.clone();
+    let loc = uni
+        .vertices
+        .get(&v)
+        .context(format!("Can't find ν{}", v))?
+        .search
+        .clone();
     uni.find(v, loc.as_str())
 }
 
@@ -37,24 +42,30 @@ impl Universe {
     /// Set atom lambda `m` to the vertex `v1`. The atom has to be
     /// registered in the Universe with the method `register`.
     pub fn atom(&mut self, v1: u32, m: &str) -> Result<()> {
-        let vtx = self.vertices.get_mut(&v1).context(format!("Can't find ν{}", v1))?;
+        let vtx = self
+            .vertices
+            .get_mut(&v1)
+            .context(format!("Can't find ν{}", v1))?;
         if m.starts_with("S/") {
             vtx.lambda = Some(search);
             vtx.search = m.chars().skip(2).collect();
-            trace!("#atom(ν{}, '{}'): lambda SEARCH set to '{}'", v1, m, vtx.search);
-        } else {
-            vtx.lambda = Some(
-                match self.atoms.get(m) {
-                    Some(a) => {
-                        trace!("#atom(ν{}, '{}'): lambda found and set", v1, m);
-                        *a
-                    },
-                    None => {
-                        trace!("#atom(ν{}, '{}'): lambda NOT found but set to NIY", v1, m);
-                        not_implemented_yet
-                    }
-                }
+            trace!(
+                "#atom(ν{}, '{}'): lambda SEARCH set to '{}'",
+                v1,
+                m,
+                vtx.search
             );
+        } else {
+            vtx.lambda = Some(match self.atoms.get(m) {
+                Some(a) => {
+                    trace!("#atom(ν{}, '{}'): lambda found and set", v1, m);
+                    *a
+                }
+                None => {
+                    trace!("#atom(ν{}, '{}'): lambda NOT found but set to NIY", v1, m);
+                    not_implemented_yet
+                }
+            });
         }
         Ok(())
     }

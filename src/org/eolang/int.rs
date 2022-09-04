@@ -18,10 +18,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use crate::universe::Universe;
-use anyhow::Result;
 use crate::da;
 use crate::scripts::copy_of_int;
+use crate::universe::Universe;
+use anyhow::Result;
 
 /// Register all known atoms in the Universe.
 pub fn register(uni: &mut Universe) {

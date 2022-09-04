@@ -18,12 +18,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use std::collections::VecDeque;
-use std::str::FromStr;
-use anyhow::{anyhow, Context, Result};
-use log::trace;
 use crate::data::Data;
 use crate::universe::Universe;
+use anyhow::{anyhow, Context, Result};
+use log::trace;
+use std::collections::VecDeque;
+use std::str::FromStr;
 
 impl Universe {
     /// Dataize by absolute locator. The search always starts from the
@@ -31,9 +31,17 @@ impl Universe {
     /// from "Φ". If you need to find any vertex starting from non-root
     /// one, use `find` method.
     pub fn dataize(&mut self, loc: &str) -> Result<Data> {
-        let id = self.find(0, loc).context(format!("Failed to find {}", loc))?;
-        let v = self.vertices.get(&id).context(format!("ν{} is absent", id))?;
-        let data = v.data.clone().context(format!("There is no data in ν{}", id))?;
+        let id = self
+            .find(0, loc)
+            .context(format!("Failed to find {}", loc))?;
+        let v = self
+            .vertices
+            .get(&id)
+            .context(format!("ν{} is absent", id))?;
+        let data = v
+            .data
+            .clone()
+            .context(format!("There is no data in ν{}", id))?;
         Ok(data)
     }
 
@@ -66,19 +74,25 @@ impl Universe {
                     None => {
                         let to = match self.edge(vtx, "φ") {
                             Some(v) => v,
-                            None => match self.vertices.get(&vtx).context(format!("Can't find ν{}", vtx))?.lambda.clone() {
+                            None => match self
+                                .vertices
+                                .get(&vtx)
+                                .context(format!("Can't find ν{}", vtx))?
+                                .lambda
+                                .clone()
+                            {
                                 Some(m) => {
                                     let to = m(self, vtx)?;
                                     trace!("#dataize({}, '{}'): atom returned {}", v, loc, to);
                                     to
-                                },
+                                }
                                 None => {
                                     if k == "Δ" {
                                         return Ok(vtx);
                                     }
                                     return Err(anyhow!("Can't continue as ν{}.{}", vtx, k));
                                 }
-                            }
+                            },
                         };
                         sectors.push_front(k);
                         to
