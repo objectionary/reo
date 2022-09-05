@@ -27,19 +27,25 @@ use log::trace;
 use std::collections::HashMap;
 use std::path::Path;
 
-/// Deploy a directory of `*.gmi` files to a new `Universe`.
-pub fn setup(uni: &mut Universe, dir: &Path) -> Result<()> {
+/// Deploy a directory of `*.gmi` files to a new `Universe`. Returns
+/// total number of GMI instructions deployed to the Universe.
+pub fn setup(uni: &mut Universe, dir: &Path) -> Result<u32> {
     register(uni);
     let mut pkgs: HashMap<String, u32> = HashMap::new();
+    let mut total = 0;
     for f in glob(format!("{}/**/*.gmi", dir.display()).as_str())? {
         let p = f?;
+        if p.is_dir() {
+            continue;
+        }
         let path = p.as_path();
+        let rel = path.strip_prefix(dir)?;
         trace!("#setup: deploying {}...", path.display());
-        let pkg = path
+        let pkg = rel
             .parent()
-            .context(format!("Can't get parent from '{}'", path.display()))?
+            .context(format!("Can't get parent from '{}'", rel.display()))?
             .to_str()
-            .context(format!("Can't turn path '{}' to str", path.display()))?
+            .context(format!("Can't turn path '{}' to str", rel.display()))?
             .replace("/", ".");
         let mut gmi = Gmi::from_file(path).context(format!("Can't read {}", path.display()))?;
         let mut root: u32 = 0;
@@ -61,8 +67,8 @@ pub fn setup(uni: &mut Universe, dir: &Path) -> Result<()> {
             }
         }
         gmi.set_root(root);
-        gmi.deploy_to(uni)
+        total += gmi.deploy_to(uni)
             .context(format!("Failed to deploy '{}'", path.display()))?;
     }
-    Ok(())
+    Ok(total)
 }

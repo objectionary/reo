@@ -57,16 +57,19 @@ impl Gmi {
         self.vars.insert("v0".to_string(), v0);
     }
 
-    /// Deploy this collection of GMIs to the Universe.
-    pub fn deploy_to(&mut self, uni: &mut Universe) -> Result<()> {
+    /// Deploy this collection of GMIs to the Universe. Returns total
+    /// number of GMI instructions deployed.
+    pub fn deploy_to(&mut self, uni: &mut Universe) -> Result<u32> {
         let txt = &self.text.clone();
         let lines = txt.split("\n").map(|t| t.trim()).filter(|t| !t.is_empty());
+        let mut total = 0;
         for (pos, t) in lines.enumerate() {
             trace!("#deploy_to: deploying line no.{} '{}'...", pos + 1, t);
             self.deploy_one(t, uni)
                 .context(format!("Failure at the line no.{}: '{}'", pos, t))?;
+            total += 1;
         }
-        Ok(())
+        Ok(total)
     }
 
     /// Deploy a sing command to the universe.
