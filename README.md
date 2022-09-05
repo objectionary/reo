@@ -32,7 +32,7 @@ Then, create a simple EO program in `app.eo` file:
 
 ```
 [] > app
-  QQ.io.stdout
+  QQ.io.stdout > @
     "Hello, world!\n"
 ```
 
