@@ -20,16 +20,16 @@
 
 extern crate reo;
 
+use anyhow::Context;
+use clap::{crate_version, AppSettings, Arg, ArgAction, Command};
+use log::{debug, LevelFilter};
 use reo::da;
-use reo::universe::Universe;
-use reo::setup::setup;
 use reo::gmi::Gmi;
+use reo::setup::setup;
+use reo::universe::Universe;
+use simple_logger::SimpleLogger;
 use std::fs;
 use std::path::Path;
-use anyhow::{Context};
-use clap::{AppSettings, Arg, ArgAction, Command, crate_version};
-use log::{debug, LevelFilter};
-use simple_logger::SimpleLogger;
 
 pub fn main() {
     let matches = Command::new("reo")
@@ -41,7 +41,7 @@ pub fn main() {
                 .long("verbose")
                 .required(false)
                 .takes_value(false)
-                .help("Print all possible debug messages")
+                .help("Print all possible debug messages"),
         )
         .arg(
             Arg::new("file")
@@ -51,7 +51,7 @@ pub fn main() {
                 .required(false)
                 .help("Name of a single .gmi file to work with")
                 .takes_value(true)
-                .action(ArgAction::Set)
+                .action(ArgAction::Set),
         )
         .arg(
             Arg::new("home")
@@ -61,7 +61,7 @@ pub fn main() {
                 .required(false)
                 .help("Directory with .gmi files")
                 .takes_value(true)
-                .action(ArgAction::Set)
+                .action(ArgAction::Set),
         )
         .subcommand_required(true)
         .allow_external_subcommands(true)
@@ -74,21 +74,22 @@ pub fn main() {
                         .required(true)
                         .help("Fully qualified object name")
                         .takes_value(false)
-                        .action(ArgAction::Set)
+                        .action(ArgAction::Set),
                 )
-                .arg_required_else_help(true)
+                .arg_required_else_help(true),
         )
         .get_matches();
     let mut logger = SimpleLogger::new().without_timestamps();
-    logger = logger.with_level(
-        if matches.contains_id("verbose") {
-            LevelFilter::Trace
-        } else {
-            LevelFilter::Info
-        }
-    );
+    logger = logger.with_level(if matches.contains_id("verbose") {
+        LevelFilter::Trace
+    } else {
+        LevelFilter::Info
+    });
     logger.init().unwrap();
-    debug!("argv: {}", std::env::args().collect::<Vec<String>>().join(" "));
+    debug!(
+        "argv: {}",
+        std::env::args().collect::<Vec<String>>().join(" ")
+    );
     match matches.subcommand() {
         Some(("dataize", subs)) => {
             let object = subs.get_one::<String>("object").unwrap();
@@ -103,10 +104,16 @@ pub fn main() {
             let mut total = 0;
             if matches.contains_id("path") {
                 let file = Path::new(matches.value_of("path").unwrap());
-                debug!("Deploying instructions from a single file '{}'", file.display());
+                debug!(
+                    "Deploying instructions from a single file '{}'",
+                    file.display()
+                );
                 total += Gmi::from_file(file).unwrap().deploy_to(&mut uni).unwrap();
             } else {
-                debug!("Deploying instructions from a directory '{}'", cwd.display());
+                debug!(
+                    "Deploying instructions from a directory '{}'",
+                    cwd.display()
+                );
                 uni.add(0).unwrap();
                 total += setup(&mut uni, cwd).unwrap();
             }

@@ -67,7 +67,8 @@ pub fn setup(uni: &mut Universe, dir: &Path) -> Result<u32> {
             }
         }
         gmi.set_root(root);
-        total += gmi.deploy_to(uni)
+        total += gmi
+            .deploy_to(uni)
             .context(format!("Failed to deploy '{}'", path.display()))?;
     }
     Ok(total)
