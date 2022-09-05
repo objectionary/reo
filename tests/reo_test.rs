@@ -70,10 +70,7 @@ fn dataizes_simple_gmi() -> Result<()> {
 #[test]
 fn dataizes_in_eoc_mode() -> Result<()> {
     let tmp = TempDir::new()?;
-    let dir = tmp
-        .path()
-        .join(".eoc")
-        .join("gmi");
+    let dir = tmp.path().join(".eoc").join("gmi");
     fsutils::mkdir(
         dir.to_str()
             .context(format!("Broken path {}", dir.display()))?,
@@ -83,7 +80,8 @@ fn dataizes_in_eoc_mode() -> Result<()> {
         ADD('$ν1');
         BIND('$ε1', 'ν0', '$ν1', 'foo');
         DATA('$ν1', 'ff ff');
-        ".as_bytes()
+        "
+        .as_bytes(),
     )?;
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
