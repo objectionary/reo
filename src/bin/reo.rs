@@ -44,6 +44,13 @@ pub fn main() {
                 .help("Print all possible debug messages"),
         )
         .arg(
+            Arg::new("eoc")
+                .long("eoc")
+                .required(false)
+                .takes_value(false)
+                .help("Compatibility with eoc command-line toolkit"),
+        )
+        .arg(
             Arg::new("file")
                 .long("file")
                 .short('f')
@@ -93,7 +100,14 @@ pub fn main() {
     match matches.subcommand() {
         Some(("dataize", subs)) => {
             let object = subs.get_one::<String>("object").unwrap();
-            let home = matches.value_of("dir").unwrap_or_default();
+            let home = matches.value_of("dir").unwrap_or_else(
+                || if matches.contains_id("eoc") {
+                    debug!("Running in eoc-compatible mode");
+                    ".eoc/gmi"
+                } else {
+                    "."
+                }
+            );
             debug!("Home requested as '{}'", home);
             let full_home = fs::canonicalize(home)
                 .context(format!("Can't access '{}'", home))
