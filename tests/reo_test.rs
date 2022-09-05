@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use glob::glob;
 use predicates::prelude::predicate;
 use predicates::prelude::*;
@@ -59,6 +59,36 @@ fn dataizes_simple_gmi() -> Result<()> {
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .arg(format!("--home={}", tmp.path().display()))
+        .arg("dataize")
+        .arg("foo")
+        .assert()
+        .success()
+        .stdout("ff-ff\n");
+    Ok(())
+}
+
+#[test]
+fn dataizes_in_eoc_mode() -> Result<()> {
+    let tmp = TempDir::new()?;
+    let dir = tmp
+        .path()
+        .join(".eoc")
+        .join("gmi");
+    fsutils::mkdir(
+        dir.to_str()
+            .context(format!("Broken path {}", dir.display()))?,
+    );
+    File::create(dir.join("foo.gmi"))?.write_all(
+        "
+        ADD('$ν1');
+        BIND('$ε1', 'ν0', '$ν1', 'foo');
+        DATA('$ν1', 'ff ff');
+        ".as_bytes()
+    )?;
+    assert_cmd::Command::cargo_bin("reo")
+        .unwrap()
+        .current_dir(tmp.path())
+        .arg("--eoc")
         .arg("dataize")
         .arg("foo")
         .assert()

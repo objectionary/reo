@@ -24,6 +24,7 @@ hex = "0.4.3"
 
 [dev-dependencies]
 assert_cmd = "2.0.4"
+fsutils = "0.1.7"
 rstest = "0.15.0"
 tempfile = "3.3.0"
 predicates = "2.1.1"
