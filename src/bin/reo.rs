@@ -20,12 +20,15 @@
 
 extern crate reo;
 
+use reo::da;
+use reo::universe::Universe;
+use reo::setup::setup;
+use reo::gmi::Gmi;
 use std::fs;
-use std::fs::File;
 use std::path::Path;
+use anyhow::{Context};
 use clap::{AppSettings, Arg, ArgAction, Command, crate_version};
 use log::{debug, LevelFilter};
-use predicates::prelude::predicate;
 use simple_logger::SimpleLogger;
 
 pub fn main() {
@@ -44,6 +47,7 @@ pub fn main() {
             Arg::new("file")
                 .long("file")
                 .short('f')
+                .name("path")
                 .required(false)
                 .help("Name of a single .gmi file to work with")
                 .takes_value(true)
@@ -52,6 +56,8 @@ pub fn main() {
         .arg(
             Arg::new("home")
                 .long("home")
+                .default_value(".")
+                .name("dir")
                 .required(false)
                 .help("Directory with .gmi files")
                 .takes_value(true)
@@ -74,25 +80,33 @@ pub fn main() {
         )
         .get_matches();
     let mut logger = SimpleLogger::new().without_timestamps();
-    if matches.contains_id("verbose") {
-        logger = logger.with_level(LevelFilter::Trace);
-    }
+    logger = logger.with_level(
+        if matches.contains_id("verbose") {
+            LevelFilter::Trace
+        } else {
+            LevelFilter::Info
+        }
+    );
     logger.init().unwrap();
+    debug!("argv: {}", std::env::args().collect::<Vec<String>>().join(" "));
     match matches.subcommand() {
         Some(("dataize", subs)) => {
             let object = subs.get_one::<String>("object").unwrap();
-            let home = matches.value_of("home").unwrap_or(".");
-            let full_home = fs::canonicalize(home).unwrap();
+            let home = matches.value_of("dir").unwrap_or_default();
+            debug!("Home requested as '{}'", home);
+            let full_home = fs::canonicalize(home)
+                .context(format!("Can't access '{}'", home))
+                .unwrap();
             let cwd = full_home.as_path();
             let mut uni = Universe::empty();
             debug!("Home is set to {}", cwd.display());
             let mut total = 0;
-            if matches.contains_id("file") {
-                let file = Path::new(matches.value_of("file").unwrap());
-                debug!("Deploying instructions from a single file {}", file.display());
+            if matches.contains_id("path") {
+                let file = Path::new(matches.value_of("path").unwrap());
+                debug!("Deploying instructions from a single file '{}'", file.display());
                 total += Gmi::from_file(file).unwrap().deploy_to(&mut uni).unwrap();
             } else {
-                debug!("Deploying instructions from a directory {}", cwd.display());
+                debug!("Deploying instructions from a directory '{}'", cwd.display());
                 uni.add(0).unwrap();
                 total += setup(&mut uni, cwd).unwrap();
             }
@@ -104,61 +118,4 @@ pub fn main() {
         }
         _ => unreachable!(),
     }
-}
-
-#[test]
-fn prints_help() {
-    assert_cmd::Command::cargo_bin("reo").unwrap()
-        .arg("--help")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("GMI to Rust"))
-        .stdout(predicate::str::contains("--home"));
-}
-
-#[cfg(test)]
-use tempfile::TempDir;
-use reo::da;
-use reo::setup::setup;
-use reo::universe::Universe;
-use anyhow::Result;
-use std::io::Write;
-use reo::gmi::Gmi;
-use glob::glob;
-
-#[test]
-fn dataizes_simple_gmi() -> Result<()> {
-    let tmp = TempDir::new()?;
-    File::create(tmp.path().join("foo.gmi"))?.write_all(
-        "
-        ADD('$ν1');
-        BIND('$ε2', 'ν0', '$ν1', 'foo');
-        DATA('$ν1', 'ff ff');
-        ".as_bytes()
-    )?;
-    assert_cmd::Command::cargo_bin("reo").unwrap()
-        .arg(format!("--home={}", tmp.path().display()))
-        .arg("dataize")
-        .arg("foo")
-        .assert()
-        .success()
-        .stdout("ff-ff\n");
-    Ok(())
-}
-
-#[test]
-fn dataizes_all_gmi_tests() -> Result<()> {
-    for f in glob("gmi-tests/*.gmi")? {
-        let p = f?;
-        let path = p.as_path();
-        assert_cmd::Command::cargo_bin("reo").unwrap()
-            .arg(format!("--file={}", path.display()))
-            .arg("--verbose")
-            .arg("dataize")
-            .arg("foo")
-            .assert()
-            .success()
-            .stdout(predicate::str::contains("Dataization result is: "));
-    }
-    Ok(())
 }

@@ -18,14 +18,67 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use assert_cmd::Command;
+use std::fs::File;
+use predicates::prelude::*;
+use tempfile::TempDir;
+use anyhow::{Result};
+use std::io::Write;
+use glob::glob;
 use predicates::prelude::predicate;
 
 #[test]
 fn prints_help() {
-    let mut cmd = Command::cargo_bin("reo").unwrap();
-    cmd.arg("--help")
+    assert_cmd::Command::cargo_bin("reo").unwrap()
+        .arg("--help")
         .assert()
         .success()
-        .stdout(predicate::str::contains("reo here"));
+        .stdout(
+            predicate::str::contains("GMI to Rust")
+                .and(predicate::str::contains("--home"))
+        );
+}
+
+#[test]
+fn prints_version() {
+    assert_cmd::Command::cargo_bin("reo").unwrap()
+        .arg("--version")
+        .assert()
+        .success();
+}
+
+#[test]
+fn dataizes_simple_gmi() -> Result<()> {
+    let tmp = TempDir::new()?;
+    File::create(tmp.path().join("foo.gmi"))?.write_all(
+        "
+        ADD('$ν1');
+        BIND('$ε2', 'ν0', '$ν1', 'foo');
+        DATA('$ν1', 'ff ff');
+        ".as_bytes()
+    )?;
+    assert_cmd::Command::cargo_bin("reo").unwrap()
+        .arg(format!("--home={}", tmp.path().display()))
+        .arg("dataize")
+        .arg("foo")
+        .assert()
+        .success()
+        .stdout("ff-ff\n");
+    Ok(())
+}
+
+#[test]
+fn dataizes_all_gmi_tests() -> Result<()> {
+    for f in glob("gmi-tests/*.gmi")? {
+        let p = f?;
+        let path = p.as_path();
+        assert_cmd::Command::cargo_bin("reo").unwrap()
+            .arg(format!("--file={}", path.display()))
+            .arg("--verbose")
+            .arg("dataize")
+            .arg("foo")
+            .assert()
+            .success()
+            .stdout(predicate::str::contains("Dataization result is: "));
+    }
+    Ok(())
 }
