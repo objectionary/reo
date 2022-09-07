@@ -21,6 +21,7 @@
 use std::process::Command;
 
 fn main() {
+    println!("cargo:rustc-cfg=feature=\"test-time\"");
     println!("cargo:rerun-if-changed=eo-tests");
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=target/eo");
