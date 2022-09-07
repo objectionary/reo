@@ -30,6 +30,7 @@ use reo::universe::Universe;
 use simple_logger::SimpleLogger;
 use std::fs;
 use std::path::Path;
+use std::time::Instant;
 
 pub fn main() {
     let matches = Command::new("reo")
@@ -116,6 +117,7 @@ pub fn main() {
             let mut uni = Universe::empty();
             debug!("Home is set to {}", cwd.display());
             let mut total = 0;
+            let start = Instant::now();
             if matches.contains_id("path") {
                 let file = Path::new(matches.value_of("path").unwrap());
                 debug!(
@@ -131,10 +133,14 @@ pub fn main() {
                 uni.add(0).unwrap();
                 total += setup(&mut uni, cwd).unwrap();
             }
-            debug!("Deployed {} GMI instructions", total);
+            debug!(
+                "Deployed {} GMI instructions in {:?}",
+                total,
+                start.elapsed()
+            );
             debug!("Dataizing '{}' object...", object);
             let ret = da!(uni, format!("Φ.{}", object)).as_hex();
-            debug!("Dataization result is: {}", ret);
+            debug!("Dataization result, in {:?} is: {}", start.elapsed(), ret);
             println!("{}", ret);
         }
         _ => unreachable!(),

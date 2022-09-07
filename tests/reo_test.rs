@@ -108,7 +108,7 @@ fn dataizes_all_gmi_tests() -> Result<()> {
             .arg("foo")
             .assert()
             .success()
-            .stdout(predicate::str::contains("Dataization result is: "));
+            .stdout(predicate::str::contains("Dataization result"));
     }
     Ok(())
 }
