@@ -21,14 +21,15 @@
 use std::process::Command;
 
 fn main() {
-    println!("cargo:rustc-cfg=feature=\"test-time\"");
-    println!("cargo:rerun-if-changed=eo-tests");
-    println!("cargo:rerun-if-changed=build.rs");
-    println!("cargo:rerun-if-changed=target/eo");
-    Command::new("mvn")
-        .arg("--file")
-        .arg("test-pom.xml")
-        .arg("compile")
-        .spawn()
-        .unwrap();
+    if std::env::var("PROFILE").unwrap() == "debug" {
+        println!("cargo:rerun-if-changed=eo-tests");
+        println!("cargo:rerun-if-changed=build.rs");
+        println!("cargo:rerun-if-changed=target/eo");
+        Command::new("mvn")
+            .arg("--file")
+            .arg("test-pom.xml")
+            .arg("compile")
+            .spawn()
+            .unwrap();
+    }
 }
