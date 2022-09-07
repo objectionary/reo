@@ -164,18 +164,18 @@ impl Gmi {
         let head = s.chars().next().context(format!("Empty identifier"))?;
         let tail: String = s.chars().skip(1).collect::<Vec<_>>().into_iter().collect();
         if head == '$' {
-            Ok(
-                *self
-                .vars
-                .entry(tail.to_string())
-                .or_insert_with(||
-                    match tail.chars().next().context(format!("Empty prefix")).unwrap() {
-                        'ν' => uni.next_v(),
-                        'ε' => uni.next_e(),
-                        p => panic!("Unknown prefix '{}' in {}", p, tail)
-                    }
-                )
-            )
+            Ok(*self.vars.entry(tail.to_string()).or_insert_with(|| {
+                match tail
+                    .chars()
+                    .next()
+                    .context(format!("Empty prefix"))
+                    .unwrap()
+                {
+                    'ν' => uni.next_v(),
+                    'ε' => uni.next_e(),
+                    p => panic!("Unknown prefix '{}' in {}", p, tail),
+                }
+            }))
         } else {
             Ok(u32::from_str(tail.as_str()).context(format!("Parsing of '{}' failed", s))?)
         }
