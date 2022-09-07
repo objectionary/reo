@@ -66,6 +66,10 @@ impl Universe {
                     vtx = 0;
                     continue;
                 }
+                if k == "Q" {
+                    vtx = 0;
+                    continue;
+                }
                 if k == "" {
                     return Err(anyhow!("The locator is empty"));
                 }
@@ -137,5 +141,16 @@ fn search_atom_works() -> Result<()> {
     uni.bind(e4, v2, v3, "c")?;
     uni.atom(v1, "S/Φ.b")?;
     assert_eq!(uni.find(v1, "Φ.a.c")?, v3);
+    Ok(())
+}
+
+#[test]
+fn finds_root() -> Result<()> {
+    let mut uni = Universe::empty();
+    uni.add(0)?;
+    uni.data(0, Data::from_int(0))?;
+    uni.add(1)?;
+    uni.atom(1, "S/Q")?;
+    assert_eq!(uni.find(1, "Δ")?, 0);
     Ok(())
 }
