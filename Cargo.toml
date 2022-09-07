@@ -1,6 +1,6 @@
 [package]
 name = "reo"
-version = "0.0.0"
+version = "0.0.5"
 edition = "2021"
 repository = "https://github.com/objectionary/reo"
 description = "Transpiler of EO programs to Rust functions"
