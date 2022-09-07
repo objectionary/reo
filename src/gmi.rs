@@ -190,12 +190,6 @@ impl Gmi {
 }
 
 #[cfg(test)]
-use glob::glob;
-
-#[cfg(test)]
-use crate::setup::setup;
-
-#[cfg(test)]
 use crate::da;
 
 #[test]
@@ -212,44 +206,5 @@ fn deploys_simple_commands() -> Result<()> {
     )?
     .deploy_to(uni)?;
     assert_eq!("привет", da!(uni, "Φ.foo").as_string()?);
-    Ok(())
-}
-
-#[cfg(test)]
-fn all_apps() -> Result<Vec<String>> {
-    let mut apps = Vec::new();
-    for f in glob("eo-tests/**/*.eo")? {
-        let p = f?;
-        let path = p.as_path();
-        let app = path
-            .to_str()
-            .context(format!("Can't get str from '{}'", path.display()))?
-            .splitn(2, "/")
-            .nth(1)
-            .context(format!("Can't take path from '{}'", path.display()))?
-            .split(".")
-            .collect::<Vec<&str>>()
-            .split_last()
-            .context(format!("Can't take split_last from '{}'", path.display()))?
-            .1
-            .join(".")
-            .replace("/", ".");
-        println!("{app:?}");
-        apps.push(app.to_string());
-    }
-    Ok(apps)
-}
-
-#[test]
-#[ignore]
-fn deploys_and_runs_all_apps() -> Result<()> {
-    let mut uni = Universe::empty();
-    uni.add(0)?;
-    setup(&mut uni, Path::new("target/eo/gmi"))?;
-    for app in all_apps()? {
-        let expected = da!(uni, format!("Φ.{}.expected", app)).as_int()?;
-        let actual = da!(uni, format!("Φ.{}", app)).as_int()?;
-        assert_eq!(expected, actual);
-    }
     Ok(())
 }

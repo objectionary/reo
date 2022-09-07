@@ -21,29 +21,9 @@
 use anyhow::{Context, Result};
 use glob::glob;
 use predicates::prelude::predicate;
-use predicates::prelude::*;
 use std::fs::File;
 use std::io::Write;
 use tempfile::TempDir;
-
-#[test]
-fn prints_help() {
-    assert_cmd::Command::cargo_bin("reo")
-        .unwrap()
-        .arg("--help")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("GMI to Rust").and(predicate::str::contains("--home")));
-}
-
-#[test]
-fn prints_version() {
-    assert_cmd::Command::cargo_bin("reo")
-        .unwrap()
-        .arg("--version")
-        .assert()
-        .success();
-}
 
 #[test]
 fn dataizes_simple_gmi() -> Result<()> {

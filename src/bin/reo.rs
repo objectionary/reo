@@ -22,7 +22,7 @@ extern crate reo;
 
 use anyhow::Context;
 use clap::{crate_version, AppSettings, Arg, ArgAction, Command};
-use log::{debug, LevelFilter};
+use log::{info, LevelFilter};
 use reo::da;
 use reo::gmi::Gmi;
 use reo::setup::setup;
@@ -43,6 +43,13 @@ pub fn main() {
                 .required(false)
                 .takes_value(false)
                 .help("Print all possible debug messages"),
+        )
+        .arg(
+            Arg::new("trace")
+                .long("trace")
+                .required(false)
+                .takes_value(false)
+                .help("Print all debug AND trace messages (be careful!)"),
         )
         .arg(
             Arg::new("eoc")
@@ -74,6 +81,11 @@ pub fn main() {
         .subcommand_required(true)
         .allow_external_subcommands(true)
         .subcommand(
+            Command::new("deploy")
+                .setting(AppSettings::ColorNever)
+                .about("Deploy all instructions to in-memory Universe (for testing)"),
+        )
+        .subcommand(
             Command::new("dataize")
                 .setting(AppSettings::ColorNever)
                 .about("Dataizes an object")
@@ -89,58 +101,74 @@ pub fn main() {
         .get_matches();
     let mut logger = SimpleLogger::new().without_timestamps();
     logger = logger.with_level(if matches.contains_id("verbose") {
+        LevelFilter::Info
+    } else if matches.contains_id("trace") {
         LevelFilter::Trace
     } else {
-        LevelFilter::Info
+        LevelFilter::Warn
     });
     logger.init().unwrap();
-    debug!(
+    info!(
         "argv: {}",
         std::env::args().collect::<Vec<String>>().join(" ")
     );
+    let home = matches.value_of("dir").unwrap_or_else(|| {
+        if matches.contains_id("eoc") {
+            info!("Running in eoc-compatible mode");
+            ".eoc/gmi"
+        } else {
+            "."
+        }
+    });
+    info!("Home requested as '{}'", home);
+    let full_home = fs::canonicalize(home)
+        .context(format!("Can't access '{}'", home))
+        .unwrap();
+    let cwd = full_home.as_path();
+    info!("Home is set to {}", cwd.display());
+    let start = Instant::now();
     match matches.subcommand() {
+        Some(("deploy", _subs)) => {
+            let mut uni = Universe::empty();
+            info!(
+                "Deploying instructions from a directory '{}'",
+                cwd.display()
+            );
+            uni.add(0).unwrap();
+            let total = setup(&mut uni, cwd).unwrap();
+            info!(
+                "Deployed {} GMI instructions in {:?}",
+                total,
+                start.elapsed()
+            );
+        }
         Some(("dataize", subs)) => {
             let object = subs.get_one::<String>("object").unwrap();
-            let home = matches.value_of("dir").unwrap_or_else(|| {
-                if matches.contains_id("eoc") {
-                    debug!("Running in eoc-compatible mode");
-                    ".eoc/gmi"
-                } else {
-                    "."
-                }
-            });
-            debug!("Home requested as '{}'", home);
-            let full_home = fs::canonicalize(home)
-                .context(format!("Can't access '{}'", home))
-                .unwrap();
-            let cwd = full_home.as_path();
             let mut uni = Universe::empty();
-            debug!("Home is set to {}", cwd.display());
             let mut total = 0;
-            let start = Instant::now();
             if matches.contains_id("path") {
                 let file = Path::new(matches.value_of("path").unwrap());
-                debug!(
+                info!(
                     "Deploying instructions from a single file '{}'",
                     file.display()
                 );
                 total += Gmi::from_file(file).unwrap().deploy_to(&mut uni).unwrap();
             } else {
-                debug!(
+                info!(
                     "Deploying instructions from a directory '{}'",
                     cwd.display()
                 );
                 uni.add(0).unwrap();
                 total += setup(&mut uni, cwd).unwrap();
             }
-            debug!(
+            info!(
                 "Deployed {} GMI instructions in {:?}",
                 total,
                 start.elapsed()
             );
-            debug!("Dataizing '{}' object...", object);
+            info!("Dataizing '{}' object...", object);
             let ret = da!(uni, format!("Φ.{}", object)).as_hex();
-            debug!("Dataization result, in {:?} is: {}", start.elapsed(), ret);
+            info!("Dataization result, in {:?} is: {}", start.elapsed(), ret);
             println!("{}", ret);
         }
         _ => unreachable!(),

@@ -18,27 +18,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// #![deny(warnings)]
+use predicates::prelude::predicate;
+use predicates::prelude::*;
 
-pub mod data;
-pub mod gmi;
-pub mod macros;
-pub mod org;
-pub mod scripts;
-pub mod setup;
-pub mod universe;
+#[test]
+fn prints_help() {
+    assert_cmd::Command::cargo_bin("reo")
+        .unwrap()
+        .arg("--help")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("GMI to Rust").and(predicate::str::contains("--home")));
+}
 
-#[cfg(test)]
-use simple_logger::SimpleLogger;
-
-#[cfg(test)]
-use log::LevelFilter;
-
-#[cfg(test)]
-#[ctor::ctor]
-fn init() {
-    SimpleLogger::new()
-        .with_level(LevelFilter::Trace)
-        .init()
-        .unwrap();
+#[test]
+fn prints_version() {
+    assert_cmd::Command::cargo_bin("reo")
+        .unwrap()
+        .arg("--version")
+        .assert()
+        .success();
 }

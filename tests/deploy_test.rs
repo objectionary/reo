@@ -18,27 +18,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// #![deny(warnings)]
+use anyhow::Result;
 
-pub mod data;
-pub mod gmi;
-pub mod macros;
-pub mod org;
-pub mod scripts;
-pub mod setup;
-pub mod universe;
-
-#[cfg(test)]
-use simple_logger::SimpleLogger;
-
-#[cfg(test)]
-use log::LevelFilter;
-
-#[cfg(test)]
-#[ctor::ctor]
-fn init() {
-    SimpleLogger::new()
-        .with_level(LevelFilter::Trace)
-        .init()
-        .unwrap();
+#[test]
+fn deploys_everything() -> Result<()> {
+    assert_cmd::Command::cargo_bin("reo")
+        .unwrap()
+        .arg("--home=target/eo/gmi/org/eolang/math")
+        .arg("deploy")
+        .assert()
+        .success();
+    Ok(())
 }
