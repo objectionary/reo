@@ -94,7 +94,11 @@ impl Universe {
                                     if k == "Δ" {
                                         return Ok(vtx);
                                     }
-                                    return Err(anyhow!("Can't continue as ν{}.{}", vtx, k));
+                                    return Err(anyhow!(
+                                        "Can't find attribute '{}' at ν{}",
+                                        k,
+                                        vtx
+                                    ));
                                 }
                             },
                         };
@@ -152,5 +156,14 @@ fn finds_root() -> Result<()> {
     uni.add(1)?;
     uni.atom(1, "S/Q")?;
     assert_eq!(uni.find(1, "Δ")?, 0);
+    Ok(())
+}
+
+#[test]
+fn fails_if_locator_is_wrong() -> Result<()> {
+    let mut uni = Universe::empty();
+    uni.add(0)?;
+    uni.data(0, Data::from_int(0))?;
+    assert!(uni.find(0, "hello").is_err());
     Ok(())
 }
