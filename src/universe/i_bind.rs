@@ -47,11 +47,11 @@ impl Universe {
         self.edges.insert(e1, Edge::new(v1, v2, a.to_string()));
         if a != "ρ" && a != "𝜎" {
             if self.edge(v2, "ρ").is_none() {
-                let e2 = self.next_id();
+                let e2 = self.next_e();
                 self.bind(e2, v2, v1, "ρ")?;
             }
             if self.edge(v2, "𝜎").is_none() {
-                let e3 = self.next_id();
+                let e3 = self.next_e();
                 self.bind(e3, v2, v1, "𝜎")?;
             }
         }
@@ -73,11 +73,11 @@ impl Universe {
 #[test]
 fn binds_simple_vertices() -> Result<()> {
     let mut uni = Universe::empty();
-    let v1 = uni.next_id();
+    let v1 = uni.next_v();
     uni.add(v1)?;
-    let v2 = uni.next_id();
+    let v2 = uni.next_v();
     uni.add(v2)?;
-    let e1 = uni.next_id();
+    let e1 = uni.next_e();
     let k = "hello";
     uni.bind(e1, v1, v2, k)?;
     assert!(uni.inconsistencies().is_empty());
@@ -102,13 +102,13 @@ fn pre_defined_ids() -> Result<()> {
 #[test]
 fn binds_two_names() -> Result<()> {
     let mut uni = Universe::empty();
-    let v1 = uni.next_id();
+    let v1 = uni.next_v();
     uni.add(v1)?;
-    let v2 = uni.next_id();
+    let v2 = uni.next_v();
     uni.add(v2)?;
-    let e1 = uni.next_id();
+    let e1 = uni.next_e();
     uni.bind(e1, v1, v2, "first")?;
-    let e1 = uni.next_id();
+    let e1 = uni.next_e();
     uni.bind(e1, v1, v2, "second")?;
     assert!(uni.inconsistencies().is_empty());
     assert_eq!(v2, uni.find(v1, "first")?);
@@ -119,9 +119,9 @@ fn binds_two_names() -> Result<()> {
 fn binds_to_root() -> Result<()> {
     let mut uni = Universe::empty();
     uni.add(0)?;
-    let v1 = uni.next_id();
+    let v1 = uni.next_v();
     uni.add(v1)?;
-    let e1 = uni.next_id();
+    let e1 = uni.next_e();
     uni.bind(e1, 0, v1, "x")?;
     assert!(uni.inconsistencies().is_empty());
     assert!(uni.edge(0, "ρ").is_none());

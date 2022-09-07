@@ -54,7 +54,7 @@ impl Universe {
             .get_mut(&v3)
             .context(format!("Can't find ν{}", v3))?
             .lambda = None;
-        let e3 = self.next_id();
+        let e3 = self.next_e();
         self.edges.insert(e3, Edge::new(v3, v2, "π".to_string()));
         trace!(
             "#copy(ε{}, ν{}, ε{}): ν{}-ε{}>ν{} restructured as ν{}-ε{}>ν{}-ε{}(π)>ν{}",
@@ -77,18 +77,18 @@ impl Universe {
 #[test]
 fn makes_simple_copy() -> Result<()> {
     let mut uni = Universe::empty();
-    let v1 = uni.next_id();
+    let v1 = uni.next_v();
     uni.add(v1)?;
-    let v2 = uni.next_id();
+    let v2 = uni.next_v();
     uni.add(v2)?;
-    let e1 = uni.next_id();
+    let e1 = uni.next_e();
     uni.bind(e1, v1, v2, "x")?;
-    let v4 = uni.next_id();
+    let v4 = uni.next_v();
     uni.add(v4)?;
-    let e3 = uni.next_id();
+    let e3 = uni.next_e();
     uni.bind(e3, v2, v4, "y")?;
-    let v3 = uni.next_id();
-    let e2 = uni.next_id();
+    let v3 = uni.next_v();
+    let e2 = uni.next_e();
     uni.copy(e1, v3, e2)?;
     assert!(uni.inconsistencies().is_empty());
     assert_eq!(v2, uni.find(v1, "x.π")?);

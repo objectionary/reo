@@ -36,16 +36,16 @@ Then, create a simple EO program in `app.eo` file:
     "Hello, world!\n"
 ```
 
-Then, compile it to XMIR using [eoc]:
+Then, compile it to GMI using [eoc](https://github.com/objectionary/eoc):
 
 ```
-$ eoc optimize
+$ eoc gmi
 ```
 
 Finally, run it:
 
 ```
-$ reo dataize app
+$ reo --eoc dataize app
 ```
 
 You should see the "Hello, world!" being printed out.

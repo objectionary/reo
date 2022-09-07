@@ -25,10 +25,10 @@ use anyhow::Result;
 /// Makes a copy of `org.eolang.int` in the Universe. It is assumed
 /// that it already exists there.
 pub fn copy_of_int(uni: &mut Universe, data: i64) -> Result<u32> {
-    let v = uni.next_id();
+    let v = uni.next_v();
     uni.add(v)?;
     let int = uni.find(0, "org.eolang.int")?;
-    let e = uni.next_id();
+    let e = uni.next_e();
     uni.bind(e, v, int, "π")?;
     uni.data(v, Data::from_int(data))?;
     Ok(v)

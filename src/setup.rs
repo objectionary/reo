@@ -57,9 +57,9 @@ pub fn setup(uni: &mut Universe, dir: &Path) -> Result<u32> {
                     root = *v;
                 }
                 None => {
-                    let v = uni.next_id();
+                    let v = uni.next_v();
                     uni.add(v)?;
-                    let e = uni.next_id();
+                    let e = uni.next_e();
                     uni.bind(e, root, v, p)?;
                     root = v;
                     pkgs.insert(pk.clone(), root);

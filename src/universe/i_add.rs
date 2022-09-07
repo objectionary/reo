@@ -37,7 +37,7 @@ impl Universe {
 #[test]
 fn adds_simple_vertex() -> Result<()> {
     let mut uni = Universe::empty();
-    let v1 = uni.next_id();
+    let v1 = uni.next_v();
     uni.add(v1)?;
     assert!(uni.inconsistencies().is_empty());
     assert_eq!(v1, uni.find(v1, "𝜉")?);

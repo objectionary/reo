@@ -76,7 +76,8 @@ pub struct Universe {
     vertices: HashMap<u32, Vertex>,
     edges: HashMap<u32, Edge>,
     atoms: HashMap<String, Lambda>,
-    tick: u32,
+    latest_v: u32,
+    latest_e: u32,
 }
 
 impl fmt::Debug for Universe {
@@ -108,19 +109,31 @@ impl Universe {
             vertices: HashMap::new(),
             edges: HashMap::new(),
             atoms: HashMap::new(),
-            tick: 0,
+            latest_v: 0,
+            latest_e: 0,
         }
     }
 
-    /// Generates the next available ID for vertices and edges.
-    pub fn next_id(&mut self) -> u32 {
+    /// Generates the next available ID for a new edge.
+    pub fn next_e(&mut self) -> u32 {
         loop {
-            self.tick += 1;
-            if !self.vertices.contains_key(&self.tick) && !self.edges.contains_key(&self.tick) {
+            self.latest_e += 1;
+            if !self.edges.contains_key(&self.latest_e) {
                 break;
             }
         }
-        self.tick
+        self.latest_e
+    }
+
+    /// Generates the next available ID for a new vertex.
+    pub fn next_v(&mut self) -> u32 {
+        loop {
+            self.latest_v += 1;
+            if !self.vertices.contains_key(&self.latest_v) {
+                break;
+            }
+        }
+        self.latest_v
     }
 
     /// Registers a new atom.
@@ -150,10 +163,10 @@ impl Universe {
 #[cfg(test)]
 fn rand(uni: &mut Universe, _v: u32) -> Result<u32> {
     let v2 = uni.find(0, "int")?;
-    let e1 = uni.next_id();
+    let e1 = uni.next_e();
     uni.bind(e1, 0, v2, format!("i{}", e1).as_str())?;
-    let v3 = uni.next_id();
-    let e2 = uni.next_id();
+    let v3 = uni.next_v();
+    let e2 = uni.next_e();
     uni.copy(e1, v3, e2)?;
     uni.data(v3, Data::from_int(rand::random::<i64>()))?;
     Ok(v3)
@@ -162,8 +175,8 @@ fn rand(uni: &mut Universe, _v: u32) -> Result<u32> {
 #[test]
 fn generates_unique_ids() -> Result<()> {
     let mut uni = Universe::empty();
-    let first = uni.next_id();
-    let second = uni.next_id();
+    let first = uni.next_v();
+    let second = uni.next_v();
     assert_ne!(first, second);
     Ok(())
 }
@@ -172,7 +185,7 @@ fn generates_unique_ids() -> Result<()> {
 fn safely_generates_unique_ids() -> Result<()> {
     let mut uni = Universe::empty();
     uni.add(1)?;
-    let v = uni.next_id();
+    let v = uni.next_v();
     uni.add(v)?;
     Ok(())
 }
@@ -181,15 +194,15 @@ fn safely_generates_unique_ids() -> Result<()> {
 fn generates_random_int() -> Result<()> {
     let mut uni = Universe::empty();
     uni.add(0)?;
-    let v1 = uni.next_id();
+    let v1 = uni.next_v();
     uni.add(v1)?;
-    let e1 = uni.next_id();
+    let e1 = uni.next_e();
     uni.bind(e1, 0, v1, "int")?;
-    let v2 = uni.next_id();
+    let v2 = uni.next_v();
     uni.add(v2)?;
-    let e2 = uni.next_id();
+    let e2 = uni.next_e();
     uni.bind(e2, 0, v2, "rand")?;
-    let e3 = uni.next_id();
+    let e3 = uni.next_e();
     uni.bind(e3, 0, v2, "x")?;
     uni.register("rand", rand);
     uni.atom(v2, "rand")?;

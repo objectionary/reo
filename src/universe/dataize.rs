@@ -123,17 +123,17 @@ impl Universe {
 fn search_atom_works() -> Result<()> {
     let mut uni = Universe::empty();
     uni.add(0)?;
-    let v1 = uni.next_id();
+    let v1 = uni.next_v();
     uni.add(v1)?;
-    let e1 = uni.next_id();
+    let e1 = uni.next_e();
     uni.bind(e1, 0, v1, "a")?;
-    let v2 = uni.next_id();
+    let v2 = uni.next_v();
     uni.add(v2)?;
-    let e2 = uni.next_id();
+    let e2 = uni.next_e();
     uni.bind(e2, 0, v2, "b")?;
-    let v3 = uni.next_id();
+    let v3 = uni.next_v();
     uni.add(v3)?;
-    let e4 = uni.next_id();
+    let e4 = uni.next_e();
     uni.bind(e4, v2, v3, "c")?;
     uni.atom(v1, "S/Φ.b")?;
     assert_eq!(uni.find(v1, "Φ.a.c")?, v3);

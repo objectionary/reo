@@ -80,7 +80,7 @@ fn dummy(_uni: &mut Universe, _v: u32) -> Result<u32> {
 fn evaluates_dummy_atom() -> Result<()> {
     let mut uni = Universe::empty();
     uni.register("dummy", dummy);
-    let v1 = uni.next_id();
+    let v1 = uni.next_v();
     uni.add(0)?;
     uni.add(v1)?;
     uni.atom(v1, "dummy")?;

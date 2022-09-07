@@ -164,10 +164,18 @@ impl Gmi {
         let head = s.chars().next().context(format!("Empty identifier"))?;
         let tail: String = s.chars().skip(1).collect::<Vec<_>>().into_iter().collect();
         if head == '$' {
-            Ok(*self
+            Ok(
+                *self
                 .vars
                 .entry(tail.to_string())
-                .or_insert_with(|| uni.next_id()))
+                .or_insert_with(||
+                    match tail.chars().next().context(format!("Empty prefix")).unwrap() {
+                        'ν' => uni.next_v(),
+                        'ε' => uni.next_e(),
+                        p => panic!("Unknown prefix '{}' in {}", p, tail)
+                    }
+                )
+            )
         } else {
             Ok(u32::from_str(tail.as_str()).context(format!("Parsing of '{}' failed", s))?)
         }
@@ -196,9 +204,9 @@ fn deploys_simple_commands() -> Result<()> {
     Gmi::from_string(
         "
         ADD('ν0');
-        ADD('ν1');
-        BIND('ε2', 'ν0', 'ν1', 'foo');
-        DATA('ν1', 'd0 bf d1 80 d0 b8 d0 b2 d0 b5 d1 82');
+        ADD('$ν1');
+        BIND('ε2', 'ν0', '$ν1', 'foo');
+        DATA('$ν1', 'd0 bf d1 80 d0 b8 d0 b2 d0 b5 d1 82');
         "
         .to_string(),
     )?
