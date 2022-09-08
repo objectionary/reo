@@ -24,13 +24,16 @@ mod i_atom;
 mod i_bind;
 mod i_copy;
 mod i_data;
+mod serialization;
 
 use crate::data::Data;
 use anyhow::Result;
 use log::error;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt;
 
+#[derive(Serialize, Deserialize)]
 struct Edge {
     from: u32,
     to: u32,
@@ -47,9 +50,13 @@ pub type Error = String;
 
 pub type Lambda = fn(&mut Universe, v: u32) -> Result<u32>;
 
+#[derive(Serialize, Deserialize)]
 struct Vertex {
     data: Option<Data>,
+    lambda_name: String,
+    #[serde(skip_serializing, skip_deserializing)]
     lambda: Option<Lambda>,
+    #[serde(skip_serializing, skip_deserializing)]
     search: String,
 }
 
@@ -58,6 +65,7 @@ impl Vertex {
         Vertex {
             data: None,
             lambda: None,
+            lambda_name: "".to_string(),
             search: "".to_string(),
         }
     }
@@ -67,16 +75,21 @@ impl Vertex {
         Vertex {
             data: self.data.clone(),
             lambda: self.lambda.clone(),
+            lambda_name: self.lambda_name.clone(),
             search: self.search.clone(),
         }
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Universe {
     vertices: HashMap<u32, Vertex>,
     edges: HashMap<u32, Edge>,
+    #[serde(skip_serializing, skip_deserializing)]
     atoms: HashMap<String, Lambda>,
+    #[serde(skip_serializing, skip_deserializing)]
     latest_v: u32,
+    #[serde(skip_serializing, skip_deserializing)]
     latest_e: u32,
 }
 

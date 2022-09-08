@@ -20,7 +20,9 @@
 
 use anyhow::{Context, Result};
 use glob::glob;
-use log::debug;
+use reo::da;
+use reo::universe::Universe;
+use std::path::Path;
 
 fn all_apps() -> Result<Vec<String>> {
     let mut apps = Vec::new();
@@ -46,24 +48,21 @@ fn all_apps() -> Result<Vec<String>> {
     Ok(apps)
 }
 
-fn dataize_one(object: String) -> String {
-    assert_cmd::Command::cargo_bin("reo")
-        .unwrap()
-        .arg("--home=target/eo/gmi")
-        .arg("deploy")
-        .arg(object)
-        .assert()
-        .success()
-        .to_string()
-}
-
 #[test]
 #[ignore]
 fn deploys_and_runs_all_apps() -> Result<()> {
+    let relf = Path::new("target/snippets.relf");
+    assert_cmd::Command::cargo_bin("reo")
+        .unwrap()
+        .arg("--home=target/eo/gmi")
+        .arg(format!("--relf={}", relf.display()))
+        .arg("compile")
+        .assert()
+        .success();
+    let mut uni = Universe::load(relf)?;
     for app in all_apps()? {
-        debug!("Testing {}...", app);
-        let expected = dataize_one(format!("Φ.{}.expected", app));
-        let actual = dataize_one(format!("Φ.{}", app));
+        let expected = da!(uni, format!("Φ.{}.expected", app));
+        let actual = da!(uni, format!("Φ.{}", app));
         assert_eq!(expected, actual);
     }
     Ok(())

@@ -67,6 +67,7 @@ impl Universe {
                 }
             });
         }
+        vtx.lambda_name = m.to_string();
         Ok(())
     }
 }

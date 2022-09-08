@@ -19,7 +19,10 @@
 // SOFTWARE.
 
 use anyhow::{Context, Result};
+use serde::{Deserialize, Serialize};
+use std::fmt::{Debug, Formatter};
 
+#[derive(Serialize, Deserialize)]
 pub struct Data {
     bytes: Vec<u8>,
 }
@@ -27,6 +30,18 @@ pub struct Data {
 impl Clone for Data {
     fn clone(&self) -> Self {
         Data::from_bytes(self.bytes.clone())
+    }
+}
+
+impl Debug for Data {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_hex().as_str())
+    }
+}
+
+impl PartialEq for Data {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_hex() == other.as_hex()
     }
 }
 
@@ -116,6 +131,14 @@ fn simple_int() {
     let i = 42;
     let d = Data::from_int(42);
     assert_eq!(i, d.as_int().unwrap());
+}
+
+#[test]
+fn compares_with_data() {
+    let i = 42;
+    let left = Data::from_int(i);
+    let right = Data::from_int(i);
+    assert_eq!(left, right);
 }
 
 #[test]

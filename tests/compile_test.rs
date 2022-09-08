@@ -21,11 +21,11 @@
 use anyhow::Result;
 
 #[test]
-fn deploys_everything() -> Result<()> {
+fn compiles_everything() -> Result<()> {
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .arg("--home=target/eo/gmi/org/eolang/math")
-        .arg("deploy")
+        .arg("compile")
         .assert()
         .success();
     Ok(())

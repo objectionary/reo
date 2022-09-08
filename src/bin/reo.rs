@@ -62,9 +62,17 @@ pub fn main() {
             Arg::new("file")
                 .long("file")
                 .short('f')
-                .name("path")
                 .required(false)
                 .help("Name of a single .gmi file to work with")
+                .takes_value(true)
+                .action(ArgAction::Set),
+        )
+        .arg(
+            Arg::new("relf")
+                .long("relf")
+                .short('r')
+                .required(false)
+                .help("Name of a binary .relf file to load into memory")
                 .takes_value(true)
                 .action(ArgAction::Set),
         )
@@ -81,9 +89,9 @@ pub fn main() {
         .subcommand_required(true)
         .allow_external_subcommands(true)
         .subcommand(
-            Command::new("deploy")
+            Command::new("compile")
                 .setting(AppSettings::ColorNever)
-                .about("Deploy all instructions to in-memory Universe (for testing)"),
+                .about("Compile all instructions into a binary .relf file"),
         )
         .subcommand(
             Command::new("dataize")
@@ -128,7 +136,7 @@ pub fn main() {
     info!("Home is set to {}", cwd.display());
     let start = Instant::now();
     match matches.subcommand() {
-        Some(("deploy", _subs)) => {
+        Some(("compile", _subs)) => {
             let mut uni = Universe::empty();
             info!(
                 "Deploying instructions from a directory '{}'",
@@ -146,8 +154,8 @@ pub fn main() {
             let object = subs.get_one::<String>("object").unwrap();
             let mut uni = Universe::empty();
             let mut total = 0;
-            if matches.contains_id("path") {
-                let file = Path::new(matches.value_of("path").unwrap());
+            if matches.contains_id("file") {
+                let file = Path::new(matches.value_of("file").unwrap());
                 info!(
                     "Deploying instructions from a single file '{}'",
                     file.display()
