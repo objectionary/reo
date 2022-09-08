@@ -42,7 +42,6 @@ fn all_apps() -> Result<Vec<String>> {
             .1
             .join(".")
             .replace("/", ".");
-        println!("{app:?}");
         apps.push(app.to_string());
     }
     Ok(apps)
@@ -55,8 +54,8 @@ fn deploys_and_runs_all_apps() -> Result<()> {
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .arg("--home=target/eo/gmi")
-        .arg(format!("--relf={}", relf.display()))
         .arg("compile")
+        .arg(relf.as_os_str())
         .assert()
         .success();
     let mut uni = Universe::load(relf)?;

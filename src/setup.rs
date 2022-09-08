@@ -23,7 +23,7 @@ use crate::org::eolang::register;
 use crate::universe::Universe;
 use anyhow::{Context, Result};
 use glob::glob;
-use log::trace;
+use log::{info, trace};
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -67,9 +67,15 @@ pub fn setup(uni: &mut Universe, dir: &Path) -> Result<u32> {
             }
         }
         gmi.set_root(root);
-        total += gmi
+        let instructions = gmi
             .deploy_to(uni)
             .context(format!("Failed to deploy '{}'", path.display()))?;
+        info!(
+            "Deployed {} instructions from {}",
+            instructions,
+            path.display()
+        );
+        total += instructions;
     }
     Ok(total)
 }

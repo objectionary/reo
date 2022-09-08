@@ -26,6 +26,7 @@ fn compiles_everything() -> Result<()> {
         .unwrap()
         .arg("--home=target/eo/gmi/org/eolang/math")
         .arg("compile")
+        .arg("target/snippets-math.relf")
         .assert()
         .success();
     Ok(())

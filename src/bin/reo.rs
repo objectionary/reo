@@ -22,6 +22,8 @@ extern crate reo;
 
 use anyhow::Context;
 use clap::{crate_version, AppSettings, Arg, ArgAction, Command};
+use filetime::FileTime;
+use glob::glob;
 use log::{info, LevelFilter};
 use reo::da;
 use reo::gmi::Gmi;
@@ -68,15 +70,6 @@ pub fn main() {
                 .action(ArgAction::Set),
         )
         .arg(
-            Arg::new("relf")
-                .long("relf")
-                .short('r')
-                .required(false)
-                .help("Name of a binary .relf file to load into memory")
-                .takes_value(true)
-                .action(ArgAction::Set),
-        )
-        .arg(
             Arg::new("home")
                 .long("home")
                 .default_value(".")
@@ -91,7 +84,21 @@ pub fn main() {
         .subcommand(
             Command::new("compile")
                 .setting(AppSettings::ColorNever)
-                .about("Compile all instructions into a binary .relf file"),
+                .about("Compile all instructions into a binary .relf file")
+                .arg(
+                    Arg::new("relf")
+                        .required(true)
+                        .help("Name of a binary .relf file to create")
+                        .takes_value(true)
+                        .action(ArgAction::Set),
+                )
+                .arg(
+                    Arg::new("force")
+                        .long("force")
+                        .required(false)
+                        .takes_value(false)
+                        .help("Compile anyway, even if the binary file is up to date"),
+                ),
         )
         .subcommand(
             Command::new("dataize")
@@ -136,19 +143,44 @@ pub fn main() {
     info!("Home is set to {}", cwd.display());
     let start = Instant::now();
     match matches.subcommand() {
-        Some(("compile", _subs)) => {
-            let mut uni = Universe::empty();
-            info!(
-                "Deploying instructions from a directory '{}'",
-                cwd.display()
-            );
-            uni.add(0).unwrap();
-            let total = setup(&mut uni, cwd).unwrap();
-            info!(
-                "Deployed {} GMI instructions in {:?}",
-                total,
-                start.elapsed()
-            );
+        Some(("compile", subs)) => {
+            let relf = Path::new(subs.get_one::<String>("relf").unwrap());
+            let mut recent: FileTime = FileTime::from_unix_time(0, 0);
+            for f in glob(format!("{}/**/*.gmi", cwd.display()).as_str()).unwrap() {
+                let meta = fs::metadata(f.unwrap()).unwrap();
+                let mtime = FileTime::from_last_modification_time(&meta);
+                if mtime > recent {
+                    recent = mtime;
+                }
+            }
+            if relf.exists()
+                && recent < FileTime::from_last_modification_time(&fs::metadata(relf).unwrap())
+                && !subs.contains_id("force")
+            {
+                info!(
+                    "Relf file '{}' is up to date ({} bytes), no need to compile (use --force to compile anyway)",
+                    relf.display(), fs::metadata(relf).unwrap().len()
+                );
+            } else {
+                let mut uni = Universe::empty();
+                info!(
+                    "Deploying instructions from a directory '{}'",
+                    cwd.display()
+                );
+                uni.add(0).unwrap();
+                let total = setup(&mut uni, cwd).unwrap();
+                info!(
+                    "Deployed {} GMI instructions in {:?}",
+                    total,
+                    start.elapsed()
+                );
+                let size = uni.save(relf).unwrap();
+                info!(
+                    "The universe saved to '{}' ({} bytes)",
+                    relf.display(),
+                    size
+                );
+            }
         }
         Some(("dataize", subs)) => {
             let object = subs.get_one::<String>("object").unwrap();

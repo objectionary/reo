@@ -27,24 +27,30 @@ use std::path::Path;
 
 impl Universe {
     /// Save the entire `Universe` into a binary file. The entire universe
-    /// can be restored from the file.
-    pub fn save(&mut self, path: &Path) -> Result<()> {
-        let bytes: Vec<u8> = bincode::serialize(self).unwrap();
+    /// can be restored from the file. Returns the size of the file just saved.
+    pub fn save(&mut self, path: &Path) -> Result<usize> {
+        let bytes: Vec<u8> = bincode::serialize(self).context("Failed to serialize")?;
         let size = bytes.len();
-        fs::write(path, bytes)?;
+        fs::write(path, bytes).context(format!("Can't write to {}", path.display()))?;
         trace!("Serialized {} bytes to {}", size, path.display());
-        Ok(())
+        Ok(size)
     }
 
     /// Load the entire `Universe` from a binary file previously
     /// created by `save()`.
     pub fn load(path: &Path) -> Result<Universe> {
-        let bytes = fs::read(path)?;
+        let bytes = fs::read(path).context(format!("Can't read from {}", path.display()))?;
         let size = bytes.len();
-        let mut uni = bincode::deserialize(&bytes).unwrap();
+        let mut uni = bincode::deserialize(&bytes)
+            .context(format!("Can't deserialize from {}", path.display()))?;
         register(&mut uni);
         for v in Self::atoms(&uni) {
-            let name = uni.vertices.get(&v).context("op")?.lambda_name.clone();
+            let name = uni
+                .vertices
+                .get(&v)
+                .context(format!("Can't find vertex ν{}", v))?
+                .lambda_name
+                .clone();
             uni.atom(v, name.as_str())?;
         }
         trace!("Deserialized {} bytes from {}", size, path.display());
