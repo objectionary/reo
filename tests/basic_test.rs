@@ -36,10 +36,19 @@ fn dataizes_simple_gmi() -> Result<()> {
         "
         .as_bytes(),
     )?;
+    let relf = tmp.path().join("temp.relf");
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
+        .current_dir(tmp.path())
+        .arg("compile")
         .arg(format!("--home={}", tmp.path().display()))
+        .arg(relf.as_os_str())
+        .assert()
+        .success();
+    assert_cmd::Command::cargo_bin("reo")
+        .unwrap()
         .arg("dataize")
+        .arg(format!("--relf={}", relf.display()))
         .arg("foo")
         .assert()
         .success()
@@ -63,11 +72,20 @@ fn dataizes_in_eoc_mode() -> Result<()> {
         "
         .as_bytes(),
     )?;
+    let relf = tmp.path().join("temp.relf");
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .current_dir(tmp.path())
+        .arg("compile")
         .arg("--eoc")
+        .arg(relf.as_os_str())
+        .assert()
+        .success();
+    assert_cmd::Command::cargo_bin("reo")
+        .unwrap()
+        .current_dir(tmp.path())
         .arg("dataize")
+        .arg(format!("--relf={}", relf.display()))
         .arg("foo")
         .assert()
         .success()
@@ -77,14 +95,23 @@ fn dataizes_in_eoc_mode() -> Result<()> {
 
 #[test]
 fn dataizes_all_gmi_tests() -> Result<()> {
+    let tmp = TempDir::new()?;
+    let relf = tmp.path().join("temp.relf");
     for f in glob("gmi-tests/*.gmi")? {
         let p = f?;
         let path = p.as_path();
         assert_cmd::Command::cargo_bin("reo")
             .unwrap()
+            .arg("compile")
             .arg(format!("--file={}", path.display()))
+            .arg(relf.as_os_str())
+            .assert()
+            .success();
+        assert_cmd::Command::cargo_bin("reo")
+            .unwrap()
             .arg("--verbose")
             .arg("dataize")
+            .arg(format!("--relf={}", relf.display()))
             .arg("foo")
             .assert()
             .success()

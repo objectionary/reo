@@ -53,8 +53,8 @@ fn deploys_and_runs_all_apps() -> Result<()> {
     let relf = Path::new("target/snippets.relf");
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
-        .arg("--home=target/eo/gmi")
         .arg("compile")
+        .arg("--home=target/eo/gmi")
         .arg(relf.as_os_str())
         .assert()
         .success();

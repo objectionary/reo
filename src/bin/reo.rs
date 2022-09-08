@@ -21,6 +21,7 @@
 extern crate reo;
 
 use anyhow::Context;
+use anyhow::Result;
 use clap::{crate_version, AppSettings, Arg, ArgAction, Command};
 use filetime::FileTime;
 use glob::glob;
@@ -33,6 +34,17 @@ use simple_logger::SimpleLogger;
 use std::fs;
 use std::path::Path;
 use std::time::Instant;
+
+fn mtime(dir: &Path) -> Result<FileTime> {
+    let mut recent: FileTime = FileTime::from_unix_time(0, 0);
+    for f in glob(format!("{}/**/*.gmi", dir.display()).as_str()).unwrap() {
+        let mtime = FileTime::from_last_modification_time(&fs::metadata(f.unwrap()).unwrap());
+        if mtime > recent {
+            recent = mtime;
+        }
+    }
+    Ok(recent)
+}
 
 pub fn main() {
     let matches = Command::new("reo")
@@ -53,38 +65,38 @@ pub fn main() {
                 .takes_value(false)
                 .help("Print all debug AND trace messages (be careful!)"),
         )
-        .arg(
-            Arg::new("eoc")
-                .long("eoc")
-                .required(false)
-                .takes_value(false)
-                .help("Compatibility with eoc command-line toolkit"),
-        )
-        .arg(
-            Arg::new("file")
-                .long("file")
-                .short('f')
-                .required(false)
-                .help("Name of a single .gmi file to work with")
-                .takes_value(true)
-                .action(ArgAction::Set),
-        )
-        .arg(
-            Arg::new("home")
-                .long("home")
-                .default_value(".")
-                .name("dir")
-                .required(false)
-                .help("Directory with .gmi files")
-                .takes_value(true)
-                .action(ArgAction::Set),
-        )
         .subcommand_required(true)
         .allow_external_subcommands(true)
         .subcommand(
             Command::new("compile")
                 .setting(AppSettings::ColorNever)
                 .about("Compile all instructions into a binary .relf file")
+                .arg(
+                    Arg::new("eoc")
+                        .long("eoc")
+                        .required(false)
+                        .takes_value(false)
+                        .help("Compatibility with eoc command-line toolkit"),
+                )
+                .arg(
+                    Arg::new("file")
+                        .long("file")
+                        .short('f')
+                        .required(false)
+                        .help("Name of a single .gmi file to work with")
+                        .takes_value(true)
+                        .action(ArgAction::Set),
+                )
+                .arg(
+                    Arg::new("home")
+                        .long("home")
+                        .default_value(".")
+                        .name("dir")
+                        .required(false)
+                        .help("Directory with .gmi files")
+                        .takes_value(true)
+                        .action(ArgAction::Set),
+                )
                 .arg(
                     Arg::new("relf")
                         .required(true)
@@ -104,6 +116,14 @@ pub fn main() {
             Command::new("dataize")
                 .setting(AppSettings::ColorNever)
                 .about("Dataizes an object")
+                .arg(
+                    Arg::new("relf")
+                        .long("relf")
+                        .required(true)
+                        .help("Name of a binary .relf file to use")
+                        .takes_value(true)
+                        .action(ArgAction::Set),
+                )
                 .arg(
                     Arg::new("object")
                         .required(true)
@@ -127,83 +147,87 @@ pub fn main() {
         "argv: {}",
         std::env::args().collect::<Vec<String>>().join(" ")
     );
-    let home = matches.value_of("dir").unwrap_or_else(|| {
-        if matches.contains_id("eoc") {
-            info!("Running in eoc-compatible mode");
-            ".eoc/gmi"
-        } else {
-            "."
-        }
-    });
-    info!("Home requested as '{}'", home);
-    let full_home = fs::canonicalize(home)
-        .context(format!("Can't access '{}'", home))
-        .unwrap();
-    let cwd = full_home.as_path();
-    info!("Home is set to {}", cwd.display());
     let start = Instant::now();
     match matches.subcommand() {
         Some(("compile", subs)) => {
             let relf = Path::new(subs.get_one::<String>("relf").unwrap());
-            let mut recent: FileTime = FileTime::from_unix_time(0, 0);
-            for f in glob(format!("{}/**/*.gmi", cwd.display()).as_str()).unwrap() {
-                let meta = fs::metadata(f.unwrap()).unwrap();
-                let mtime = FileTime::from_last_modification_time(&meta);
-                if mtime > recent {
-                    recent = mtime;
+            let mut uni = Universe::empty();
+            if subs.contains_id("file") {
+                let file = Path::new(subs.value_of("file").unwrap());
+                let recent = FileTime::from_last_modification_time(&fs::metadata(file).unwrap());
+                if relf.exists()
+                    && recent < FileTime::from_last_modification_time(&fs::metadata(relf).unwrap())
+                    && !subs.contains_id("force")
+                {
+                    info!(
+                        "Relf file '{}' is up to date ({} bytes), no need to compile (use --force to compile anyway)",
+                        relf.display(), fs::metadata(relf).unwrap().len()
+                    );
+                } else {
+                    info!(
+                        "Deploying instructions from a single file '{}'",
+                        file.display()
+                    );
+                    let total = Gmi::from_file(file).unwrap().deploy_to(&mut uni).unwrap();
+                    info!(
+                        "Deployed {} GMI instructions in {:?}",
+                        total,
+                        start.elapsed()
+                    );
+                }
+            } else {
+                let home = matches.value_of("dir").unwrap_or_else(|| {
+                    if matches.contains_id("eoc") {
+                        info!("Running in eoc-compatible mode");
+                        ".eoc/gmi"
+                    } else {
+                        "."
+                    }
+                });
+                info!("Home requested as '{}'", home);
+                let full_home = fs::canonicalize(home)
+                    .context(format!("Can't access '{}'", home))
+                    .unwrap();
+                let cwd = full_home.as_path();
+                info!("Home is set to {}", cwd.display());
+                let recent = mtime(cwd).unwrap();
+                if relf.exists()
+                    && recent < FileTime::from_last_modification_time(&fs::metadata(relf).unwrap())
+                    && !subs.contains_id("force")
+                {
+                    info!(
+                        "Relf file '{}' is up to date ({} bytes), no need to compile (use --force to compile anyway)",
+                        relf.display(), fs::metadata(relf).unwrap().len()
+                    );
+                } else {
+                    info!(
+                        "Deploying instructions from a directory '{}'",
+                        cwd.display()
+                    );
+                    uni.add(0).unwrap();
+                    let total = setup(&mut uni, cwd).unwrap();
+                    info!(
+                        "Deployed {} GMI instructions in {:?}",
+                        total,
+                        start.elapsed()
+                    );
                 }
             }
-            if relf.exists()
-                && recent < FileTime::from_last_modification_time(&fs::metadata(relf).unwrap())
-                && !subs.contains_id("force")
-            {
-                info!(
-                    "Relf file '{}' is up to date ({} bytes), no need to compile (use --force to compile anyway)",
-                    relf.display(), fs::metadata(relf).unwrap().len()
-                );
-            } else {
-                let mut uni = Universe::empty();
-                info!(
-                    "Deploying instructions from a directory '{}'",
-                    cwd.display()
-                );
-                uni.add(0).unwrap();
-                let total = setup(&mut uni, cwd).unwrap();
-                info!(
-                    "Deployed {} GMI instructions in {:?}",
-                    total,
-                    start.elapsed()
-                );
-                let size = uni.save(relf).unwrap();
-                info!(
-                    "The universe saved to '{}' ({} bytes)",
-                    relf.display(),
-                    size
-                );
-            }
+            let size = uni.save(relf).unwrap();
+            info!(
+                "The universe saved to '{}' ({} bytes)",
+                relf.display(),
+                size
+            );
         }
         Some(("dataize", subs)) => {
             let object = subs.get_one::<String>("object").unwrap();
-            let mut uni = Universe::empty();
-            let mut total = 0;
-            if matches.contains_id("file") {
-                let file = Path::new(matches.value_of("file").unwrap());
-                info!(
-                    "Deploying instructions from a single file '{}'",
-                    file.display()
-                );
-                total += Gmi::from_file(file).unwrap().deploy_to(&mut uni).unwrap();
-            } else {
-                info!(
-                    "Deploying instructions from a directory '{}'",
-                    cwd.display()
-                );
-                uni.add(0).unwrap();
-                total += setup(&mut uni, cwd).unwrap();
-            }
+            let relf = Path::new(subs.value_of("relf").unwrap());
+            info!("Deserializing a relf file '{}'", relf.display());
+            let mut uni = Universe::load(relf).unwrap();
             info!(
-                "Deployed {} GMI instructions in {:?}",
-                total,
+                "Deserialized {} bytes in {:?}",
+                fs::metadata(relf).unwrap().len(),
                 start.elapsed()
             );
             info!("Dataizing '{}' object...", object);

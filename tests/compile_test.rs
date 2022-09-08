@@ -24,8 +24,8 @@ use anyhow::Result;
 fn compiles_everything() -> Result<()> {
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
-        .arg("--home=target/eo/gmi/org/eolang/math")
         .arg("compile")
+        .arg("--home=target/eo/gmi/org/eolang/math")
         .arg("target/snippets-math.relf")
         .assert()
         .success();
