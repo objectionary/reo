@@ -36,13 +36,19 @@ use std::path::Path;
 use std::time::Instant;
 
 fn mtime(dir: &Path) -> Result<FileTime> {
+    let mut total = 0;
     let mut recent: FileTime = FileTime::from_unix_time(0, 0);
     for f in glob(format!("{}/**/*.gmi", dir.display()).as_str()).unwrap() {
         let mtime = FileTime::from_last_modification_time(&fs::metadata(f.unwrap()).unwrap());
         if mtime > recent {
             recent = mtime;
         }
+        total += 1;
     }
+    info!(
+        "There are {} .gmi files in {}, the latest modification is {} minutes ago",
+        total, dir.display(), (FileTime::now().seconds() - recent.seconds()) / 60
+    );
     Ok(recent)
 }
 
@@ -176,8 +182,8 @@ pub fn main() {
                     );
                 }
             } else {
-                let home = matches.value_of("dir").unwrap_or_else(|| {
-                    if matches.contains_id("eoc") {
+                let home = subs.value_of("dir").unwrap_or_else(|| {
+                    if subs.contains_id("eoc") {
                         info!("Running in eoc-compatible mode");
                         ".eoc/gmi"
                     } else {
