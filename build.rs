@@ -26,8 +26,7 @@ fn main() {
         println!("cargo:rerun-if-changed=build.rs");
         println!("cargo:rerun-if-changed=test-pom.xml");
         println!("cargo:rerun-if-changed=target/eo");
-        assert!(
-            Command::new("mvn")
+        assert!(Command::new("mvn")
             .arg("--file")
             .arg("test-pom.xml")
             .arg("compile")
@@ -35,7 +34,6 @@ fn main() {
             .unwrap()
             .wait()
             .unwrap()
-            .success()
-        );
+            .success());
     }
 }
