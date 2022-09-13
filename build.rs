@@ -24,12 +24,18 @@ fn main() {
     if std::env::var("PROFILE").unwrap() == "debug" {
         println!("cargo:rerun-if-changed=eo-tests");
         println!("cargo:rerun-if-changed=build.rs");
+        println!("cargo:rerun-if-changed=test-pom.xml");
         println!("cargo:rerun-if-changed=target/eo");
-        Command::new("mvn")
+        assert!(
+            Command::new("mvn")
             .arg("--file")
             .arg("test-pom.xml")
             .arg("compile")
             .spawn()
-            .unwrap();
+            .unwrap()
+            .wait()
+            .unwrap()
+            .success()
+        );
     }
 }
