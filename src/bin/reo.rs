@@ -20,8 +20,8 @@
 
 extern crate reo;
 
-use anyhow::Context;
 use anyhow::Result;
+use anyhow::{anyhow, Context};
 use clap::{crate_version, AppSettings, Arg, ArgAction, Command};
 use filetime::FileTime;
 use glob::glob;
@@ -38,7 +38,7 @@ use std::time::Instant;
 fn mtime(dir: &Path) -> Result<FileTime> {
     let mut total = 0;
     let mut recent: FileTime = FileTime::from_unix_time(0, 0);
-    for f in glob(format!("{}/**/*.gmi", dir.display()).as_str()).unwrap() {
+    for f in glob(format!("{}/**/*.gmi", dir.display()).as_str())? {
         let mtime = FileTime::from_last_modification_time(&fs::metadata(f.unwrap()).unwrap());
         if mtime > recent {
             recent = mtime;
@@ -47,12 +47,14 @@ fn mtime(dir: &Path) -> Result<FileTime> {
     }
     info!(
         "There are {} .gmi files in {}, the latest modification is {} minutes ago",
-        total, dir.display(), (FileTime::now().seconds() - recent.seconds()) / 60
+        total,
+        dir.display(),
+        (FileTime::now().seconds() - recent.seconds()) / 60
     );
     Ok(recent)
 }
 
-pub fn main() {
+pub fn main() -> Result<()> {
     let matches = Command::new("reo")
         .setting(AppSettings::ColorNever)
         .about("GMI to Rust compiler and runner")
@@ -148,7 +150,7 @@ pub fn main() {
     } else {
         LevelFilter::Warn
     });
-    logger.init().unwrap();
+    logger.init()?;
     info!(
         "argv: {}",
         std::env::args().collect::<Vec<String>>().join(" ")
@@ -156,25 +158,28 @@ pub fn main() {
     let start = Instant::now();
     match matches.subcommand() {
         Some(("compile", subs)) => {
-            let relf = Path::new(subs.get_one::<String>("relf").unwrap());
+            let relf = Path::new(
+                subs.get_one::<String>("relf")
+                    .context("Path of .relf file is required")?,
+            );
             let mut uni = Universe::empty();
             if subs.contains_id("file") {
-                let file = Path::new(subs.value_of("file").unwrap());
-                let recent = FileTime::from_last_modification_time(&fs::metadata(file).unwrap());
+                let file = Path::new(subs.value_of("file").context("Path of file is required")?);
+                let recent = FileTime::from_last_modification_time(&fs::metadata(file)?);
                 if relf.exists()
-                    && recent < FileTime::from_last_modification_time(&fs::metadata(relf).unwrap())
+                    && recent < FileTime::from_last_modification_time(&fs::metadata(relf)?)
                     && !subs.contains_id("force")
                 {
                     info!(
                         "Relf file '{}' is up to date ({} bytes), no need to compile (use --force to compile anyway)",
-                        relf.display(), fs::metadata(relf).unwrap().len()
+                        relf.display(), fs::metadata(relf)?.len()
                     );
                 } else {
                     info!(
                         "Deploying instructions from a single file '{}'",
                         file.display()
                     );
-                    let total = Gmi::from_file(file).unwrap().deploy_to(&mut uni).unwrap();
+                    let total = Gmi::from_file(file)?.deploy_to(&mut uni)?;
                     info!(
                         "Deployed {} GMI instructions in {:?}",
                         total,
@@ -191,27 +196,29 @@ pub fn main() {
                     }
                 });
                 info!("Home requested as '{}'", home);
-                let full_home = fs::canonicalize(home)
-                    .context(format!("Can't access '{}'", home))
-                    .unwrap();
+                if !Path::new(home).exists() {
+                    return Err(anyhow!("Directory '{}' doesn't exist", home));
+                }
+                let full_home =
+                    fs::canonicalize(home).context(format!("Can't access '{}'", home))?;
                 let cwd = full_home.as_path();
                 info!("Home is set to {}", cwd.display());
-                let recent = mtime(cwd).unwrap();
+                let recent = mtime(cwd)?;
                 if relf.exists()
-                    && recent < FileTime::from_last_modification_time(&fs::metadata(relf).unwrap())
+                    && recent < FileTime::from_last_modification_time(&fs::metadata(relf)?)
                     && !subs.contains_id("force")
                 {
                     info!(
                         "Relf file '{}' is up to date ({} bytes), no need to compile (use --force to compile anyway)",
-                        relf.display(), fs::metadata(relf).unwrap().len()
+                        relf.display(), fs::metadata(relf)?.len()
                     );
                 } else {
                     info!(
                         "Deploying instructions from a directory '{}'",
                         cwd.display()
                     );
-                    uni.add(0).unwrap();
-                    let total = setup(&mut uni, cwd).unwrap();
+                    uni.add(0)?;
+                    let total = setup(&mut uni, cwd)?;
                     info!(
                         "Deployed {} GMI instructions in {:?}",
                         total,
@@ -219,7 +226,7 @@ pub fn main() {
                     );
                 }
             }
-            let size = uni.save(relf).unwrap();
+            let size = uni.save(relf)?;
             info!(
                 "The universe saved to '{}' ({} bytes)",
                 relf.display(),
@@ -227,13 +234,18 @@ pub fn main() {
             );
         }
         Some(("dataize", subs)) => {
-            let object = subs.get_one::<String>("object").unwrap();
-            let relf = Path::new(subs.value_of("relf").unwrap());
+            let object = subs
+                .get_one::<String>("object")
+                .context("Object name is required")?;
+            let relf = Path::new(
+                subs.value_of("relf")
+                    .context("Path of .relf file is required")?,
+            );
             info!("Deserializing a relf file '{}'", relf.display());
-            let mut uni = Universe::load(relf).unwrap();
+            let mut uni = Universe::load(relf)?;
             info!(
                 "Deserialized {} bytes in {:?}",
-                fs::metadata(relf).unwrap().len(),
+                fs::metadata(relf)?.len(),
                 start.elapsed()
             );
             info!("Dataizing '{}' object...", object);
@@ -243,4 +255,5 @@ pub fn main() {
         }
         _ => unreachable!(),
     }
+    Ok(())
 }

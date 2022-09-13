@@ -19,6 +19,7 @@
 // SOFTWARE.
 
 use anyhow::Result;
+use predicates::prelude::predicate;
 
 #[test]
 fn compiles_everything() -> Result<()> {
@@ -29,5 +30,20 @@ fn compiles_everything() -> Result<()> {
         .arg("target/snippets-math.relf")
         .assert()
         .success();
+    Ok(())
+}
+
+#[test]
+fn fails_when_directory_is_absent() -> Result<()> {
+    assert_cmd::Command::cargo_bin("reo")
+        .unwrap()
+        .arg("compile")
+        .arg("--home=/usr/boom")
+        .arg("target/failure.relf")
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains(
+            "Directory '/usr/boom' doesn't exist",
+        ));
     Ok(())
 }
