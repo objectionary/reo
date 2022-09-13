@@ -6,7 +6,7 @@ install: |
   pdd --file=/dev/null
 merge:
   script: |
-    cargo --color=never test
+    cargo --color=never test -vv
     cargo --color=never fmt --check
 release:
   script: |-
