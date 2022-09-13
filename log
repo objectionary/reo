@@ -1,0 +1,439 @@
+       Fresh autocfg v1.1.0
+       Fresh unicode-ident v1.0.3
+       Fresh regex-syntax v0.6.27
+       Fresh lazy_static v1.4.0
+       Fresh futures-sink v0.3.24
+       Fresh termcolor v1.1.3
+       Fresh either v1.8.0
+       Fresh pin-project-lite v0.2.9
+       Fresh hashbrown v0.12.3
+       Fresh time-macros v0.2.4
+       Fresh itoa v1.0.3
+       Fresh os_str_bytes v6.3.0
+       Fresh pin-utils v0.1.0
+       Fresh num_threads v0.1.6
+       Fresh futures-io v0.3.24
+       Fresh strsim v0.10.0
+       Fresh bitflags v1.3.2
+       Fresh once_cell v1.14.0
+       Fresh predicates-core v1.0.3
+       Fresh quick-error v1.2.3
+       Fresh textwrap v0.15.0
+       Fresh termtree v0.2.4
+       Fresh hex v0.4.3
+       Fresh glob v0.3.0
+warning: trait objects without an explicit `dyn` are deprecated
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/glob-0.3.0/src/lib.rs:294:32
+    |
+294 |     fn cause(&self) -> Option<&Error> {
+    |                                ^^^^^
+    |
+    = note: `#[warn(bare_trait_objects)]` on by default
+    = warning: this is accepted in the current edition (Rust 2015) but is a hard error in Rust 2021!
+    = note: for more information, see <https://doc.rust-lang.org/nightly/edition-guide/rust-2021/warnings-promoted-to-error.html>
+help: use `dyn`
+    |
+294 -     fn cause(&self) -> Option<&Error> {
+294 +     fn cause(&self) -> Option<&dyn Error> {
+    |
+
+warning: use of deprecated associated function `std::error::Error::description`: use the Display impl or to_string()
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/glob-0.3.0/src/lib.rs:291:20
+    |
+291 |         self.error.description()
+    |                    ^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+       Fresh normalize-line-endings v0.3.0
+       Fresh regex-automata v0.1.10
+warning: `glob` (lib) generated 2 warnings
+       Fresh ppv-lite86 v0.2.16
+       Fresh cfg-if v1.0.0
+       Fresh difflib v0.4.0
+warning: use of deprecated associated function `core::str::<impl str>::trim_right`: superseded by `trim_end`
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/difflib-0.4.0/src/differ.rs:271:52
+    |
+271 |         first_tags = first_tags.split_at(common).1.trim_right();
+    |                                                    ^^^^^^^^^^ help: replace the use of the deprecated associated function: `trim_end`
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated associated function `core::str::<impl str>::trim_right`: superseded by `trim_end`
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/difflib-0.4.0/src/differ.rs:272:54
+    |
+272 |         second_tags = second_tags.split_at(common).1.trim_right();
+    |                                                      ^^^^^^^^^^ help: replace the use of the deprecated associated function: `trim_end`
+
+warning: variable does not need to be mutable
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/difflib-0.4.0/src/sequencematcher.rs:117:17
+    |
+117 |             let mut counter = second_sequence_elements
+    |                 ----^^^^^^^
+    |                 |
+    |                 help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+       Fresh fastrand v1.8.0
+       Fresh remove_dir_all v0.5.3
+       Fresh futures-timer v3.0.2
+warning: use of deprecated associated function `std::sync::atomic::AtomicUsize::compare_and_swap`: Use `compare_exchange` or `compare_exchange_weak` instead
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-timer-3.0.2/src/native/atomic_waker.rs:107:26
+    |
+107 |         match self.state.compare_and_swap(WAITING, REGISTERING, Acquire) {
+    |                          ^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: `difflib` (lib) generated 3 warnings
+warning: `futures-timer` (lib) generated 1 warning
+       Fresh itertools v0.10.3
+warning: unused attribute `inline`
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/itertools-0.10.3/src/flatten_ok.rs:141:5
+    |
+141 |     #[inline]
+    |     ^^^^^^^^^
+    |
+    = note: `#[warn(unused_attributes)]` on by default
+note: the built-in attribute `inline` will be ignored, since it's applied to the macro invocation `clone_fields`
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/itertools-0.10.3/src/flatten_ok.rs:142:5
+    |
+142 |     clone_fields!(iter, inner_front, inner_back);
+    |     ^^^^^^^^^^^^
+
+warning: unused attribute `inline`
+  --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/itertools-0.10.3/src/rciter_impl.rs:54:5
+   |
+54 |     #[inline]
+   |     ^^^^^^^^^
+   |
+note: the built-in attribute `inline` will be ignored, since it's applied to the macro invocation `clone_fields`
+  --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/itertools-0.10.3/src/rciter_impl.rs:55:5
+   |
+55 |     clone_fields!(rciter);
+   |     ^^^^^^^^^^^^
+
+warning: `#[must_use]` has no effect when applied to a type alias
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/itertools-0.10.3/src/adaptors/mod.rs:495:1
+    |
+495 | #[must_use = "iterator adaptors are lazy and do nothing unless consumed"]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `#[must_use]` has no effect when applied to a type alias
+  --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/itertools-0.10.3/src/adaptors/coalesce.rs:89:1
+   |
+89 | #[must_use = "iterator adaptors are lazy and do nothing unless consumed"]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `#[must_use]` has no effect when applied to a type alias
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/itertools-0.10.3/src/adaptors/coalesce.rs:116:1
+    |
+116 | #[must_use = "iterator adaptors are lazy and do nothing unless consumed"]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `#[must_use]` has no effect when applied to a type alias
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/itertools-0.10.3/src/adaptors/coalesce.rs:189:1
+    |
+189 | #[must_use = "iterator adaptors are lazy and do nothing unless consumed"]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `#[must_use]` has no effect when applied to a type alias
+  --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/itertools-0.10.3/src/grouping_map.rs:42:1
+   |
+42 | #[must_use = "GroupingMapBy is lazy and do nothing unless consumed"]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `#[must_use]` has no effect when applied to a type alias
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/itertools-0.10.3/src/kmerge_impl.rs:107:1
+    |
+107 | #[must_use = "iterator adaptors are lazy and do nothing unless consumed"]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `#[must_use]` has no effect when applied to a type alias
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/itertools-0.10.3/src/duplicates_impl.rs:191:1
+    |
+191 | #[must_use = "iterator adaptors are lazy and do nothing unless consumed"]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: use of deprecated associated function `Itertools::fold1`: Use `Iterator::reduce` instead
+  --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/itertools-0.10.3/src/concat_impl.rs:21:26
+   |
+21 |     iterable.into_iter().fold1(|mut a, b| { a.extend(b); a }).unwrap_or_else(<_>::default)
+   |                          ^^^^^
+   |
+   = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated associated function `Itertools::fold1`: Use `Iterator::reduce` instead
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/itertools-0.10.3/src/kmerge_impl.rs:219:19
+    |
+219 |                  .fold1(size_hint::add)
+    |                   ^^^^^
+
+       Fresh clap_lex v0.2.4
+warning: `itertools` (lib) generated 11 warnings
+   Compiling reo v0.0.0 (/home/karina/reo)
+       Fresh humantime v1.3.0
+warning: `...` range patterns are deprecated
+  --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/humantime-1.3.0/src/duration.rs:93:20
+   |
+93 |                 '0'...'9' => {
+   |                    ^^^ help: use `..=` for an inclusive range
+   |
+   = note: `#[warn(ellipsis_inclusive_range_patterns)]` on by default
+   = warning: this is accepted in the current edition (Rust 2015) but is a hard error in Rust 2021!
+   = note: for more information, see <https://doc.rust-lang.org/nightly/edition-guide/rust-2021/warnings-promoted-to-error.html>
+
+warning: use of deprecated macro `try`: use the `?` operator instead
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/humantime-1.3.0/src/duration.rs:109:37
+    |
+109 |             "usec" | "us" => (0u64, try!(n.mul(1000))),
+    |                                     ^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated macro `try`: use the `?` operator instead
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/humantime-1.3.0/src/duration.rs:110:48
+    |
+110 |             "millis" | "msec" | "ms" => (0u64, try!(n.mul(1000_000))),
+    |                                                ^^^
+
+warning: use of deprecated macro `try`: use the `?` operator instead
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/humantime-1.3.0/src/duration.rs:113:17
+    |
+113 |             => (try!(n.mul(60)), 0),
+    |                 ^^^
+
+warning: use of deprecated macro `try`: use the `?` operator instead
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/humantime-1.3.0/src/duration.rs:114:55
+    |
+114 |             "hours" | "hour" | "hr" | "hrs" | "h" => (try!(n.mul(3600)), 0),
+    |                                                       ^^^
+
+warning: use of deprecated macro `try`: use the `?` operator instead
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/humantime-1.3.0/src/duration.rs:115:38
+    |
+115 |             "days" | "day" | "d" => (try!(n.mul(86400)), 0),
+    |                                      ^^^
+
+warning: use of deprecated macro `try`: use the `?` operator instead
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/humantime-1.3.0/src/duration.rs:116:40
+    |
+116 |             "weeks" | "week" | "w" => (try!(n.mul(86400*7)), 0),
+    |                                        ^^^
+
+warning: use of deprecated macro `try`: use the `?` operator instead
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/humantime-1.3.0/src/duration.rs:117:42
+    |
+117 |             "months" | "month" | "M" => (try!(n.mul(2630016)), 0), // 30.44d
+    |                                          ^^^
+
+warning: use of deprecated macro `try`: use the `?` operator instead
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/humantime-1.3.0/src/duration.rs:118:40
+    |
+118 |             "years" | "year" | "y" => (try!(n.mul(31557600)), 0), // 365.25d
+    |                                        ^^^
+
+warning: use of deprecated macro `try`: use the `?` operator instead
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/humantime-1.3.0/src/duration.rs:121:24
+    |
+121 |         let mut nsec = try!(self.current.1.add(nsec));
+    |                        ^^^
+
+warning: use of deprecated macro `try`: use the `?` operator instead
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/humantime-1.3.0/src/duration.rs:123:19
+    |
+123 |             sec = try!(sec.add(nsec / 1000_000_000));
+    |                   ^^^
+
+warning: use of deprecated macro `try`: use the `?` operator instead
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/humantime-1.3.0/src/duration.rs:126:15
+    |
+126 |         sec = try!(self.current.0.add(sec));
+    |               ^^^
+
+warning: use of deprecated macro `try`: use the `?` operator instead
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/humantime-1.3.0/src/duration.rs:132:21
+    |
+132 |         let mut n = try!(try!(self.parse_first_char()).ok_or(Error::Empty));
+    |                     ^^^
+
+warning: use of deprecated macro `try`: use the `?` operator instead
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/humantime-1.3.0/src/duration.rs:132:26
+    |
+132 |         let mut n = try!(try!(self.parse_first_char()).ok_or(Error::Empty));
+    |                          ^^^
+
+warning: use of deprecated macro `try`: use the `?` operator instead
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/humantime-1.3.0/src/duration.rs:169:13
+    |
+169 |             try!(self.parse_unit(n, start, off));
+    |             ^^^
+
+warning: `...` range patterns are deprecated
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/humantime-1.3.0/src/duration.rs:137:24
+    |
+137 |                     '0'...'9' => {
+    |                        ^^^ help: use `..=` for an inclusive range
+    |
+    = warning: this is accepted in the current edition (Rust 2015) but is a hard error in Rust 2021!
+    = note: for more information, see <https://doc.rust-lang.org/nightly/edition-guide/rust-2021/warnings-promoted-to-error.html>
+
+warning: use of deprecated macro `try`: use the `?` operator instead
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/humantime-1.3.0/src/duration.rs:138:29
+    |
+138 |                         n = try!(n.checked_mul(10)
+    |                             ^^^
+
+warning: `...` range patterns are deprecated
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/humantime-1.3.0/src/duration.rs:143:24
+    |
+143 |                     'a'...'z' | 'A'...'Z' => {
+    |                        ^^^ help: use `..=` for an inclusive range
+    |
+    = warning: this is accepted in the current edition (Rust 2015) but is a hard error in Rust 2021!
+    = note: for more information, see <https://doc.rust-lang.org/nightly/edition-guide/rust-2021/warnings-promoted-to-error.html>
+
+warning: `...` range patterns are deprecated
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/humantime-1.3.0/src/duration.rs:143:36
+    |
+143 |                     'a'...'z' | 'A'...'Z' => {
+    |                                    ^^^ help: use `..=` for an inclusive range
+    |
+    = warning: this is accepted in the current edition (Rust 2015) but is a hard error in Rust 2021!
+    = note: for more information, see <https://doc.rust-lang.org/nightly/edition-guide/rust-2021/warnings-promoted-to-error.html>
+
+warning: `...` range patterns are deprecated
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/humantime-1.3.0/src/duration.rs:156:24
+    |
+156 |                     '0'...'9' => {
+    |                        ^^^ help: use `..=` for an inclusive range
+    |
+    = warning: this is accepted in the current edition (Rust 2015) but is a hard error in Rust 2021!
+    = note: for more information, see <https://doc.rust-lang.org/nightly/edition-guide/rust-2021/warnings-promoted-to-error.html>
+
+warning: use of deprecated macro `try`: use the `?` operator instead
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/humantime-1.3.0/src/duration.rs:157:25
+    |
+157 |                         try!(self.parse_unit(n, start, off));
+    |                         ^^^
+
+warning: `...` range patterns are deprecated
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/humantime-1.3.0/src/duration.rs:162:24
+    |
+162 |                     'a'...'z' | 'A'...'Z' => {}
+    |                        ^^^ help: use `..=` for an inclusive range
+    |
+    = warning: this is accepted in the current edition (Rust 2015) but is a hard error in Rust 2021!
+    = note: for more information, see <https://doc.rust-lang.org/nightly/edition-guide/rust-2021/warnings-promoted-to-error.html>
+
+warning: `...` range patterns are deprecated
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/humantime-1.3.0/src/duration.rs:162:36
+    |
+162 |                     'a'...'z' | 'A'...'Z' => {}
+    |                                    ^^^ help: use `..=` for an inclusive range
+    |
+    = warning: this is accepted in the current edition (Rust 2015) but is a hard error in Rust 2021!
+    = note: for more information, see <https://doc.rust-lang.org/nightly/edition-guide/rust-2021/warnings-promoted-to-error.html>
+
+warning: use of deprecated macro `try`: use the `?` operator instead
+   --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/humantime-1.3.0/src/duration.rs:170:23
+    |
+170 |             n = match try!(self.parse_first_char()) {
+    |                       ^^^
+
+warning: use of deprecated associated function `std::error::Error::description`: use the Display impl or to_string()
+  --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/humantime-1.3.0/src/duration.rs:48:44
+   |
+48 |             display(self_) -> ("{}", self_.description())
+   |                                            ^^^^^^^^^^^
+
+warning: use of deprecated associated function `std::error::Error::description`: use the Display impl or to_string()
+  --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/humantime-1.3.0/src/duration.rs:53:44
+   |
+53 |             display(self_) -> ("{}", self_.description())
+   |                                            ^^^^^^^^^^^
+
+       Fresh predicates-tree v1.0.5
+       Fresh libc v0.2.132
+       Fresh proc-macro2 v1.0.43
+     Running `/home/karina/reo/target/release/build/reo-31b1c2d2580b2bf8/build-script-build`
+warning: `humantime` (lib) generated 26 warnings
+       Fresh memchr v2.5.0
+       Fresh log v0.4.17
+       Fresh semver v1.0.13
+       Fresh futures-core v0.3.24
+       Fresh futures-task v0.3.24
+       Fresh quote v1.0.21
+       Fresh atty v0.2.14
+       Fresh slab v0.4.7
+       Fresh time v0.3.14
+       Fresh getrandom v0.2.7
+       Fresh anyhow v1.0.64
+       Fresh filetime v0.2.17
+       Fresh doc-comment v0.3.3
+       Fresh wait-timeout v0.2.0
+warning: use of deprecated constant `std::sync::ONCE_INIT`: the `new` function is now preferred
+  --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/wait-timeout-0.2.0/src/unix.rs:27:23
+   |
+27 | use std::sync::{Once, ONCE_INIT, Mutex};
+   |                       ^^^^^^^^^
+   |
+note: the lint level is defined here
+  --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/wait-timeout-0.2.0/src/lib.rs:31:23
+   |
+31 | #![deny(missing_docs, warnings)]
+   |                       ^^^^^^^^
+   = note: `#[warn(deprecated)]` implied by `#[warn(warnings)]`
+
+warning: use of deprecated constant `std::sync::ONCE_INIT`: the `new` function is now preferred
+  --> /home/karina/.cargo/registry/src/github.com-1ecc6299db9ec823/wait-timeout-0.2.0/src/unix.rs:32:21
+   |
+32 | static INIT: Once = ONCE_INIT;
+   |                     ^^^^^^^^^ help: replace the use of the deprecated constant: `Once::new()`
+
+       Fresh tempfile v3.3.0
+       Fresh aho-corasick v0.7.19
+       Fresh rustc_version v0.4.0
+       Fresh futures-channel v0.3.24
+       Fresh indexmap v1.9.1
+warning: `wait-timeout` (lib) generated 2 warnings
+       Fresh num-traits v0.2.15
+       Fresh bstr v0.2.17
+       Fresh syn v1.0.99
+       Fresh colored v2.0.0
+       Fresh rand_core v0.6.3
+       Fresh regex v1.6.0
+       Fresh clap v3.2.20
+       Fresh futures-macro v0.3.24
+       Fresh serde_derive v1.0.144
+       Fresh simple_logger v2.3.0
+       Fresh ctor v0.1.23
+       Fresh float-cmp v0.9.0
+       Fresh rand_chacha v0.3.1
+       Fresh env_logger v0.7.1
+       Fresh serde v1.0.144
+       Fresh futures-util v0.3.24
+       Fresh predicates v2.1.1
+       Fresh rstest_macros v0.14.0
+       Fresh rand v0.8.5
+       Fresh fsutils v0.1.7
+       Fresh bincode v1.3.3
+       Fresh futures-executor v0.3.24
+       Fresh assert_cmd v2.0.4
+       Fresh futures v0.3.24
+       Fresh rstest v0.15.0
+     Running `CARGO=/home/karina/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo CARGO_CRATE_NAME=reo CARGO_MANIFEST_DIR=/home/karina/reo CARGO_PKG_AUTHORS='' CARGO_PKG_DESCRIPTION='Transpiler of EO programs to Rust functions' CARGO_PKG_HOMEPAGE='https://github.com/objectionary/reo' CARGO_PKG_LICENSE='' CARGO_PKG_LICENSE_FILE=LICENSE.txt CARGO_PKG_NAME=reo CARGO_PKG_REPOSITORY='https://github.com/objectionary/reo' CARGO_PKG_RUST_VERSION='' CARGO_PKG_VERSION=0.0.0 CARGO_PKG_VERSION_MAJOR=0 CARGO_PKG_VERSION_MINOR=0 CARGO_PKG_VERSION_PATCH=0 CARGO_PKG_VERSION_PRE='' CARGO_PRIMARY_PACKAGE=1 LD_LIBRARY_PATH='/home/karina/reo/target/release/deps:/home/karina/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib:/home/karina/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib' OUT_DIR=/home/karina/reo/target/release/build/reo-3ce8ba70766b0906/out rustc --crate-name reo --edition=2021 src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C opt-level=3 -C embed-bitcode=no --test -C metadata=c94fd3346298b250 -C extra-filename=-c94fd3346298b250 --out-dir /home/karina/reo/target/release/deps -L dependency=/home/karina/reo/target/release/deps --extern anyhow=/home/karina/reo/target/release/deps/libanyhow-4f19aaf46d83477b.rlib --extern assert_cmd=/home/karina/reo/target/release/deps/libassert_cmd-4b6b2453a4fcaa14.rlib --extern bincode=/home/karina/reo/target/release/deps/libbincode-6321be80ecbfa74c.rlib --extern clap=/home/karina/reo/target/release/deps/libclap-33c244f6f4da1695.rlib --extern ctor=/home/karina/reo/target/release/deps/libctor-c082862ed0d92de1.so --extern filetime=/home/karina/reo/target/release/deps/libfiletime-4cf170882a82bf34.rlib --extern fsutils=/home/karina/reo/target/release/deps/libfsutils-00936b364524af3c.rlib --extern glob=/home/karina/reo/target/release/deps/libglob-f4ce3ed0e94191be.rlib --extern hex=/home/karina/reo/target/release/deps/libhex-012d425aa5fd76bf.rlib --extern itertools=/home/karina/reo/target/release/deps/libitertools-a01274c9fd3019ba.rlib --extern lazy_static=/home/karina/reo/target/release/deps/liblazy_static-eaefde9ae7ab1f68.rlib --extern log=/home/karina/reo/target/release/deps/liblog-d88ff5c2a3b9f514.rlib --extern predicates=/home/karina/reo/target/release/deps/libpredicates-f80af49a35bd87a3.rlib --extern rand=/home/karina/reo/target/release/deps/librand-e8925c4e2ff2b483.rlib --extern regex=/home/karina/reo/target/release/deps/libregex-f60e02e291b71e6c.rlib --extern rstest=/home/karina/reo/target/release/deps/librstest-d04662fafe9adac3.rlib --extern serde=/home/karina/reo/target/release/deps/libserde-2e03465545e9d37d.rlib --extern simple_logger=/home/karina/reo/target/release/deps/libsimple_logger-056de79093c3ec39.rlib --extern tempfile=/home/karina/reo/target/release/deps/libtempfile-6b03088fc8585f85.rlib`
+     Running `CARGO=/home/karina/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo CARGO_CRATE_NAME=reo CARGO_MANIFEST_DIR=/home/karina/reo CARGO_PKG_AUTHORS='' CARGO_PKG_DESCRIPTION='Transpiler of EO programs to Rust functions' CARGO_PKG_HOMEPAGE='https://github.com/objectionary/reo' CARGO_PKG_LICENSE='' CARGO_PKG_LICENSE_FILE=LICENSE.txt CARGO_PKG_NAME=reo CARGO_PKG_REPOSITORY='https://github.com/objectionary/reo' CARGO_PKG_RUST_VERSION='' CARGO_PKG_VERSION=0.0.0 CARGO_PKG_VERSION_MAJOR=0 CARGO_PKG_VERSION_MINOR=0 CARGO_PKG_VERSION_PATCH=0 CARGO_PKG_VERSION_PRE='' CARGO_PRIMARY_PACKAGE=1 LD_LIBRARY_PATH='/home/karina/reo/target/release/deps:/home/karina/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib:/home/karina/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib' OUT_DIR=/home/karina/reo/target/release/build/reo-3ce8ba70766b0906/out rustc --crate-name reo --edition=2021 src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C opt-level=3 -C embed-bitcode=no -C metadata=e87bbbec49356ec5 -C extra-filename=-e87bbbec49356ec5 --out-dir /home/karina/reo/target/release/deps -L dependency=/home/karina/reo/target/release/deps --extern anyhow=/home/karina/reo/target/release/deps/libanyhow-4f19aaf46d83477b.rmeta --extern bincode=/home/karina/reo/target/release/deps/libbincode-6321be80ecbfa74c.rmeta --extern clap=/home/karina/reo/target/release/deps/libclap-33c244f6f4da1695.rmeta --extern ctor=/home/karina/reo/target/release/deps/libctor-c082862ed0d92de1.so --extern filetime=/home/karina/reo/target/release/deps/libfiletime-4cf170882a82bf34.rmeta --extern glob=/home/karina/reo/target/release/deps/libglob-f4ce3ed0e94191be.rmeta --extern hex=/home/karina/reo/target/release/deps/libhex-012d425aa5fd76bf.rmeta --extern itertools=/home/karina/reo/target/release/deps/libitertools-a01274c9fd3019ba.rmeta --extern lazy_static=/home/karina/reo/target/release/deps/liblazy_static-eaefde9ae7ab1f68.rmeta --extern log=/home/karina/reo/target/release/deps/liblog-d88ff5c2a3b9f514.rmeta --extern regex=/home/karina/reo/target/release/deps/libregex-f60e02e291b71e6c.rmeta --extern serde=/home/karina/reo/target/release/deps/libserde-2e03465545e9d37d.rmeta --extern simple_logger=/home/karina/reo/target/release/deps/libsimple_logger-056de79093c3ec39.rmeta`
+     Running `CARGO=/home/karina/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo CARGO_BIN_EXE_reo=/home/karina/reo/target/release/reo CARGO_CRATE_NAME=basic_test CARGO_MANIFEST_DIR=/home/karina/reo CARGO_PKG_AUTHORS='' CARGO_PKG_DESCRIPTION='Transpiler of EO programs to Rust functions' CARGO_PKG_HOMEPAGE='https://github.com/objectionary/reo' CARGO_PKG_LICENSE='' CARGO_PKG_LICENSE_FILE=LICENSE.txt CARGO_PKG_NAME=reo CARGO_PKG_REPOSITORY='https://github.com/objectionary/reo' CARGO_PKG_RUST_VERSION='' CARGO_PKG_VERSION=0.0.0 CARGO_PKG_VERSION_MAJOR=0 CARGO_PKG_VERSION_MINOR=0 CARGO_PKG_VERSION_PATCH=0 CARGO_PKG_VERSION_PRE='' CARGO_PRIMARY_PACKAGE=1 CARGO_TARGET_TMPDIR=/home/karina/reo/target/tmp LD_LIBRARY_PATH='/home/karina/reo/target/release/deps:/home/karina/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib:/home/karina/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib' OUT_DIR=/home/karina/reo/target/release/build/reo-3ce8ba70766b0906/out rustc --crate-name basic_test --edition=2021 tests/basic_test.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C opt-level=3 -C embed-bitcode=no --test -C metadata=7fd0a90306558f46 -C extra-filename=-7fd0a90306558f46 --out-dir /home/karina/reo/target/release/deps -L dependency=/home/karina/reo/target/release/deps --extern anyhow=/home/karina/reo/target/release/deps/libanyhow-4f19aaf46d83477b.rlib --extern assert_cmd=/home/karina/reo/target/release/deps/libassert_cmd-4b6b2453a4fcaa14.rlib --extern bincode=/home/karina/reo/target/release/deps/libbincode-6321be80ecbfa74c.rlib --extern clap=/home/karina/reo/target/release/deps/libclap-33c244f6f4da1695.rlib --extern ctor=/home/karina/reo/target/release/deps/libctor-c082862ed0d92de1.so --extern filetime=/home/karina/reo/target/release/deps/libfiletime-4cf170882a82bf34.rlib --extern fsutils=/home/karina/reo/target/release/deps/libfsutils-00936b364524af3c.rlib --extern glob=/home/karina/reo/target/release/deps/libglob-f4ce3ed0e94191be.rlib --extern hex=/home/karina/reo/target/release/deps/libhex-012d425aa5fd76bf.rlib --extern itertools=/home/karina/reo/target/release/deps/libitertools-a01274c9fd3019ba.rlib --extern lazy_static=/home/karina/reo/target/release/deps/liblazy_static-eaefde9ae7ab1f68.rlib --extern log=/home/karina/reo/target/release/deps/liblog-d88ff5c2a3b9f514.rlib --extern predicates=/home/karina/reo/target/release/deps/libpredicates-f80af49a35bd87a3.rlib --extern rand=/home/karina/reo/target/release/deps/librand-e8925c4e2ff2b483.rlib --extern regex=/home/karina/reo/target/release/deps/libregex-f60e02e291b71e6c.rlib --extern reo=/home/karina/reo/target/release/deps/libreo-e87bbbec49356ec5.rlib --extern rstest=/home/karina/reo/target/release/deps/librstest-d04662fafe9adac3.rlib --extern serde=/home/karina/reo/target/release/deps/libserde-2e03465545e9d37d.rlib --extern simple_logger=/home/karina/reo/target/release/deps/libsimple_logger-056de79093c3ec39.rlib --extern tempfile=/home/karina/reo/target/release/deps/libtempfile-6b03088fc8585f85.rlib`
+     Running `CARGO=/home/karina/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo CARGO_BIN_EXE_reo=/home/karina/reo/target/release/reo CARGO_CRATE_NAME=misc_test CARGO_MANIFEST_DIR=/home/karina/reo CARGO_PKG_AUTHORS='' CARGO_PKG_DESCRIPTION='Transpiler of EO programs to Rust functions' CARGO_PKG_HOMEPAGE='https://github.com/objectionary/reo' CARGO_PKG_LICENSE='' CARGO_PKG_LICENSE_FILE=LICENSE.txt CARGO_PKG_NAME=reo CARGO_PKG_REPOSITORY='https://github.com/objectionary/reo' CARGO_PKG_RUST_VERSION='' CARGO_PKG_VERSION=0.0.0 CARGO_PKG_VERSION_MAJOR=0 CARGO_PKG_VERSION_MINOR=0 CARGO_PKG_VERSION_PATCH=0 CARGO_PKG_VERSION_PRE='' CARGO_PRIMARY_PACKAGE=1 CARGO_TARGET_TMPDIR=/home/karina/reo/target/tmp LD_LIBRARY_PATH='/home/karina/reo/target/release/deps:/home/karina/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib:/home/karina/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib' OUT_DIR=/home/karina/reo/target/release/build/reo-3ce8ba70766b0906/out rustc --crate-name misc_test --edition=2021 tests/misc_test.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C opt-level=3 -C embed-bitcode=no --test -C metadata=f9ded41573529a0a -C extra-filename=-f9ded41573529a0a --out-dir /home/karina/reo/target/release/deps -L dependency=/home/karina/reo/target/release/deps --extern anyhow=/home/karina/reo/target/release/deps/libanyhow-4f19aaf46d83477b.rlib --extern assert_cmd=/home/karina/reo/target/release/deps/libassert_cmd-4b6b2453a4fcaa14.rlib --extern bincode=/home/karina/reo/target/release/deps/libbincode-6321be80ecbfa74c.rlib --extern clap=/home/karina/reo/target/release/deps/libclap-33c244f6f4da1695.rlib --extern ctor=/home/karina/reo/target/release/deps/libctor-c082862ed0d92de1.so --extern filetime=/home/karina/reo/target/release/deps/libfiletime-4cf170882a82bf34.rlib --extern fsutils=/home/karina/reo/target/release/deps/libfsutils-00936b364524af3c.rlib --extern glob=/home/karina/reo/target/release/deps/libglob-f4ce3ed0e94191be.rlib --extern hex=/home/karina/reo/target/release/deps/libhex-012d425aa5fd76bf.rlib --extern itertools=/home/karina/reo/target/release/deps/libitertools-a01274c9fd3019ba.rlib --extern lazy_static=/home/karina/reo/target/release/deps/liblazy_static-eaefde9ae7ab1f68.rlib --extern log=/home/karina/reo/target/release/deps/liblog-d88ff5c2a3b9f514.rlib --extern predicates=/home/karina/reo/target/release/deps/libpredicates-f80af49a35bd87a3.rlib --extern rand=/home/karina/reo/target/release/deps/librand-e8925c4e2ff2b483.rlib --extern regex=/home/karina/reo/target/release/deps/libregex-f60e02e291b71e6c.rlib --extern reo=/home/karina/reo/target/release/deps/libreo-e87bbbec49356ec5.rlib --extern rstest=/home/karina/reo/target/release/deps/librstest-d04662fafe9adac3.rlib --extern serde=/home/karina/reo/target/release/deps/libserde-2e03465545e9d37d.rlib --extern simple_logger=/home/karina/reo/target/release/deps/libsimple_logger-056de79093c3ec39.rlib --extern tempfile=/home/karina/reo/target/release/deps/libtempfile-6b03088fc8585f85.rlib`
+     Running `CARGO=/home/karina/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo CARGO_BIN_EXE_reo=/home/karina/reo/target/release/reo CARGO_CRATE_NAME=snippets_test CARGO_MANIFEST_DIR=/home/karina/reo CARGO_PKG_AUTHORS='' CARGO_PKG_DESCRIPTION='Transpiler of EO programs to Rust functions' CARGO_PKG_HOMEPAGE='https://github.com/objectionary/reo' CARGO_PKG_LICENSE='' CARGO_PKG_LICENSE_FILE=LICENSE.txt CARGO_PKG_NAME=reo CARGO_PKG_REPOSITORY='https://github.com/objectionary/reo' CARGO_PKG_RUST_VERSION='' CARGO_PKG_VERSION=0.0.0 CARGO_PKG_VERSION_MAJOR=0 CARGO_PKG_VERSION_MINOR=0 CARGO_PKG_VERSION_PATCH=0 CARGO_PKG_VERSION_PRE='' CARGO_PRIMARY_PACKAGE=1 CARGO_TARGET_TMPDIR=/home/karina/reo/target/tmp LD_LIBRARY_PATH='/home/karina/reo/target/release/deps:/home/karina/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib:/home/karina/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib' OUT_DIR=/home/karina/reo/target/release/build/reo-3ce8ba70766b0906/out rustc --crate-name snippets_test --edition=2021 tests/snippets_test.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C opt-level=3 -C embed-bitcode=no --test -C metadata=ca2a108a05b9acb3 -C extra-filename=-ca2a108a05b9acb3 --out-dir /home/karina/reo/target/release/deps -L dependency=/home/karina/reo/target/release/deps --extern anyhow=/home/karina/reo/target/release/deps/libanyhow-4f19aaf46d83477b.rlib --extern assert_cmd=/home/karina/reo/target/release/deps/libassert_cmd-4b6b2453a4fcaa14.rlib --extern bincode=/home/karina/reo/target/release/deps/libbincode-6321be80ecbfa74c.rlib --extern clap=/home/karina/reo/target/release/deps/libclap-33c244f6f4da1695.rlib --extern ctor=/home/karina/reo/target/release/deps/libctor-c082862ed0d92de1.so --extern filetime=/home/karina/reo/target/release/deps/libfiletime-4cf170882a82bf34.rlib --extern fsutils=/home/karina/reo/target/release/deps/libfsutils-00936b364524af3c.rlib --extern glob=/home/karina/reo/target/release/deps/libglob-f4ce3ed0e94191be.rlib --extern hex=/home/karina/reo/target/release/deps/libhex-012d425aa5fd76bf.rlib --extern itertools=/home/karina/reo/target/release/deps/libitertools-a01274c9fd3019ba.rlib --extern lazy_static=/home/karina/reo/target/release/deps/liblazy_static-eaefde9ae7ab1f68.rlib --extern log=/home/karina/reo/target/release/deps/liblog-d88ff5c2a3b9f514.rlib --extern predicates=/home/karina/reo/target/release/deps/libpredicates-f80af49a35bd87a3.rlib --extern rand=/home/karina/reo/target/release/deps/librand-e8925c4e2ff2b483.rlib --extern regex=/home/karina/reo/target/release/deps/libregex-f60e02e291b71e6c.rlib --extern reo=/home/karina/reo/target/release/deps/libreo-e87bbbec49356ec5.rlib --extern rstest=/home/karina/reo/target/release/deps/librstest-d04662fafe9adac3.rlib --extern serde=/home/karina/reo/target/release/deps/libserde-2e03465545e9d37d.rlib --extern simple_logger=/home/karina/reo/target/release/deps/libsimple_logger-056de79093c3ec39.rlib --extern tempfile=/home/karina/reo/target/release/deps/libtempfile-6b03088fc8585f85.rlib`
+     Running `CARGO=/home/karina/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo CARGO_BIN_NAME=reo CARGO_CRATE_NAME=reo CARGO_MANIFEST_DIR=/home/karina/reo CARGO_PKG_AUTHORS='' CARGO_PKG_DESCRIPTION='Transpiler of EO programs to Rust functions' CARGO_PKG_HOMEPAGE='https://github.com/objectionary/reo' CARGO_PKG_LICENSE='' CARGO_PKG_LICENSE_FILE=LICENSE.txt CARGO_PKG_NAME=reo CARGO_PKG_REPOSITORY='https://github.com/objectionary/reo' CARGO_PKG_RUST_VERSION='' CARGO_PKG_VERSION=0.0.0 CARGO_PKG_VERSION_MAJOR=0 CARGO_PKG_VERSION_MINOR=0 CARGO_PKG_VERSION_PATCH=0 CARGO_PKG_VERSION_PRE='' CARGO_PRIMARY_PACKAGE=1 LD_LIBRARY_PATH='/home/karina/reo/target/release/deps:/home/karina/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib:/home/karina/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib' OUT_DIR=/home/karina/reo/target/release/build/reo-3ce8ba70766b0906/out rustc --crate-name reo --edition=2021 src/bin/reo.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type bin --emit=dep-info,link -C opt-level=3 -C embed-bitcode=no -C metadata=984837bca48c98d6 -C extra-filename=-984837bca48c98d6 --out-dir /home/karina/reo/target/release/deps -L dependency=/home/karina/reo/target/release/deps --extern anyhow=/home/karina/reo/target/release/deps/libanyhow-4f19aaf46d83477b.rlib --extern bincode=/home/karina/reo/target/release/deps/libbincode-6321be80ecbfa74c.rlib --extern clap=/home/karina/reo/target/release/deps/libclap-33c244f6f4da1695.rlib --extern ctor=/home/karina/reo/target/release/deps/libctor-c082862ed0d92de1.so --extern filetime=/home/karina/reo/target/release/deps/libfiletime-4cf170882a82bf34.rlib --extern glob=/home/karina/reo/target/release/deps/libglob-f4ce3ed0e94191be.rlib --extern hex=/home/karina/reo/target/release/deps/libhex-012d425aa5fd76bf.rlib --extern itertools=/home/karina/reo/target/release/deps/libitertools-a01274c9fd3019ba.rlib --extern lazy_static=/home/karina/reo/target/release/deps/liblazy_static-eaefde9ae7ab1f68.rlib --extern log=/home/karina/reo/target/release/deps/liblog-d88ff5c2a3b9f514.rlib --extern regex=/home/karina/reo/target/release/deps/libregex-f60e02e291b71e6c.rlib --extern reo=/home/karina/reo/target/release/deps/libreo-e87bbbec49356ec5.rlib --extern serde=/home/karina/reo/target/release/deps/libserde-2e03465545e9d37d.rlib --extern simple_logger=/home/karina/reo/target/release/deps/libsimple_logger-056de79093c3ec39.rlib`
+     Running `CARGO=/home/karina/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo CARGO_BIN_EXE_reo=/home/karina/reo/target/release/reo CARGO_CRATE_NAME=compile_test CARGO_MANIFEST_DIR=/home/karina/reo CARGO_PKG_AUTHORS='' CARGO_PKG_DESCRIPTION='Transpiler of EO programs to Rust functions' CARGO_PKG_HOMEPAGE='https://github.com/objectionary/reo' CARGO_PKG_LICENSE='' CARGO_PKG_LICENSE_FILE=LICENSE.txt CARGO_PKG_NAME=reo CARGO_PKG_REPOSITORY='https://github.com/objectionary/reo' CARGO_PKG_RUST_VERSION='' CARGO_PKG_VERSION=0.0.0 CARGO_PKG_VERSION_MAJOR=0 CARGO_PKG_VERSION_MINOR=0 CARGO_PKG_VERSION_PATCH=0 CARGO_PKG_VERSION_PRE='' CARGO_PRIMARY_PACKAGE=1 CARGO_TARGET_TMPDIR=/home/karina/reo/target/tmp LD_LIBRARY_PATH='/home/karina/reo/target/release/deps:/home/karina/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib:/home/karina/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib' OUT_DIR=/home/karina/reo/target/release/build/reo-3ce8ba70766b0906/out rustc --crate-name compile_test --edition=2021 tests/compile_test.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C opt-level=3 -C embed-bitcode=no --test -C metadata=473b7bd0fcd66007 -C extra-filename=-473b7bd0fcd66007 --out-dir /home/karina/reo/target/release/deps -L dependency=/home/karina/reo/target/release/deps --extern anyhow=/home/karina/reo/target/release/deps/libanyhow-4f19aaf46d83477b.rlib --extern assert_cmd=/home/karina/reo/target/release/deps/libassert_cmd-4b6b2453a4fcaa14.rlib --extern bincode=/home/karina/reo/target/release/deps/libbincode-6321be80ecbfa74c.rlib --extern clap=/home/karina/reo/target/release/deps/libclap-33c244f6f4da1695.rlib --extern ctor=/home/karina/reo/target/release/deps/libctor-c082862ed0d92de1.so --extern filetime=/home/karina/reo/target/release/deps/libfiletime-4cf170882a82bf34.rlib --extern fsutils=/home/karina/reo/target/release/deps/libfsutils-00936b364524af3c.rlib --extern glob=/home/karina/reo/target/release/deps/libglob-f4ce3ed0e94191be.rlib --extern hex=/home/karina/reo/target/release/deps/libhex-012d425aa5fd76bf.rlib --extern itertools=/home/karina/reo/target/release/deps/libitertools-a01274c9fd3019ba.rlib --extern lazy_static=/home/karina/reo/target/release/deps/liblazy_static-eaefde9ae7ab1f68.rlib --extern log=/home/karina/reo/target/release/deps/liblog-d88ff5c2a3b9f514.rlib --extern predicates=/home/karina/reo/target/release/deps/libpredicates-f80af49a35bd87a3.rlib --extern rand=/home/karina/reo/target/release/deps/librand-e8925c4e2ff2b483.rlib --extern regex=/home/karina/reo/target/release/deps/libregex-f60e02e291b71e6c.rlib --extern reo=/home/karina/reo/target/release/deps/libreo-e87bbbec49356ec5.rlib --extern rstest=/home/karina/reo/target/release/deps/librstest-d04662fafe9adac3.rlib --extern serde=/home/karina/reo/target/release/deps/libserde-2e03465545e9d37d.rlib --extern simple_logger=/home/karina/reo/target/release/deps/libsimple_logger-056de79093c3ec39.rlib --extern tempfile=/home/karina/reo/target/release/deps/libtempfile-6b03088fc8585f85.rlib`
+     Running `CARGO=/home/karina/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo CARGO_BIN_NAME=reo CARGO_CRATE_NAME=reo CARGO_MANIFEST_DIR=/home/karina/reo CARGO_PKG_AUTHORS='' CARGO_PKG_DESCRIPTION='Transpiler of EO programs to Rust functions' CARGO_PKG_HOMEPAGE='https://github.com/objectionary/reo' CARGO_PKG_LICENSE='' CARGO_PKG_LICENSE_FILE=LICENSE.txt CARGO_PKG_NAME=reo CARGO_PKG_REPOSITORY='https://github.com/objectionary/reo' CARGO_PKG_RUST_VERSION='' CARGO_PKG_VERSION=0.0.0 CARGO_PKG_VERSION_MAJOR=0 CARGO_PKG_VERSION_MINOR=0 CARGO_PKG_VERSION_PATCH=0 CARGO_PKG_VERSION_PRE='' CARGO_PRIMARY_PACKAGE=1 LD_LIBRARY_PATH='/home/karina/reo/target/release/deps:/home/karina/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib:/home/karina/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib' OUT_DIR=/home/karina/reo/target/release/build/reo-3ce8ba70766b0906/out rustc --crate-name reo --edition=2021 src/bin/reo.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C opt-level=3 -C embed-bitcode=no --test -C metadata=23dceeb7470384d8 -C extra-filename=-23dceeb7470384d8 --out-dir /home/karina/reo/target/release/deps -L dependency=/home/karina/reo/target/release/deps --extern anyhow=/home/karina/reo/target/release/deps/libanyhow-4f19aaf46d83477b.rlib --extern assert_cmd=/home/karina/reo/target/release/deps/libassert_cmd-4b6b2453a4fcaa14.rlib --extern bincode=/home/karina/reo/target/release/deps/libbincode-6321be80ecbfa74c.rlib --extern clap=/home/karina/reo/target/release/deps/libclap-33c244f6f4da1695.rlib --extern ctor=/home/karina/reo/target/release/deps/libctor-c082862ed0d92de1.so --extern filetime=/home/karina/reo/target/release/deps/libfiletime-4cf170882a82bf34.rlib --extern fsutils=/home/karina/reo/target/release/deps/libfsutils-00936b364524af3c.rlib --extern glob=/home/karina/reo/target/release/deps/libglob-f4ce3ed0e94191be.rlib --extern hex=/home/karina/reo/target/release/deps/libhex-012d425aa5fd76bf.rlib --extern itertools=/home/karina/reo/target/release/deps/libitertools-a01274c9fd3019ba.rlib --extern lazy_static=/home/karina/reo/target/release/deps/liblazy_static-eaefde9ae7ab1f68.rlib --extern log=/home/karina/reo/target/release/deps/liblog-d88ff5c2a3b9f514.rlib --extern predicates=/home/karina/reo/target/release/deps/libpredicates-f80af49a35bd87a3.rlib --extern rand=/home/karina/reo/target/release/deps/librand-e8925c4e2ff2b483.rlib --extern regex=/home/karina/reo/target/release/deps/libregex-f60e02e291b71e6c.rlib --extern reo=/home/karina/reo/target/release/deps/libreo-e87bbbec49356ec5.rlib --extern rstest=/home/karina/reo/target/release/deps/librstest-d04662fafe9adac3.rlib --extern serde=/home/karina/reo/target/release/deps/libserde-2e03465545e9d37d.rlib --extern simple_logger=/home/karina/reo/target/release/deps/libsimple_logger-056de79093c3ec39.rlib --extern tempfile=/home/karina/reo/target/release/deps/libtempfile-6b03088fc8585f85.rlib`
+    Finished release [optimized] target(s) in 5.52s
+     Running `/home/karina/reo/target/release/deps/reo-c94fd3346298b250`
+     Running `/home/karina/reo/target/release/deps/reo-23dceeb7470384d8`
+     Running `/home/karina/reo/target/release/deps/basic_test-7fd0a90306558f46`
+     Running `/home/karina/reo/target/release/deps/compile_test-473b7bd0fcd66007`
+error: test failed, to rerun pass '--test compile_test'

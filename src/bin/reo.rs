@@ -139,6 +139,20 @@ pub fn main() {
                 )
                 .arg_required_else_help(true),
         )
+        .subcommand(
+            Command::new("inspect")
+                .setting(AppSettings::ColorNever)
+                .about("Print the universe")
+                .arg(
+                    Arg::new("relf")
+                        .long("relf")
+                        .required(true)
+                        .help("Name of a binary .relf file to use")
+                        .takes_value(true)
+                        .action(ArgAction::Set),
+                )
+                .arg_required_else_help(true),
+        )
         .get_matches();
     let mut logger = SimpleLogger::new().without_timestamps();
     logger = logger.with_level(if matches.contains_id("verbose") {
@@ -240,6 +254,17 @@ pub fn main() {
             let ret = da!(uni, format!("Φ.{}", object)).as_hex();
             info!("Dataization result, in {:?} is: {}", start.elapsed(), ret);
             println!("{}", ret);
+        }
+        Some(("inspect", subs)) => {
+            let relf = Path::new(subs.value_of("relf").unwrap());
+            let uni = Universe::load(relf).unwrap();
+            info!(
+                "Deserialized {} bytes in {:?}",
+                fs::metadata(relf).unwrap().len(),
+                start.elapsed()
+            );
+            let json = serde_json::to_string(&uni).unwrap();
+            println!("Universe is: {}", json);
         }
         _ => unreachable!(),
     }
