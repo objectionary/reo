@@ -145,7 +145,6 @@ pub fn main() {
                 .about("Print the universe")
                 .arg(
                     Arg::new("relf")
-                        .long("relf")
                         .required(true)
                         .help("Name of a binary .relf file to use")
                         .takes_value(true)

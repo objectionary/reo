@@ -48,7 +48,7 @@ fn inspect_existed() -> Result<()> {
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .arg("inspect")
-        .arg(format!("--relf={}", relf.display()))
+        .arg(relf.as_os_str())
         .assert()
         .success()
         .stdout(predicate::str::contains("Universe is: "));
@@ -60,7 +60,7 @@ fn inspect_nonexisted() -> Result<()> {
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .arg("inspect")
-        .arg(format!("--relf=foo"))
+        .arg(format!("foo.relf"))
         .assert()
         .failure()
         .stderr(predicate::str::contains("Can't read from foo"));
