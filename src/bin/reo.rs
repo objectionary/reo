@@ -263,7 +263,7 @@ pub fn main() {
                 fs::metadata(relf).unwrap().len(),
                 start.elapsed()
             );
-            let json = serde_json::to_string(&uni).unwrap();
+            let json = serde_json::to_string_pretty(&uni).unwrap();
             println!("Universe is: {}", json);
         }
         _ => unreachable!(),
