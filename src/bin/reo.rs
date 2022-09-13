@@ -155,6 +155,7 @@ pub fn main() -> Result<()> {
         "argv: {}",
         std::env::args().collect::<Vec<String>>().join(" ")
     );
+    info!("pwd: {}", std::env::current_dir()?.as_path().display());
     let start = Instant::now();
     match matches.subcommand() {
         Some(("compile", subs)) => {
