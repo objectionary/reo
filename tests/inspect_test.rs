@@ -18,12 +18,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use anyhow::{Result};
+use anyhow::Result;
+use predicates::prelude::predicate;
 use std::fs::File;
 use std::io::Write;
-use predicates::prelude::predicate;
 use tempfile::TempDir;
-
 
 #[test]
 fn inspect_existed() -> Result<()> {
@@ -34,7 +33,7 @@ fn inspect_existed() -> Result<()> {
         BIND('$ε2', 'ν0', '$ν1', 'foo');
         DATA('$ν1', 'ff ff');
         "
-            .as_bytes(),
+        .as_bytes(),
     )?;
     let relf = tmp.path().join("temp.relf");
     assert_cmd::Command::cargo_bin("reo")

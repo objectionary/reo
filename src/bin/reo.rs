@@ -47,7 +47,9 @@ fn mtime(dir: &Path) -> Result<FileTime> {
     }
     info!(
         "There are {} .gmi files in {}, the latest modification is {} minutes ago",
-        total, dir.display(), (FileTime::now().seconds() - recent.seconds()) / 60
+        total,
+        dir.display(),
+        (FileTime::now().seconds() - recent.seconds()) / 60
     );
     Ok(recent)
 }
