@@ -163,6 +163,18 @@ impl Universe {
         self.atoms.insert(name.to_string(), m);
     }
 
+    /// Merge universe into inself
+    pub fn merge(&mut self, unis: &mut Vec<Universe>) {
+        for uni in unis {
+            for vert in uni.vertices.iter(){
+                self.vertices.insert(*vert.0, vert.1.clone());
+            }
+            for edge in uni.edges.iter(){
+                self.edges.insert(*edge.0, edge.1.clone());
+            }
+        }
+    }
+
     /// Validate the Universe and return all found data
     /// inconsistencies. This is mostly used for testing.
     pub fn inconsistencies(&self) -> Vec<String> {
