@@ -154,6 +154,20 @@ pub fn main() -> Result<()> {
                 )
                 .arg_required_else_help(true),
         )
+        .subcommand(
+            Command::new("link")
+                .setting(AppSettings::ColorNever)
+                .about("Take a list of .relf files and join them all into one")
+                .arg(
+                    Arg::new("relfs")
+                        .required(true)
+                        .multiple(true)
+                        .help("Name of a binary .relf file to use")
+                        .takes_value(true)
+                        .action(ArgAction::Set),
+                )
+                .arg_required_else_help(true),
+        )
         .get_matches();
     let mut logger = SimpleLogger::new().without_timestamps();
     logger = logger.with_level(if matches.contains_id("verbose") {
@@ -277,6 +291,21 @@ pub fn main() -> Result<()> {
             );
             let json = serde_json::to_string_pretty(&uni).unwrap();
             println!("Universe is: {}", json);
+        }
+        Some(("link", subs)) => {
+            let args: Vec<&str> = subs.values_of("relfs").unwrap().collect();
+            let target = Path::new(args[0]);
+            let mut uni =  Universe::load(target).unwrap();
+            let mut relfs = args.clone();
+            relfs.retain(|&x| x != args[0]);
+            let mut universes: Vec<Universe> = relfs.into_iter().map(|x| Universe::load(Path::new(x)).unwrap()).collect();
+            uni.merge(&mut universes);
+            let size = uni.save(target)?;
+            info!(
+                "The universe saved to '{}' ({} bytes)",
+                target.display(),
+                size
+            );
         }
         _ => unreachable!(),
     }
