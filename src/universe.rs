@@ -166,11 +166,20 @@ impl Universe {
     /// Merge universe into inself
     pub fn merge(&mut self, unis: &mut Vec<Universe>) {
         for uni in unis {
+            let mut matcher: HashMap<u32, u32> = HashMap::new();
             for vert in uni.vertices.iter(){
-                self.vertices.insert(*vert.0, vert.1.clone());
+                let id = self.next_v();
+                matcher.insert(*vert.0, id);
+                self.vertices.insert(id, vert.1.clone());
             }
             for edge in uni.edges.iter(){
-                self.edges.insert(*edge.0, edge.1.clone());
+                let id = self.next_e();
+                let edge = Edge {
+                    from: *matcher.get(&edge.1.from).unwrap(),
+                    to: *matcher.get(&edge.1.to).unwrap(),
+                    a: edge.1.a.clone(),
+                };
+                self.edges.insert(id, edge);
             }
         }
     }
