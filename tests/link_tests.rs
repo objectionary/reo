@@ -82,9 +82,9 @@ fn link_three() -> Result<()> {
         BIND('$ε1', 'ν0', '$ν1', 'foo');
         DATA('$ν1', 'd0 bf d1 80 d0 b8 d0 b2 d0 b5 d1 82');
         "
-            .to_string(),
+        .to_string(),
     )?
-        .deploy_to(uni1)?;
+    .deploy_to(uni1)?;
     uni1.save(relf1.as_path())?;
     let before1 = da!(uni1, "Φ.foo").as_string()?;
     let target = tmp.path().join("target.relf");
@@ -96,7 +96,7 @@ fn link_three() -> Result<()> {
         BIND('ε2', 'ν0', '$ν1', 'bar');
         DATA('$ν1', 'd0 bc d0 b8 d1 80');
         "
-            .to_string(),
+        .to_string(),
     )?
     .deploy_to(uni2)?;
     uni2.save(target.as_path())?;
