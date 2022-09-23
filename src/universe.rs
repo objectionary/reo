@@ -168,7 +168,10 @@ impl Universe {
         for uni in unis {
             let mut matcher: HashMap<u32, u32> = HashMap::new();
             for vert in uni.vertices.iter(){
-                let id = self.next_v();
+                let mut id = 0;
+                if *vert.0 != 0 {
+                    id = self.next_v();
+                }
                 matcher.insert(*vert.0, id);
                 self.vertices.insert(id, vert.1.clone());
             }

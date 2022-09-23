@@ -34,14 +34,14 @@ fn link() -> Result<()> {
         "
         ADD('ν0');
         ADD('$ν1');
-        BIND('$ε1', 'ν0', '$ν1', 'a');
+        BIND('$ε1', 'ν0', '$ν1', 'foo');
         DATA('$ν1', 'd0 bf d1 80 d0 b8 d0 b2 d0 b5 d1 82');
         "
         .to_string(),
     )?
     .deploy_to(uni1)?;
     uni1.save(relf.as_path())?;
-    let before1 = da!(uni1, "Φ.a").as_string()?;
+    let before1 = da!(uni1, "Φ.foo").as_string()?;
     let target = tmp.path().join("target.relf");
     let uni2 = &mut Universe::empty();
     Gmi::from_string(
