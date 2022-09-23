@@ -18,12 +18,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-
 use anyhow::Result;
-use tempfile::TempDir;
 use reo::da;
 use reo::gmi::Gmi;
 use reo::universe::Universe;
+use tempfile::TempDir;
 
 #[test]
 fn link() -> Result<()> {

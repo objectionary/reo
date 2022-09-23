@@ -167,7 +167,7 @@ impl Universe {
     pub fn merge(&mut self, unis: &mut Vec<Universe>) {
         for uni in unis {
             let mut matcher: HashMap<u32, u32> = HashMap::new();
-            for vert in uni.vertices.iter(){
+            for vert in uni.vertices.iter() {
                 let mut id = 0;
                 if *vert.0 != 0 {
                     id = self.next_v();
@@ -175,7 +175,7 @@ impl Universe {
                 matcher.insert(*vert.0, id);
                 self.vertices.insert(id, vert.1.clone());
             }
-            for edge in uni.edges.iter(){
+            for edge in uni.edges.iter() {
                 let id = self.next_e();
                 let edge = Edge {
                     from: *matcher.get(&edge.1.from).unwrap(),
