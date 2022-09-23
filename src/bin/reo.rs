@@ -295,15 +295,17 @@ pub fn main() -> Result<()> {
         Some(("link", subs)) => {
             let args: Vec<&str> = subs.values_of("relfs").unwrap().collect();
             let target = Path::new(args[0]);
-            let mut uni = Universe::load(target).unwrap();
+            let mut uni_target = Universe::load(target).unwrap();
             let mut relfs = args.clone();
             relfs.retain(|&x| x != args[0]);
-            let mut universes: Vec<Universe> = relfs
+            let universes: Vec<Universe> = relfs
                 .into_iter()
                 .map(|x| Universe::load(Path::new(x)).unwrap())
                 .collect();
-            uni.merge(&mut universes);
-            let size = uni.save(target)?;
+            for uni in universes {
+                uni_target.merge(&uni);
+            }
+            let size = uni_target.save(target)?;
             info!(
                 "The universe saved to '{}' ({} bytes)",
                 target.display(),
