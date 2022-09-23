@@ -44,6 +44,15 @@ impl Edge {
     fn new(from: u32, to: u32, a: String) -> Edge {
         Edge { from, to, a }
     }
+
+    /// Make a copy of itself.
+    pub fn clone(&self) -> Self {
+        Edge {
+            from: self.from.clone(),
+            to: self.to.clone(),
+            a: self.a.clone(),
+        }
+    }
 }
 
 pub type Error = String;
@@ -152,6 +161,28 @@ impl Universe {
     /// Registers a new atom.
     pub fn register(&mut self, name: &str, m: Lambda) {
         self.atoms.insert(name.to_string(), m);
+    }
+
+    /// Merge universe into inself
+    pub fn merge(&mut self, uni: &Universe) {
+        let mut matcher: HashMap<u32, u32> = HashMap::new();
+        for vert in uni.vertices.iter() {
+            let mut id = 0;
+            if *vert.0 != 0 {
+                id = self.next_v();
+            }
+            matcher.insert(*vert.0, id);
+            self.vertices.insert(id, vert.1.clone());
+        }
+        for edge in uni.edges.iter() {
+            let id = self.next_e();
+            let edge = Edge {
+                from: *matcher.get(&edge.1.from).unwrap(),
+                to: *matcher.get(&edge.1.to).unwrap(),
+                a: edge.1.a.clone(),
+            };
+            self.edges.insert(id, edge);
+        }
     }
 
     /// Validate the Universe and return all found data
