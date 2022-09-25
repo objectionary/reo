@@ -64,7 +64,7 @@ pub fn main() -> Result<()> {
                 .long("verbose")
                 .required(false)
                 .takes_value(false)
-                .help("Print all possible debug messages"),
+                .help("Print all debug messages"),
         )
         .arg(
             Arg::new("trace")
