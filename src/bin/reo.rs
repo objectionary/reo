@@ -144,7 +144,7 @@ pub fn main() -> Result<()> {
         .subcommand(
             Command::new("inspect")
                 .setting(AppSettings::ColorNever)
-                .about("Print the universe")
+                .about("Read a binary universe and print all the details")
                 .arg(
                     Arg::new("relf")
                         .required(true)
