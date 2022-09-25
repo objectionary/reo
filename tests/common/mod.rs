@@ -20,8 +20,8 @@
 
 #![deny(warnings)]
 
-use simple_logger::SimpleLogger;
 use log::LevelFilter;
+use simple_logger::SimpleLogger;
 
 #[ctor::ctor]
 fn init() {

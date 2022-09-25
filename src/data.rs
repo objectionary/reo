@@ -91,6 +91,24 @@ impl Data {
         self.bytes.len() == 0
     }
 
+    /// Turn it into `bool`.
+    ///
+    /// ```
+    /// use reo::data::Data;
+    /// let d = Data::from_bytes([0x01].to_vec());
+    /// assert_eq!(true, d.as_bool().unwrap());
+    /// ```
+    pub fn as_bool(&self) -> Result<bool> {
+        Ok(self.bytes[0] == 0x01)
+    }
+
+    /// Turn it into `i64`.
+    ///
+    /// ```
+    /// use reo::data::Data;
+    /// let d = Data::from_bytes([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x2A].to_vec());
+    /// assert_eq!(42, d.as_int().unwrap());
+    /// ```
     pub fn as_int(&self) -> Result<i64> {
         let a: &[u8; 8] = &self
             .bytes
@@ -100,6 +118,13 @@ impl Data {
         Ok(i64::from_be_bytes(*a))
     }
 
+    /// Turn it into `f64`.
+    ///
+    /// ```
+    /// use reo::data::Data;
+    /// let d = Data::from_bytes([0x40, 0x09, 0x21, 0xfb, 0x54, 0x44, 0x2d, 0x18].to_vec());
+    /// assert_eq!(std::f64::consts::PI, d.as_float().unwrap());
+    /// ```
     pub fn as_float(&self) -> Result<f64> {
         let a: &[u8; 8] = &self
             .bytes
@@ -109,28 +134,64 @@ impl Data {
         Ok(f64::from_be_bytes(*a))
     }
 
+    /// Turn it into `string`.
+    ///
+    /// ```
+    /// use reo::data::Data;
+    /// let d = Data::from_bytes([0x41, 0x42].to_vec());
+    /// assert_eq!("AB", d.as_string().unwrap());
+    /// ```
     pub fn as_string(&self) -> Result<String> {
         Ok(String::from_utf8(self.bytes.clone())?)
     }
 
+    /// Turn it into a hexadecimal string.
+    ///
+    /// ```
+    /// use reo::data::Data;
+    /// let d = Data::from_bytes([0xCA, 0xFE].to_vec());
+    /// assert_eq!("CA-FE", d.as_hex());
+    /// ```
     pub fn as_hex(&self) -> String {
         if self.bytes.is_empty() {
             "--".to_string()
         } else {
             self.bytes
                 .iter()
-                .map(|b| format!("{:02x}", b).to_string())
+                .map(|b| format!("{:02X}", b).to_string())
                 .collect::<Vec<String>>()
                 .join("-")
         }
+    }
+
+    /// Turn it into a vector of bytes.
+    pub fn as_bytes(&self) -> Vec<u8> {
+        self.bytes.clone()
     }
 }
 
 #[test]
 fn simple_int() {
     let i = 42;
-    let d = Data::from_int(42);
+    let d = Data::from_int(i);
     assert_eq!(i, d.as_int().unwrap());
+    assert_eq!("00-00-00-00-00-00-00-2A", d.as_hex());
+}
+
+#[test]
+fn simple_bool() {
+    let b = true;
+    let d = Data::from_bool(b);
+    assert_eq!(b, d.as_bool().unwrap());
+    assert_eq!("01", d.as_hex());
+}
+
+#[test]
+fn simple_float() {
+    let f = std::f64::consts::PI;
+    let d = Data::from_float(f);
+    assert_eq!(f, d.as_float().unwrap());
+    assert_eq!("40-09-21-FB-54-44-2D-18", d.as_hex());
 }
 
 #[test]
@@ -145,7 +206,7 @@ fn compares_with_data() {
 fn prints_bytes() {
     let txt = "привет";
     let d = Data::from_str(txt);
-    assert_eq!("d0-bf-d1-80-d0-b8-d0-b2-d0-b5-d1-82", d.as_hex());
+    assert_eq!("D0-BF-D1-80-D0-B8-D0-B2-D0-B5-D1-82", d.as_hex());
     assert_eq!(txt, Data::from_hex(d.as_hex()).as_string().unwrap());
 }
 

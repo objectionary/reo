@@ -55,7 +55,7 @@ fn dataizes_simple_gmi() -> Result<()> {
         .arg("foo")
         .assert()
         .success()
-        .stdout("ff-ff\n");
+        .stdout("FF-FF\n");
     Ok(())
 }
 
@@ -71,7 +71,7 @@ fn dataizes_in_eoc_mode() -> Result<()> {
         "
         ADD('$ν1');
         BIND('$ε1', 'ν0', '$ν1', 'foo');
-        DATA('$ν1', 'ff ff');
+        DATA('$ν1', 'ca fe');
         "
         .as_bytes(),
     )?;
@@ -92,7 +92,7 @@ fn dataizes_in_eoc_mode() -> Result<()> {
         .arg("foo")
         .assert()
         .success()
-        .stdout("ff-ff\n");
+        .stdout("CA-FE\n");
     Ok(())
 }
 

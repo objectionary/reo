@@ -45,6 +45,11 @@ impl Universe {
             .data
             .clone()
             .context(format!("There is no data in ν{}", id))?;
+        trace!(
+            "#dataize: data found in ν{} ({} bytes), all good",
+            id,
+            data.as_bytes().len()
+        );
         Ok(data)
     }
 
@@ -56,6 +61,7 @@ impl Universe {
         let mut sectors = VecDeque::new();
         loc.split('.').for_each(|k| sectors.push_back(k));
         loop {
+            trace!("#find: at ν{}", v);
             self.reconnect(v)?;
             if let Some(k) = sectors.pop_front() {
                 if k.starts_with("ν") {
@@ -91,7 +97,13 @@ impl Universe {
                             {
                                 Some(m) => {
                                     let to = m(self, v)?;
-                                    trace!("#dataize({}, '{}'): atom returned {}", v, loc, to);
+                                    trace!(
+                                        "#find({}, '{}'): atom at ν{} returned {}",
+                                        v1,
+                                        loc,
+                                        v,
+                                        to
+                                    );
                                     to
                                 }
                                 None => {
@@ -114,6 +126,7 @@ impl Universe {
                 break;
             }
         }
+        trace!("#find: found ν{} by '{}'", v1, loc);
         Ok(v)
     }
 
@@ -168,7 +181,7 @@ fn finds_root() -> Result<()> {
     uni.data(0, Data::from_int(0))?;
     uni.add(1)?;
     uni.atom(1, "S/Q")?;
-    assert_eq!(uni.find(1, "Δ")?, 0);
+    assert_eq!(0, uni.find(1, "Δ")?);
     Ok(())
 }
 

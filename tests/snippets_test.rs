@@ -22,10 +22,8 @@ mod common;
 
 use anyhow::{Context, Result};
 use glob::glob;
-use log::LevelFilter;
 use reo::da;
 use reo::universe::Universe;
-use simple_logger::SimpleLogger;
 use std::path::Path;
 
 fn all_apps() -> Result<Vec<String>> {
@@ -54,11 +52,6 @@ fn all_apps() -> Result<Vec<String>> {
 #[test]
 #[ignore]
 fn deploys_and_runs_all_apps() -> Result<()> {
-    SimpleLogger::new()
-        .with_level(LevelFilter::Trace)
-        .init()
-        .unwrap();
-
     let relf = Path::new("target/snippets.relf");
     assert_cmd::Command::cargo_bin("reo")?
         .arg("compile")
@@ -67,7 +60,7 @@ fn deploys_and_runs_all_apps() -> Result<()> {
         .assert()
         .success();
     let mut uni = Universe::load(relf)?;
-    println!("{}", uni.inspect("Q")?);
+    println!("{}", uni.inspect("Q.org.eolang.reo")?);
     for app in all_apps()? {
         let expected = da!(uni, format!("Φ.{}.expected", app));
         let actual = da!(uni, format!("Φ.{}", app));
