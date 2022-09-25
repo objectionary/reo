@@ -54,7 +54,7 @@ impl Gmi {
 
     /// Set root.
     pub fn set_root(&mut self, v0: u32) {
-        self.vars.insert("v0".to_string(), v0);
+        self.vars.insert("ν0".to_string(), v0);
     }
 
     /// Deploy this collection of GMIs to the Universe. Returns total
@@ -161,6 +161,16 @@ impl Gmi {
 
     /// Parses `ε2` or `ν5` into `2` and `5` respectively.
     fn parse(&mut self, s: &str, uni: &mut Universe) -> Result<u32> {
+        if s == "$ν0" {
+            return Err(anyhow!("It's illegal to use {}", s));
+        }
+        if s == "ν0" {
+            return Ok(if let Some(v) = self.vars.get(s) {
+                *v
+            } else {
+                0
+            });
+        }
         let head = s.chars().next().context(format!("Empty identifier"))?;
         let tail: String = s.chars().skip(1).collect::<Vec<_>>().into_iter().collect();
         if head == '$' {
@@ -206,5 +216,23 @@ fn deploys_simple_commands() -> Result<()> {
     )?
     .deploy_to(uni)?;
     assert_eq!("привет", da!(uni, "Φ.foo").as_string()?);
+    Ok(())
+}
+
+#[test]
+fn repositions_root() -> Result<()> {
+    let mut gmi = Gmi::from_string(
+        "
+        ADD('$ν1');
+        BIND('$ε1', 'ν0', '$ν1', 'foo');
+        "
+        .to_string(),
+    )?;
+    let uni: &mut Universe = &mut Universe::empty();
+    uni.add(256)?;
+    uni.add(42)?;
+    gmi.set_root(42);
+    gmi.deploy_to(uni)?;
+    assert_eq!(1, uni.find(256, "ν42.foo")?);
     Ok(())
 }

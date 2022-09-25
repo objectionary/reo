@@ -25,7 +25,7 @@ use std::io::Write;
 use tempfile::TempDir;
 
 #[test]
-fn inspect_existed() -> Result<()> {
+fn inspect_existing() -> Result<()> {
     let tmp = TempDir::new()?;
     File::create(tmp.path().join("foo.gmi"))?.write_all(
         "
@@ -51,12 +51,12 @@ fn inspect_existed() -> Result<()> {
         .arg("Q")
         .assert()
         .success()
-        .stdout(predicate::str::contains(".foo ➞ ν2"));
+        .stdout(predicate::str::contains(".foo ➞ ν"));
     Ok(())
 }
 
 #[test]
-fn inspect_nonexisted() -> Result<()> {
+fn inspect_nonexisting() -> Result<()> {
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .arg("inspect")

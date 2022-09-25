@@ -155,3 +155,17 @@ fn prints_empty_bytes() {
     let d = Data::from_str(txt);
     assert_eq!("--", d.as_hex());
 }
+
+#[test]
+fn broken_int_from_small_data() {
+    let d = Data::from_bytes([0x01, 0x02].to_vec());
+    let ret = d.as_int();
+    assert!(ret.is_err());
+}
+
+#[test]
+fn broken_float_from_small_data() {
+    let d = Data::from_bytes([0x00].to_vec());
+    let ret = d.as_float();
+    assert!(ret.is_err());
+}

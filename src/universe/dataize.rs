@@ -130,7 +130,7 @@ impl Universe {
         let vtx = self
             .vertices
             .get(&v)
-            .context(format!("Can't find ν{}", v))?
+            .context(format!("Can't reconnect ν{}", v))?
             .clone();
         if vtx.lambda.is_none() && !vtx.lambda_name.is_empty() {
             self.atom(v, vtx.lambda_name.as_str())?;

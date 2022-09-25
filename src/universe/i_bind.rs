@@ -27,6 +27,13 @@ impl Universe {
     /// label is not equal to `"ρ"`, makes two backward edges from `v2` to `v1`
     /// and label them as `"ρ"` an `"𝜎"`.
     pub fn bind(&mut self, e1: u32, v1: u32, v2: u32, a: &str) -> Result<()> {
+        if a.is_empty() {
+            return Err(anyhow!(
+                "Edge label can't be empty, from ν{} to ν{}",
+                v1,
+                v2
+            ));
+        }
         if !self.vertices.contains_key(&v1) {
             return Err(anyhow!("Can't find ν{}", v1));
         }

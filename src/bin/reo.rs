@@ -229,14 +229,12 @@ pub fn main() -> Result<()> {
                     start.elapsed()
                 );
             } else {
-                let home = subs.value_of("dir").unwrap_or_else(|| {
-                    if subs.contains_id("eoc") {
-                        info!("Running in eoc-compatible mode");
-                        ".eoc/gmi"
-                    } else {
-                        "."
-                    }
-                });
+                let home = if subs.contains_id("eoc") {
+                    info!("Running in eoc-compatible mode");
+                    ".eoc/gmi"
+                } else {
+                    subs.value_of("dir").unwrap()
+                };
                 info!("Home requested as '{}'", home);
                 let full_home =
                     fs::canonicalize(home).context(format!("Can't access '{}'", home))?;
@@ -303,7 +301,7 @@ pub fn main() -> Result<()> {
                 fs::metadata(relf).unwrap().len(),
                 start.elapsed()
             );
-            println!("{}:\n{}", object, uni.inspect(object.as_str())?);
+            println!("{}", uni.inspect(object.as_str())?);
         }
         Some(("link", subs)) => {
             let target = Path::new(subs.value_of("relf").unwrap());

@@ -40,6 +40,7 @@ fn dataizes_simple_gmi() -> Result<()> {
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .current_dir(tmp.path())
+        .arg("--verbose")
         .arg("compile")
         .arg(format!("--home={}", tmp.path().display()))
         .arg(relf.as_os_str())

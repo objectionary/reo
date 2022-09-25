@@ -61,13 +61,13 @@ impl Universe {
             .iter()
             .filter(|(_, e)| e.from == v)
             .for_each(|(_, e)| {
-                lines.push(format!("\t.{} ➞ ν{}", e.a, e.to));
-                if !seen.contains(&e.to) {
+                lines.push(format!("  .{} ➞ ν{}", e.a, e.to));
+                if !seen.contains(&e.to) && e.a != "ρ" && e.a != "𝜎" {
                     seen.insert(e.to);
                     self.inspect_v(e.to, seen)
                         .unwrap()
                         .iter()
-                        .for_each(|t| lines.push(format!("\t{}", t)));
+                        .for_each(|t| lines.push(format!("  {}", t)));
                 }
             });
         Ok(lines)

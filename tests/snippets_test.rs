@@ -65,7 +65,7 @@ fn deploys_and_runs_all_apps() -> Result<()> {
         .assert()
         .success();
     let mut uni = Universe::load(relf)?;
-    // println!("Uni: [{:?}]", uni);
+    println!("{}", uni.inspect("Q.org.eolang")?);
     for app in all_apps()? {
         let expected = da!(uni, format!("Φ.{}.expected", app));
         let actual = da!(uni, format!("Φ.{}", app));
