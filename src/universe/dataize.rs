@@ -51,57 +51,54 @@ impl Universe {
     /// Find a vertex in the Universe by its locator. The search
     /// starts from the vertex `v`, but the locator may jump to
     /// the root vertex, if it starts with "Φ".
-    pub fn find(&mut self, v: u32, loc: &str) -> Result<u32> {
-        let mut vtx = v;
+    pub fn find(&mut self, v1: u32, loc: &str) -> Result<u32> {
+        let mut v = v1;
         let mut sectors = VecDeque::new();
         loc.split('.').for_each(|k| sectors.push_back(k));
         loop {
+            self.reconnect(v)?;
             if let Some(k) = sectors.pop_front() {
                 if k.starts_with("ν") {
-                    vtx = u32::from_str(&k[2..])?;
+                    v = u32::from_str(&k[2..])?;
                     continue;
                 }
                 if k == "𝜉" {
-                    vtx = vtx;
+                    v = v;
                     continue;
                 }
                 if k == "Φ" {
-                    vtx = 0;
+                    v = 0;
                     continue;
                 }
                 if k == "Q" {
-                    vtx = 0;
+                    v = 0;
                     continue;
                 }
                 if k == "" {
                     return Err(anyhow!("The locator is empty"));
                 }
-                let to = match self.edge(vtx, k) {
-                    Some(v) => v,
+                let to = match self.edge(v, k) {
+                    Some(t) => t,
                     None => {
-                        let to = match self.edge(vtx, "φ") {
-                            Some(v) => v,
+                        let to = match self.edge(v, "φ") {
+                            Some(t) => t,
                             None => match self
                                 .vertices
-                                .get(&vtx)
-                                .context(format!("Can't find ν{}", vtx))?
+                                .get(&v)
+                                .context(format!("Can't find ν{}", v))?
                                 .lambda
                                 .clone()
                             {
                                 Some(m) => {
-                                    let to = m(self, vtx)?;
+                                    let to = m(self, v)?;
                                     trace!("#dataize({}, '{}'): atom returned {}", v, loc, to);
                                     to
                                 }
                                 None => {
                                     if k == "Δ" {
-                                        return Ok(vtx);
+                                        return Ok(v);
                                     }
-                                    return Err(anyhow!(
-                                        "Can't find attribute '{}' at ν{}",
-                                        k,
-                                        vtx
-                                    ));
+                                    return Err(anyhow!("Can't find attribute '{}' at ν{}", k, v));
                                 }
                             },
                         };
@@ -110,14 +107,14 @@ impl Universe {
                     }
                 };
                 if !self.vertices.contains_key(&to) {
-                    return Err(anyhow!("Can't move to ν{}.{}, ν{} is absent", vtx, k, to));
+                    return Err(anyhow!("Can't move to ν{}.{}, ν{} is absent", v, k, to));
                 }
-                vtx = to;
+                v = to;
             } else {
                 break;
             }
         }
-        Ok(vtx)
+        Ok(v)
     }
 
     /// Find `k`-labeled edge departing from `v` and return the number
@@ -127,6 +124,19 @@ impl Universe {
     ///  some index, so that the speed of this search will be higher.
     pub fn edge(&self, v: u32, k: &str) -> Option<u32> {
         Some(self.edges.values().find(|e| e.from == v && e.a == k)?.to)
+    }
+
+    fn reconnect(&mut self, v: u32) -> Result<()> {
+        let vtx = self
+            .vertices
+            .get(&v)
+            .context(format!("Can't find ν{}", v))?
+            .clone();
+        if vtx.lambda.is_none() && !vtx.lambda_name.is_empty() {
+            self.atom(v, vtx.lambda_name.as_str())?;
+            trace!("#reconnect(ν{}): lambda set to {}", v, vtx.lambda_name);
+        }
+        Ok(())
     }
 }
 

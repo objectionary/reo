@@ -52,15 +52,6 @@ impl Universe {
         let mut uni = bincode::deserialize(&bytes)
             .context(format!("Can't deserialize from {}", path.display()))?;
         register(&mut uni);
-        for v in Self::atoms(&uni) {
-            let name = uni
-                .vertices
-                .get(&v)
-                .context(format!("Can't find vertex ν{}", v))?
-                .lambda_name
-                .clone();
-            uni.atom(v, name.as_str())?;
-        }
         trace!(
             "Deserialized {} bytes from {} in {:?}",
             size,
@@ -68,15 +59,6 @@ impl Universe {
             start.elapsed()
         );
         Ok(uni)
-    }
-
-    /// Get numbers of all vertices, which are atoms.
-    fn atoms(uni: &Universe) -> Vec<u32> {
-        uni.vertices
-            .iter()
-            .filter(|(_v, vtx)| !vtx.lambda_name.is_empty())
-            .map(|(v, _vtx)| *v)
-            .collect::<Vec<u32>>()
     }
 }
 

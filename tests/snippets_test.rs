@@ -20,7 +20,7 @@
 
 use anyhow::{Context, Result};
 use glob::glob;
-use log::{trace, LevelFilter};
+use log::LevelFilter;
 use reo::da;
 use reo::universe::Universe;
 use simple_logger::SimpleLogger;
@@ -65,7 +65,7 @@ fn deploys_and_runs_all_apps() -> Result<()> {
         .assert()
         .success();
     let mut uni = Universe::load(relf)?;
-    println!("Uni: [{:?}]", uni);
+    // println!("Uni: [{:?}]", uni);
     for app in all_apps()? {
         let expected = da!(uni, format!("Φ.{}.expected", app));
         let actual = da!(uni, format!("Φ.{}", app));

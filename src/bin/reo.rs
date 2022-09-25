@@ -152,6 +152,13 @@ pub fn main() -> Result<()> {
                         .takes_value(true)
                         .action(ArgAction::Set),
                 )
+                .arg(
+                    Arg::new("object")
+                        .required(true)
+                        .help("Fully qualified object name")
+                        .takes_value(false)
+                        .action(ArgAction::Set),
+                )
                 .arg_required_else_help(true),
         )
         .subcommand(
@@ -287,14 +294,16 @@ pub fn main() -> Result<()> {
         }
         Some(("inspect", subs)) => {
             let relf = Path::new(subs.value_of("relf").unwrap());
+            let object = subs
+                .get_one::<String>("object")
+                .context("Object name is required")?;
             let uni = Universe::load(relf).unwrap();
             info!(
                 "Deserialized {} bytes in {:?}",
                 fs::metadata(relf).unwrap().len(),
                 start.elapsed()
             );
-            let json = serde_json::to_string_pretty(&uni).unwrap();
-            println!("Universe is: {}", json);
+            println!("{}:\n{}", object, uni.inspect(object.as_str())?);
         }
         Some(("link", subs)) => {
             let target = Path::new(subs.value_of("relf").unwrap());

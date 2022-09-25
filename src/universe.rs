@@ -24,6 +24,7 @@ mod i_atom;
 mod i_bind;
 mod i_copy;
 mod i_data;
+mod inspect;
 mod serialization;
 
 use crate::data::Data;
