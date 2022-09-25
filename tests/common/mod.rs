@@ -18,26 +18,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-mod common;
+#![deny(warnings)]
 
-use predicates::prelude::predicate;
-use predicates::prelude::*;
+use simple_logger::SimpleLogger;
+use log::LevelFilter;
 
-#[test]
-fn prints_help() {
-    assert_cmd::Command::cargo_bin("reo")
-        .unwrap()
-        .arg("--help")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("GMI to Rust").and(predicate::str::contains("--help")));
-}
-
-#[test]
-fn prints_version() {
-    assert_cmd::Command::cargo_bin("reo")
-        .unwrap()
-        .arg("--version")
-        .assert()
-        .success();
+#[ctor::ctor]
+fn init() {
+    SimpleLogger::new()
+        .with_level(LevelFilter::Trace)
+        .init()
+        .unwrap();
 }

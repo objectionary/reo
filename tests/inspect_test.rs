@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+mod common;
+
 use anyhow::Result;
 use predicates::prelude::predicate;
 use std::fs::File;
