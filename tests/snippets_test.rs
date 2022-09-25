@@ -20,10 +20,11 @@
 
 use anyhow::{Context, Result};
 use glob::glob;
+use log::{trace, LevelFilter};
 use reo::da;
 use reo::universe::Universe;
+use simple_logger::SimpleLogger;
 use std::path::Path;
-use log::trace;
 
 fn all_apps() -> Result<Vec<String>> {
     let mut apps = Vec::new();
@@ -51,6 +52,11 @@ fn all_apps() -> Result<Vec<String>> {
 #[test]
 #[ignore]
 fn deploys_and_runs_all_apps() -> Result<()> {
+    SimpleLogger::new()
+        .with_level(LevelFilter::Trace)
+        .init()
+        .unwrap();
+
     let relf = Path::new("target/snippets.relf");
     assert_cmd::Command::cargo_bin("reo")?
         .arg("compile")
