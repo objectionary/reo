@@ -24,21 +24,29 @@ use anyhow::{Context, Result};
 use log::trace;
 use std::fs;
 use std::path::Path;
+use std::time::Instant;
 
 impl Universe {
     /// Save the entire `Universe` into a binary file. The entire universe
     /// can be restored from the file. Returns the size of the file just saved.
     pub fn save(&mut self, path: &Path) -> Result<usize> {
+        let start = Instant::now();
         let bytes: Vec<u8> = bincode::serialize(self).context("Failed to serialize")?;
         let size = bytes.len();
         fs::write(path, bytes).context(format!("Can't write to {}", path.display()))?;
-        trace!("Serialized {} bytes to {}", size, path.display());
+        trace!(
+            "Serialized {} bytes to {} in {:?}",
+            size,
+            path.display(),
+            start.elapsed()
+        );
         Ok(size)
     }
 
     /// Load the entire `Universe` from a binary file previously
     /// created by `save()`.
     pub fn load(path: &Path) -> Result<Universe> {
+        let start = Instant::now();
         let bytes = fs::read(path).context(format!("Can't read from {}", path.display()))?;
         let size = bytes.len();
         let mut uni = bincode::deserialize(&bytes)
@@ -53,7 +61,12 @@ impl Universe {
                 .clone();
             uni.atom(v, name.as_str())?;
         }
-        trace!("Deserialized {} bytes from {}", size, path.display());
+        trace!(
+            "Deserialized {} bytes from {} in {:?}",
+            size,
+            path.display(),
+            start.elapsed()
+        );
         Ok(uni)
     }
 

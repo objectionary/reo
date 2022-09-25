@@ -159,10 +159,17 @@ pub fn main() -> Result<()> {
                 .setting(AppSettings::ColorNever)
                 .about("Take a list of .relf files and join them all into one")
                 .arg(
+                    Arg::new("relf")
+                        .required(true)
+                        .help("Name of a binary .relf file to create")
+                        .takes_value(true)
+                        .action(ArgAction::Set),
+                )
+                .arg(
                     Arg::new("relfs")
                         .required(true)
                         .multiple(true)
-                        .help("Name of a binary .relf file to use")
+                        .help("Names of a binary .relf files to use as sources")
                         .takes_value(true)
                         .action(ArgAction::Set),
                 )
@@ -293,23 +300,25 @@ pub fn main() -> Result<()> {
             println!("Universe is: {}", json);
         }
         Some(("link", subs)) => {
-            let args: Vec<&str> = subs.values_of("relfs").unwrap().collect();
-            let target = Path::new(args[0]);
-            let mut universe = Universe::load(target).unwrap();
-            let mut relfs = args.clone();
-            relfs.retain(|&x| x != args[0]);
-            let universes: Vec<Universe> = relfs
+            let target = Path::new(subs.value_of("relf").unwrap());
+            let mut uni = Universe::load(target).unwrap();
+            let mut linked = 0;
+            subs.values_of("relfs")
+                .unwrap()
+                .collect::<Vec<&str>>()
                 .into_iter()
-                .map(|x| Universe::load(Path::new(x)).unwrap())
-                .collect();
-            for uni in universes {
-                universe.merge(&uni);
-            }
-            let size = universe.save(target)?;
+                .map(|f| Universe::load(Path::new(f)).unwrap())
+                .for_each(|u| {
+                    uni.merge(&u);
+                    linked += 1;
+                });
+            let size = uni.save(target)?;
             info!(
-                "The universe saved to '{}' ({} bytes)",
+                "The universe made of {} parts saved to '{}' ({} bytes) in {:?}",
+                linked,
                 target.display(),
-                size
+                size,
+                start.elapsed()
             );
         }
         _ => unreachable!(),

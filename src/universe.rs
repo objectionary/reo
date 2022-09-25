@@ -44,15 +44,6 @@ impl Edge {
     fn new(from: u32, to: u32, a: String) -> Edge {
         Edge { from, to, a }
     }
-
-    /// Make a copy of itself.
-    pub fn clone(&self) -> Self {
-        Edge {
-            from: self.from.clone(),
-            to: self.to.clone(),
-            a: self.a.clone(),
-        }
-    }
 }
 
 pub type Error = String;
