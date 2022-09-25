@@ -302,16 +302,14 @@ pub fn main() -> Result<()> {
         Some(("link", subs)) => {
             let target = Path::new(subs.value_of("relf").unwrap());
             let mut uni = Universe::load(target).unwrap();
-            let mut linked = 0;
-            subs.values_of("relfs")
+            let linked = subs
+                .values_of("relfs")
                 .unwrap()
                 .collect::<Vec<&str>>()
                 .into_iter()
                 .map(|f| Universe::load(Path::new(f)).unwrap())
-                .for_each(|u| {
-                    uni.merge(&u);
-                    linked += 1;
-                });
+                .inspect(|u| uni.merge(&u))
+                .count();
             let size = uni.save(target)?;
             info!(
                 "The universe made of {} parts saved to '{}' ({} bytes) in {:?}",
