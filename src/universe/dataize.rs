@@ -31,6 +31,9 @@ impl Universe {
     /// from "Φ". If you need to find any vertex starting from non-root
     /// one, use `find` method.
     pub fn dataize(&mut self, loc: &str) -> Result<Data> {
+        if self.vertices.is_empty() {
+            return Err(anyhow!("The Universe is empty, can't dataize {}", loc));
+        }
         let id = self
             .find(0, loc)
             .context(format!("Failed to find {}", loc))?;

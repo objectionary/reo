@@ -23,6 +23,7 @@ use glob::glob;
 use reo::da;
 use reo::universe::Universe;
 use std::path::Path;
+use log::trace;
 
 fn all_apps() -> Result<Vec<String>> {
     let mut apps = Vec::new();
@@ -51,14 +52,14 @@ fn all_apps() -> Result<Vec<String>> {
 #[ignore]
 fn deploys_and_runs_all_apps() -> Result<()> {
     let relf = Path::new("target/snippets.relf");
-    assert_cmd::Command::cargo_bin("reo")
-        .unwrap()
+    assert_cmd::Command::cargo_bin("reo")?
         .arg("compile")
         .arg("--home=target/eo/gmi")
         .arg(relf.as_os_str())
         .assert()
         .success();
     let mut uni = Universe::load(relf)?;
+    println!("Uni: [{:?}]", uni);
     for app in all_apps()? {
         let expected = da!(uni, format!("Φ.{}.expected", app));
         let actual = da!(uni, format!("Φ.{}", app));

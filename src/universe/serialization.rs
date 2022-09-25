@@ -46,6 +46,7 @@ impl Universe {
     /// Load the entire `Universe` from a binary file previously
     /// created by `save()`.
     pub fn load(path: &Path) -> Result<Universe> {
+        trace!("boom");
         let start = Instant::now();
         let bytes = fs::read(path).context(format!("Can't read from {}", path.display()))?;
         let size = bytes.len();
