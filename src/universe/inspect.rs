@@ -61,7 +61,23 @@ impl Universe {
             .iter()
             .filter(|(_, e)| e.from == v)
             .for_each(|(_, e)| {
-                lines.push(format!("  .{} ➞ ν{}", e.a, e.to));
+                let to = self.vertices.get(&e.to).unwrap().clone();
+                let line = format!(
+                    "  .{} ➞ ν{}{}{}",
+                    e.a,
+                    e.to,
+                    if to.lambda.is_some() {
+                        format!(" λ{}", to.lambda_name)
+                    } else {
+                        "".to_string()
+                    },
+                    if to.data.is_some() {
+                        format!(" Δ{}", to.data.unwrap().as_hex())
+                    } else {
+                        "".to_string()
+                    }
+                );
+                lines.push(line);
                 if !seen.contains(&e.to) && e.a != "ρ" && e.a != "𝜎" {
                     seen.insert(e.to);
                     self.inspect_v(e.to, seen)
