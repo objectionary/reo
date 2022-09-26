@@ -27,14 +27,17 @@ use tempfile::TempDir;
 
 #[test]
 fn compiles_everything() -> Result<()> {
+    let tmp = TempDir::new()?;
+    let relf = tmp.path().join("foo.relf");
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .arg("--verbose")
         .arg("compile")
-        .arg("--home=target/eo/gmi/org/eolang/math")
-        .arg("target/snippets-math.relf")
+        .arg("--home=target/eo/gmi/org/eolang/reo")
+        .arg(relf.as_os_str())
         .assert()
         .success();
+    assert!(relf.exists());
     Ok(())
 }
 
@@ -45,7 +48,7 @@ fn skips_compilation_if_file_present() -> Result<()> {
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .arg("compile")
-        .arg("--home=target/eo/gmi/org/eolang/io")
+        .arg("--home=target/eo/gmi/org/eolang/reo")
         .arg(relf.as_os_str())
         .assert()
         .success();
@@ -54,7 +57,7 @@ fn skips_compilation_if_file_present() -> Result<()> {
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .arg("compile")
-        .arg("--home=target/eo/gmi/org/eolang/io")
+        .arg("--home=target/eo/gmi/org/eolang/reo")
         .arg(relf.as_os_str())
         .assert()
         .success();

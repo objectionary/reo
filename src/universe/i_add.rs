@@ -40,6 +40,6 @@ fn adds_simple_vertex() -> Result<()> {
     let v1 = uni.next_v();
     uni.add(v1)?;
     assert!(uni.inconsistencies().is_empty());
-    assert_eq!(v1, uni.find(v1, "𝜉")?);
+    assert_eq!(v1, uni.find(v1, "ξ")?);
     Ok(())
 }
