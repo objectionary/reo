@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#![deny(warnings)]
+// #![deny(warnings)]
 
 pub mod data;
 pub mod gmi;
@@ -38,6 +38,7 @@ use log::LevelFilter;
 #[ctor::ctor]
 fn init() {
     SimpleLogger::new()
+        .without_timestamps()
         .with_level(LevelFilter::Trace)
         .init()
         .unwrap();

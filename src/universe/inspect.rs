@@ -21,6 +21,7 @@
 use crate::universe::Universe;
 use anyhow::{anyhow, Context, Result};
 use std::collections::HashSet;
+use itertools::Itertools;
 
 impl Universe {
     /// Finds an object by the provided locator and returns its tree
@@ -32,8 +33,9 @@ impl Universe {
             .context(format!("Can't locate '{}'", loc))?;
         let mut seen = HashSet::new();
         Ok(format!(
-            "{}\n{}",
+            "{}/ν{}\n{}",
             loc,
+            v,
             self.inspect_v(v, &mut seen)?.join("\n")
         ))
     }
@@ -60,25 +62,28 @@ impl Universe {
         self.edges
             .iter()
             .filter(|(_, e)| e.from == v)
-            .for_each(|(_, e)| {
+            .map(|(_, e)| e)
+            .sorted()
+            .for_each(|e| {
+                let skip = seen.contains(&e.to) || e.a == "ρ" || e.a == "σ";
                 let to = self.vertices.get(&e.to).unwrap().clone();
                 let line = format!(
                     "  .{} ➞ ν{}{}{}",
                     e.a,
                     e.to,
-                    if to.lambda.is_some() {
-                        format!(" λ{}", to.lambda_name)
-                    } else {
+                    if to.lambda_name.is_empty() || skip {
                         "".to_string()
+                    } else {
+                        format!(" λ{}", to.lambda_name)
                     },
-                    if to.data.is_some() {
+                    if to.data.is_some() && !skip {
                         format!(" Δ{}", to.data.unwrap().as_hex())
                     } else {
                         "".to_string()
                     }
                 );
                 lines.push(line);
-                if !seen.contains(&e.to) && e.a != "ρ" && e.a != "𝜎" {
+                if !skip {
                     seen.insert(e.to);
                     self.inspect_v(e.to, seen)
                         .unwrap()
