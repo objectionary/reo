@@ -18,6 +18,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+/// Dataizes a vertex by the locator:
+///
+/// ```
+/// use reo::universe::Universe;
+/// use reo::da;
+/// use reo::data::Data;
+/// let mut uni = Universe::empty();
+/// uni.add(0).unwrap();
+/// uni.data(0, Data::from_int(42)).unwrap();
+/// assert_eq!(42, da!(uni, "Φ").as_int().unwrap());
+/// ```
 #[macro_export]
 macro_rules! da {
     ($uni:expr, $loc:expr) => {

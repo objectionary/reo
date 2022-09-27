@@ -197,13 +197,13 @@ impl Universe {
 }
 
 #[cfg(test)]
+use crate::{add, bind, copy};
+
+#[cfg(test)]
 fn rand(uni: &mut Universe, _v: u32) -> Result<u32> {
     let v2 = uni.find(0, "int")?;
-    let e1 = uni.next_e();
-    uni.bind(e1, 0, v2, format!("i{}", e1).as_str())?;
-    let v3 = uni.next_v();
-    let e2 = uni.next_e();
-    uni.copy(e1, v3, e2)?;
+    let e1 = bind!(uni, 0, v2, format!("i{}", v2).as_str());
+    let v3 = copy!(uni, e1);
     uni.data(v3, Data::from_int(rand::random::<i64>()))?;
     Ok(v3)
 }
@@ -230,16 +230,11 @@ fn safely_generates_unique_ids() -> Result<()> {
 fn generates_random_int() -> Result<()> {
     let mut uni = Universe::empty();
     uni.add(0)?;
-    let v1 = uni.next_v();
-    uni.add(v1)?;
-    let e1 = uni.next_e();
-    uni.bind(e1, 0, v1, "int")?;
-    let v2 = uni.next_v();
-    uni.add(v2)?;
-    let e2 = uni.next_e();
-    uni.bind(e2, 0, v2, "rand")?;
-    let e3 = uni.next_e();
-    uni.bind(e3, 0, v2, "x")?;
+    let v1 = add!(uni);
+    bind!(uni, 0, v1, "int");
+    let v2 = add!(uni);
+    bind!(uni, 0, v2, "rand");
+    bind!(uni, 0, v2, "x");
     uni.register("rand", rand);
     uni.atom(v2, "rand")?;
     let first = uni.dataize("Φ.x.Δ")?.as_int()?;
