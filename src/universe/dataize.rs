@@ -59,7 +59,8 @@ impl Universe {
     pub fn find(&mut self, v1: u32, loc: &str) -> Result<u32> {
         let mut v = v1;
         let mut locator: VecDeque<String> = VecDeque::new();
-        loc.split('.').for_each(|k| locator.push_back(k.to_string()));
+        loc.split('.')
+            .for_each(|k| locator.push_back(k.to_string()));
         let mut jumps = 0;
         loop {
             self.reconnect(v)?;
@@ -75,14 +76,12 @@ impl Universe {
             }
             jumps += 1;
             if jumps > 64 {
-                return Err(
-                    anyhow!(
-                        "Too many jumps ({}), locator length is {}: '{}'",
-                        jumps,
-                        locator.len(),
-                        itertools::join(locator.clone(), ".")
-                    )
-                );
+                return Err(anyhow!(
+                    "Too many jumps ({}), locator length is {}: '{}'",
+                    jumps,
+                    locator.len(),
+                    itertools::join(locator.clone(), ".")
+                ));
             }
             if k == "Δ" && self.vertices.get(&v).unwrap().data.is_some() {
                 trace!("#find: data is right here at ν{}", v);
@@ -125,31 +124,41 @@ impl Universe {
                 let lname = vtx.lambda_name.clone();
                 if lname.starts_with("S/") {
                     locator.push_front(k);
-                    let p: String = lname.chars().skip(2).collect::<Vec<_>>().into_iter().collect();
+                    let p: String = lname
+                        .chars()
+                        .skip(2)
+                        .collect::<Vec<_>>()
+                        .into_iter()
+                        .collect();
                     for i in p.split('.').rev() {
                         locator.push_front(i.to_string());
                     }
-                    trace!("#find: reset locator to '{}'", itertools::join(locator.clone(), "."));
                 } else {
+                    trace!("#find: calling λ{}(ν{})...", lname, v);
                     let to = vtx.lambda.unwrap()(self, v)?;
                     locator.push_front(format!("ν{}", to));
                     trace!("#find: λ{} in ν{} returned ν{}", lname, v, to);
                 }
+                trace!(
+                    "#find: reset locator to '{}'",
+                    itertools::join(locator.clone(), ".")
+                );
                 continue;
             }
-            let others: Vec<String> = self.edges.values()
+            let others: Vec<String> = self
+                .edges
+                .values()
                 .filter(|e| e.from == v)
                 .map(|e| e.a.clone())
                 .collect();
-            return Err(
-                anyhow!(
-                    "Can't find .{} in ν{} among other {} attribute{}: {}",
-                    k, v,
-                    others.len(),
-                    if others.len() == 1 { "" } else { "s" },
-                    others.join(", ")
-                )
-            );
+            return Err(anyhow!(
+                "Can't find .{} in ν{} among other {} attribute{}: {}",
+                k,
+                v,
+                others.len(),
+                if others.len() == 1 { "" } else { "s" },
+                others.join(", ")
+            ));
         }
         trace!("#find: found ν{} by '{}'", v1, loc);
         Ok(v)

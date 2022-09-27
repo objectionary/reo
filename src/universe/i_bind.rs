@@ -70,16 +70,16 @@ impl Universe {
     }
 }
 
+#[cfg(test)]
+use crate::{add, bind};
+
 #[test]
 fn binds_simple_vertices() -> Result<()> {
     let mut uni = Universe::empty();
-    let v1 = uni.next_v();
-    uni.add(v1)?;
-    let v2 = uni.next_v();
-    uni.add(v2)?;
-    let e1 = uni.next_e();
+    let v1 = add!(uni);
+    let v2 = add!(uni);
     let k = "hello";
-    uni.bind(e1, v1, v2, k)?;
+    bind!(uni, v1, v2, k);
     assert!(uni.inconsistencies().is_empty());
     assert_eq!(v2, uni.find(v1, k)?);
     assert_eq!(v1, uni.find(v2, "ρ")?);
@@ -93,7 +93,7 @@ fn pre_defined_ids() -> Result<()> {
     uni.add(1)?;
     uni.add(2)?;
     let k = "a-привет";
-    uni.bind(1, 1, 2, k)?;
+    bind!(uni, 1, 2, k);
     assert!(uni.inconsistencies().is_empty());
     assert_eq!(2, uni.find(1, k)?);
     Ok(())
@@ -102,14 +102,10 @@ fn pre_defined_ids() -> Result<()> {
 #[test]
 fn binds_two_names() -> Result<()> {
     let mut uni = Universe::empty();
-    let v1 = uni.next_v();
-    uni.add(v1)?;
-    let v2 = uni.next_v();
-    uni.add(v2)?;
-    let e1 = uni.next_e();
-    uni.bind(e1, v1, v2, "first")?;
-    let e1 = uni.next_e();
-    uni.bind(e1, v1, v2, "second")?;
+    let v1 = add!(uni);
+    let v2 = add!(uni);
+    bind!(uni, v1, v2, "first");
+    bind!(uni, v1, v2, "second");
     assert!(uni.inconsistencies().is_empty());
     assert_eq!(v2, uni.find(v1, "first")?);
     Ok(())
@@ -118,17 +114,12 @@ fn binds_two_names() -> Result<()> {
 #[test]
 fn overwrites_edge() -> Result<()> {
     let mut uni = Universe::empty();
-    let v1 = uni.next_v();
-    uni.add(v1)?;
-    let v2 = uni.next_v();
-    uni.add(v2)?;
-    let e1 = uni.next_e();
+    let v1 = add!(uni);
+    let v2 = add!(uni);
     let label = "hello";
-    uni.bind(e1, v1, v2, label)?;
-    let v3 = uni.next_v();
-    uni.add(v3)?;
-    let e2 = uni.next_e();
-    uni.bind(e2, v1, v3, label)?;
+    bind!(uni, v1, v2, label);
+    let v3 = add!(uni);
+    bind!(uni, v1, v3, label);
     assert!(uni.inconsistencies().is_empty());
     assert_eq!(v3, uni.find(v1, label)?);
     Ok(())
@@ -138,10 +129,8 @@ fn overwrites_edge() -> Result<()> {
 fn binds_to_root() -> Result<()> {
     let mut uni = Universe::empty();
     uni.add(0)?;
-    let v1 = uni.next_v();
-    uni.add(v1)?;
-    let e1 = uni.next_e();
-    uni.bind(e1, 0, v1, "x")?;
+    let v1 = add!(uni);
+    bind!(uni, 0, v1, "x");
     assert!(uni.inconsistencies().is_empty());
     assert!(uni.edge(0, "ρ").is_none());
     assert!(uni.edge(0, "σ").is_none());

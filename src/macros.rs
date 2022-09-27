@@ -25,3 +25,21 @@ macro_rules! da {
             .expect(format!("Can't dataize {}", $loc).as_str())
     };
 }
+
+#[macro_export]
+macro_rules! add {
+    ($uni:expr) => {{
+        let v = $uni.next_v();
+        $uni.add(v)?;
+        v
+    }};
+}
+
+#[macro_export]
+macro_rules! bind {
+    ($uni:expr, $v1:expr, $v2:expr, $a:expr) => {{
+        let e = $uni.next_e();
+        $uni.bind(e, $v1, $v2, $a)?;
+        e
+    }};
+}

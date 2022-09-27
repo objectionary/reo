@@ -20,8 +20,8 @@
 
 use crate::universe::Universe;
 use anyhow::{anyhow, Context, Result};
-use std::collections::HashSet;
 use itertools::Itertools;
+use std::collections::HashSet;
 
 impl Universe {
     /// Finds an object by the provided locator and returns its tree

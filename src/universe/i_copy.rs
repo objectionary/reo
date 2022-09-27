@@ -74,19 +74,17 @@ impl Universe {
     }
 }
 
+#[cfg(test)]
+use crate::{add, bind};
+
 #[test]
 fn makes_simple_copy() -> Result<()> {
     let mut uni = Universe::empty();
-    let v1 = uni.next_v();
-    uni.add(v1)?;
-    let v2 = uni.next_v();
-    uni.add(v2)?;
-    let e1 = uni.next_e();
-    uni.bind(e1, v1, v2, "x")?;
-    let v4 = uni.next_v();
-    uni.add(v4)?;
-    let e3 = uni.next_e();
-    uni.bind(e3, v2, v4, "y")?;
+    let v1 = add!(uni);
+    let v2 = add!(uni);
+    let e1 = bind!(uni, v1, v2, "x");
+    let v4 = add!(uni);
+    bind!(uni, v2, v4, "y");
     let v3 = uni.next_v();
     let e2 = uni.next_e();
     uni.copy(e1, v3, e2)?;

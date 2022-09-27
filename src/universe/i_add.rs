@@ -34,11 +34,13 @@ impl Universe {
     }
 }
 
+#[cfg(test)]
+use crate::add;
+
 #[test]
 fn adds_simple_vertex() -> Result<()> {
     let mut uni = Universe::empty();
-    let v1 = uni.next_v();
-    uni.add(v1)?;
+    let v1 = add!(uni);
     assert!(uni.inconsistencies().is_empty());
     assert_eq!(v1, uni.find(v1, "ξ")?);
     Ok(())
