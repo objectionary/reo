@@ -75,7 +75,7 @@ impl Universe {
 }
 
 #[cfg(test)]
-use crate::{add, bind};
+use crate::{add, bind, copy};
 
 #[test]
 fn makes_simple_copy() -> Result<()> {
@@ -85,9 +85,7 @@ fn makes_simple_copy() -> Result<()> {
     let e1 = bind!(uni, v1, v2, "x");
     let v4 = add!(uni);
     bind!(uni, v2, v4, "y");
-    let v3 = uni.next_v();
-    let e2 = uni.next_e();
-    uni.copy(e1, v3, e2)?;
+    copy!(uni, e1);
     assert!(uni.inconsistencies().is_empty());
     assert_eq!(v2, uni.find(v1, "x.π")?);
     assert_eq!(v4, uni.find(v1, "x.y")?);

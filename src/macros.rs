@@ -26,20 +26,60 @@ macro_rules! da {
     };
 }
 
+/// Add a new vertex to the universe and return its ID:
+///
+/// ```
+/// use reo::universe::Universe;
+/// use reo::add;
+/// let mut uni = Universe::empty();
+/// let v1 = add!(uni);
+/// ```
 #[macro_export]
 macro_rules! add {
     ($uni:expr) => {{
         let v = $uni.next_v();
-        $uni.add(v)?;
+        $uni.add(v).unwrap();
         v
     }};
 }
 
+/// Adds a new edge between two vertices:
+///
+/// ```
+/// use reo::universe::Universe;
+/// use reo::{add, bind};
+/// let mut uni = Universe::empty();
+/// let v1 = add!(uni);
+/// let v2 = add!(uni);
+/// let e = bind!(uni, v1, v2, "foo");
+/// ```
 #[macro_export]
 macro_rules! bind {
     ($uni:expr, $v1:expr, $v2:expr, $a:expr) => {{
         let e = $uni.next_e();
-        $uni.bind(e, $v1, $v2, $a)?;
+        $uni.bind(e, $v1, $v2, $a).unwrap();
         e
+    }};
+}
+
+/// Makes a copy of an existing vertex, by looking at the edge
+/// that leads to it:
+///
+/// ```
+/// use reo::universe::Universe;
+/// use reo::{add, bind, copy};
+/// let mut uni = Universe::empty();
+/// let v1 = add!(uni);
+/// let v2 = add!(uni);
+/// let e = bind!(uni, v1, v2, "foo");
+/// copy!(uni, e);
+/// ```
+#[macro_export]
+macro_rules! copy {
+    ($uni:expr, $e1:expr) => {{
+        let v3 = $uni.next_v();
+        let e2 = $uni.next_e();
+        $uni.copy($e1, v3, e2).unwrap();
+        v3
     }};
 }
