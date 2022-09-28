@@ -42,7 +42,9 @@ impl Universe {
             }
             if let Some(d) = &(*vtx).data {
                 let mut data_node = XMLElement::new("data");
-                data_node.add_text(d.as_hex()).unwrap();
+                data_node
+                    .add_text(format!("bytes/{}", d.as_hex().replace(' ', "-")))
+                    .unwrap();
                 v_node.add_child(data_node).unwrap();
             }
             if !vtx.lambda_name.is_empty() {
@@ -88,7 +90,7 @@ fn prints_simple_graph() -> Result<()> {
         evaluate_xpath(&doc, "/graph/v[@id=1]/lambda")?.string()
     );
     assert_eq!(
-        "00-00-00-00-00-00-00-2A",
+        "bytes/00-00-00-00-00-00-00-2A",
         evaluate_xpath(&doc, "/graph/v[@id=0]/data")?.string()
     );
     Ok(())
