@@ -39,11 +39,29 @@ SOFTWARE.
             <goals>
               <goal>register</goal>
               <goal>assemble</goal>
-              <goal>gmi</goal>
             </goals>
             <configuration>
               <sourcesDir>${project.basedir}/eo-tests</sourcesDir>
             </configuration>
+          </execution>
+          <execution>
+            <id>gmi-graphs</id>
+            <goals>
+              <goal>gmi</goal>
+            </goals>
+            <configuration>
+              <gmiIncludes>org.eolang.reo.**</gmiIncludes>
+              <generateGmiXmlFiles>true</generateGmiXmlFiles>
+              <generateDotFiles>true</generateDotFiles>
+              <generateGraphFiles>true</generateGraphFiles>
+              <generateXemblyFiles>true</generateXemblyFiles>
+            </configuration>
+          </execution>
+          <execution>
+            <id>gmi-everything</id>
+            <goals>
+              <goal>gmi</goal>
+            </goals>
           </execution>
         </executions>
       </plugin>

@@ -26,6 +26,7 @@ mod i_copy;
 mod i_data;
 mod inspect;
 mod serialization;
+mod graph;
 
 use crate::data::Data;
 use anyhow::Result;
@@ -181,12 +182,12 @@ impl Universe {
     /// inconsistencies. This is mostly used for testing.
     pub fn inconsistencies(&self) -> Vec<String> {
         let mut errors = Vec::new();
-        for e in self.edges.iter() {
-            if !self.vertices.contains_key(&e.1.to) {
-                errors.push(format!("Edge ε{} arrives to lost ν{}", e.0, e.1.to));
+        for (e, edge) in self.edges.iter() {
+            if !self.vertices.contains_key(&edge.to) {
+                errors.push(format!("Edge ε{} arrives to lost ν{}", e, edge.to));
             }
-            if !self.vertices.contains_key(&e.1.from) {
-                errors.push(format!("Edge ε{} departs from lost ν{}", e.0, e.1.from));
+            if !self.vertices.contains_key(&edge.from) {
+                errors.push(format!("Edge ε{} departs from lost ν{}", e, edge.from));
             }
         }
         for e in errors.to_vec() {
