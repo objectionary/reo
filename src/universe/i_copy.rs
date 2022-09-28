@@ -68,7 +68,9 @@ impl Universe {
     }
 }
 
+#[cfg(test)]
 use crate::data::Data;
+
 #[cfg(test)]
 use crate::{add, bind, copy};
 

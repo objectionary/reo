@@ -25,12 +25,12 @@ mod i_atom;
 mod i_bind;
 mod i_copy;
 mod i_data;
+mod inconsistencies;
 mod inspect;
 mod serialization;
 
 use crate::data::Data;
 use anyhow::Result;
-use log::error;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fmt;
@@ -225,24 +225,6 @@ impl Universe {
             latest_v: self.latest_v,
             latest_e: self.latest_e,
         })
-    }
-
-    /// Validate the Universe and return all found data
-    /// inconsistencies. This is mostly used for testing.
-    pub fn inconsistencies(&self) -> Vec<String> {
-        let mut errors = Vec::new();
-        for (e, edge) in self.edges.iter() {
-            if !self.vertices.contains_key(&edge.to) {
-                errors.push(format!("Edge ε{} arrives to lost ν{}", e, edge.to));
-            }
-            if !self.vertices.contains_key(&edge.from) {
-                errors.push(format!("Edge ε{} departs from lost ν{}", e, edge.from));
-            }
-        }
-        for e in errors.to_vec() {
-            error!("{}", e)
-        }
-        errors
     }
 }
 

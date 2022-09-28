@@ -70,7 +70,6 @@ impl Universe {
                 break;
             }
             let k = next.unwrap().to_string();
-            trace!("#find: at ν{}, going to .{}", v, k);
             if k.is_empty() {
                 return Err(anyhow!("System error, the locator is empty"));
             }
@@ -84,7 +83,7 @@ impl Universe {
                 ));
             }
             if k == "Δ" && self.vertices.get(&v).unwrap().data.is_some() {
-                trace!("#find: data is right here at ν{}", v);
+                trace!("#find: ν{}.Δ is found!", v);
                 break;
             }
             if k.starts_with("ν") {
@@ -95,26 +94,26 @@ impl Universe {
             }
             if k == "ξ" {
                 v = v;
-                trace!("#find: staying at ν{}", v);
+                trace!("#find: ν{}.ξ -> {}", v, v);
                 continue;
             }
             if k == "Φ" || k == "Q" {
                 v = 0;
-                trace!("#find: going to Φ/ν{}", v);
+                trace!("#find: Φ/ν{}", v);
                 continue;
             }
             if let Some(to) = self.edge(v, k.as_str()) {
-                trace!("#find: .{} found in ν{}, pointing to ν{}", k, v, to);
+                trace!("#find: ν{}.{} -> ν{}", v, k, to);
                 v = to;
                 continue;
             };
-            // if let Some(to) = self.edge(v, "π") {
-            //     trace!("#find: .π found in ν{}, pointing to ν{}", v, to);
-            //     v = to;
-            //     continue;
-            // }
+            if let Some(to) = self.edge(v, "π") {
+                trace!("#find: ν{}.π -> ν{} (.{} not found)", v, to, k);
+                v = to;
+                continue;
+            }
             if let Some(to) = self.edge(v, "φ") {
-                trace!("#find: .φ found in ν{}, pointing to ν{}", v, to);
+                trace!("#find: ν{}.φ -> ν{} (.{} not found)", v, to, k);
                 v = to;
                 locator.push_front(k);
                 continue;

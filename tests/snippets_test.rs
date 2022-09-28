@@ -60,9 +60,9 @@ fn deploys_and_runs_all_apps() -> Result<()> {
         .assert()
         .success();
     let mut uni = Universe::load(relf)?;
+    assert!(uni.inconsistencies().is_empty());
     for app in all_apps()? {
         println!("{}", uni.inspect(format!("Q.{}", app).as_str())?);
-        println!("{}", uni.slice(format!("Q.{}", app))?.to_graph()?);
         let expected = da!(uni, format!("Φ.{}.expected", app));
         let actual = da!(uni, format!("Φ.{}", app));
         assert_eq!(expected, actual);
