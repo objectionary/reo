@@ -47,7 +47,9 @@ impl Universe {
             }
             if !vtx.lambda_name.is_empty() {
                 let mut lambda_node = XMLElement::new("lambda");
-                lambda_node.add_text((*vtx).lambda_name.to_string()).unwrap();
+                lambda_node
+                    .add_text((*vtx).lambda_name.to_string())
+                    .unwrap();
                 v_node.add_child(lambda_node).unwrap();
             }
             root.add_child(v_node).unwrap();
@@ -62,16 +64,35 @@ impl Universe {
 #[cfg(test)]
 use crate::data::Data;
 
+#[cfg(test)]
+use sxd_document::parser;
+
+#[cfg(test)]
+use sxd_xpath::evaluate_xpath;
+
 #[test]
 fn prints_simple_graph() -> Result<()> {
     let mut uni = Universe::empty();
     uni.add(0)?;
-    uni.data(0, Data::from_int(0))?;
+    uni.data(0, Data::from_int(42))?;
     uni.add(1)?;
     uni.bind(1, 0, 1, "foo")?;
     uni.atom(1, "S/Q")?;
     let xml = uni.to_graph()?;
     println!("{}", xml);
-    // assert_ne!("".to_string(), txt);
+    let parser = parser::parse(xml.as_str())?;
+    let doc = parser.as_document();
+    assert_eq!(
+        "ρ",
+        evaluate_xpath(&doc, "/graph/v[@id=1]/e[@id=2]/@title")?.string()
+    );
+    assert_eq!(
+        "S/Q",
+        evaluate_xpath(&doc, "/graph/v[@id=1]/lambda")?.string()
+    );
+    assert_eq!(
+        "00-00-00-00-00-00-00-2A",
+        evaluate_xpath(&doc, "/graph/v[@id=0]/data")?.string()
+    );
     Ok(())
 }

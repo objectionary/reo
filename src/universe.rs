@@ -19,6 +19,7 @@
 // SOFTWARE.
 
 mod dataize;
+mod graph;
 mod i_add;
 mod i_atom;
 mod i_bind;
@@ -26,7 +27,6 @@ mod i_copy;
 mod i_data;
 mod inspect;
 mod serialization;
-mod graph;
 
 use crate::data::Data;
 use anyhow::Result;
