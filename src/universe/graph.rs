@@ -65,9 +65,6 @@ impl Universe {
 use crate::data::Data;
 
 #[cfg(test)]
-use sxd_document::parser;
-
-#[cfg(test)]
 use sxd_xpath::evaluate_xpath;
 
 #[test]
@@ -80,7 +77,7 @@ fn prints_simple_graph() -> Result<()> {
     uni.atom(1, "S/Q")?;
     let xml = uni.to_graph()?;
     println!("{}", xml);
-    let parser = parser::parse(xml.as_str())?;
+    let parser = sxd_document::parser::parse(xml.as_str())?;
     let doc = parser.as_document();
     assert_eq!(
         "ρ",
