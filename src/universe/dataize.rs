@@ -31,6 +31,9 @@ impl Universe {
     /// from "Φ". If you need to find any vertex starting from non-root
     /// one, use `find` method.
     pub fn dataize(&mut self, loc: &str) -> Result<Data> {
+        if self.vertices.is_empty() {
+            return Err(anyhow!("The Universe is empty, can't dataize {}", loc));
+        }
         let id = self
             .find(0, loc)
             .context(format!("Failed to find {}", loc))?;
@@ -42,79 +45,142 @@ impl Universe {
             .data
             .clone()
             .context(format!("There is no data in ν{}", id))?;
+        trace!(
+            "#dataize: data found in ν{} ({} bytes), all good!",
+            id,
+            data.as_bytes().len()
+        );
         Ok(data)
     }
 
     /// Find a vertex in the Universe by its locator. The search
     /// starts from the vertex `v`, but the locator may jump to
     /// the root vertex, if it starts with "Φ".
-    pub fn find(&mut self, v: u32, loc: &str) -> Result<u32> {
-        let mut vtx = v;
-        let mut sectors = VecDeque::new();
-        loc.split('.').for_each(|k| sectors.push_back(k));
+    pub fn find(&mut self, v1: u32, loc: &str) -> Result<u32> {
+        trace!("#find(ν{}, '{}'): starting...", v1, loc);
+        let mut v = v1;
+        let mut xi = v;
+        let mut xis = VecDeque::new();
+        let mut locator: VecDeque<String> = VecDeque::new();
+        loc.split('.')
+            .for_each(|k| locator.push_back(k.to_string()));
+        let mut jumps = 0;
         loop {
-            if let Some(k) = sectors.pop_front() {
-                if k.starts_with("ν") {
-                    vtx = u32::from_str(&k[2..])?;
-                    continue;
-                }
-                if k == "𝜉" {
-                    vtx = vtx;
-                    continue;
-                }
-                if k == "Φ" {
-                    vtx = 0;
-                    continue;
-                }
-                if k == "Q" {
-                    vtx = 0;
-                    continue;
-                }
-                if k == "" {
-                    return Err(anyhow!("The locator is empty"));
-                }
-                let to = match self.edge(vtx, k) {
-                    Some(v) => v,
-                    None => {
-                        let to = match self.edge(vtx, "φ") {
-                            Some(v) => v,
-                            None => match self
-                                .vertices
-                                .get(&vtx)
-                                .context(format!("Can't find ν{}", vtx))?
-                                .lambda
-                                .clone()
-                            {
-                                Some(m) => {
-                                    let to = m(self, vtx)?;
-                                    trace!("#dataize({}, '{}'): atom returned {}", v, loc, to);
-                                    to
-                                }
-                                None => {
-                                    if k == "Δ" {
-                                        return Ok(vtx);
-                                    }
-                                    return Err(anyhow!(
-                                        "Can't find attribute '{}' at ν{}",
-                                        k,
-                                        vtx
-                                    ));
-                                }
-                            },
-                        };
-                        sectors.push_front(k);
-                        to
-                    }
-                };
-                if !self.vertices.contains_key(&to) {
-                    return Err(anyhow!("Can't move to ν{}.{}, ν{} is absent", vtx, k, to));
-                }
-                vtx = to;
-            } else {
+            self.reconnect(v)?;
+            let next = locator.pop_front();
+            if next.is_none() {
+                trace!("#find: end of locator, we are at ν{}", v);
                 break;
             }
+            let k = next.unwrap().to_string();
+            if k.is_empty() {
+                return Err(anyhow!("System error, the locator is empty"));
+            }
+            jumps += 1;
+            if jumps > 64 {
+                return Err(anyhow!(
+                    "Too many jumps ({}), locator length is {}: '{}'",
+                    jumps,
+                    locator.len(),
+                    itertools::join(locator.clone(), ".")
+                ));
+            }
+            if k == "Δ" && self.vertices.get(&v).unwrap().data.is_some() {
+                trace!("#find: ν{}.Δ is found!", v);
+                break;
+            }
+            if k == "▲" {
+                xi = xis.pop_back().unwrap();
+                trace!("#find: ξ loaded to ν{} by ▲", xi);
+                continue;
+            }
+            if k == "▼" {
+                xis.push_back(xi);
+                trace!("#find: ξ=ν{} saved by ▼", xi);
+                continue;
+            }
+            if k.starts_with("ν") {
+                let num: String = k.chars().skip(1).collect::<Vec<_>>().into_iter().collect();
+                v = u32::from_str(num.as_str())?;
+                xi = v;
+                trace!("#find: jumping directly to ν{}", v);
+                continue;
+            }
+            if k == "ξ" {
+                v = v;
+                trace!("#find: ν{}.ξ -> {}", v, v);
+                continue;
+            }
+            if k == "Φ" || k == "Q" {
+                v = 0;
+                xi = v;
+                trace!("#find: Φ/ν{}", v);
+                continue;
+            }
+            if let Some(to) = self.edge(v, k.as_str()) {
+                trace!("#find: ν{}.{} -> ν{}", v, k, to);
+                v = to;
+                xi = v;
+                continue;
+            };
+            if let Some(to) = self.edge(v, "π") {
+                trace!("#find: ν{}.π -> ν{} (.{} not found)", v, to, k);
+                v = to;
+                locator.push_front(k);
+                continue;
+            }
+            if let Some(to) = self.edge(v, "φ") {
+                trace!("#find: ν{}.φ -> ν{} (.{} not found)", v, to, k);
+                v = to;
+                xi = v;
+                locator.push_front(k);
+                continue;
+            }
+            let vtx = self.vertices.get(&v).unwrap();
+            if vtx.lambda.is_some() {
+                let lname = vtx.lambda_name.clone();
+                if lname.starts_with("S/") {
+                    locator.push_front(k);
+                    locator.push_front("▲".to_string());
+                    let p: String = lname
+                        .chars()
+                        .skip(2)
+                        .collect::<Vec<_>>()
+                        .into_iter()
+                        .collect();
+                    for i in p.split('.').rev() {
+                        locator.push_front(i.to_string());
+                    }
+                    locator.push_front("▼".to_string());
+                } else {
+                    trace!("#find: at ν{} calling λ{}(ξ=ν{})...", v, lname, xi);
+                    let to = vtx.lambda.unwrap()(self, xi)?;
+                    locator.push_front(format!("ν{}", to));
+                    trace!("#find: λ{} in ν{}(ξ=ν{}) returned ν{}", lname, v, xi, to);
+                }
+                trace!(
+                    "#find: reset locator to '{}'",
+                    itertools::join(locator.clone(), ".")
+                );
+                continue;
+            }
+            let others: Vec<String> = self
+                .edges
+                .values()
+                .filter(|e| e.from == v)
+                .map(|e| e.a.clone())
+                .collect();
+            return Err(anyhow!(
+                "Can't find .{} in ν{} among other {} attribute{}: {}",
+                k,
+                v,
+                others.len(),
+                if others.len() == 1 { "" } else { "s" },
+                others.join(", ")
+            ));
         }
-        Ok(vtx)
+        trace!("#find: found ν{} by '{}'", v1, loc);
+        Ok(v)
     }
 
     /// Find `k`-labeled edge departing from `v` and return the number
@@ -124,6 +190,19 @@ impl Universe {
     ///  some index, so that the speed of this search will be higher.
     pub fn edge(&self, v: u32, k: &str) -> Option<u32> {
         Some(self.edges.values().find(|e| e.from == v && e.a == k)?.to)
+    }
+
+    fn reconnect(&mut self, v: u32) -> Result<()> {
+        let vtx = self
+            .vertices
+            .get(&v)
+            .context(format!("Can't reconnect ν{}", v))?
+            .clone();
+        if vtx.lambda.is_none() && !vtx.lambda_name.is_empty() {
+            self.atom(v, vtx.lambda_name.as_str())?;
+            trace!("#reconnect(ν{}): lambda set to {}", v, vtx.lambda_name);
+        }
+        Ok(())
     }
 }
 
@@ -155,7 +234,7 @@ fn finds_root() -> Result<()> {
     uni.data(0, Data::from_int(0))?;
     uni.add(1)?;
     uni.atom(1, "S/Q")?;
-    assert_eq!(uni.find(1, "Δ")?, 0);
+    assert_eq!(0, uni.find(1, "Δ")?);
     Ok(())
 }
 

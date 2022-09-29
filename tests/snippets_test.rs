@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+mod common;
+
 use anyhow::{Context, Result};
 use glob::glob;
 use reo::da;
@@ -48,18 +50,19 @@ fn all_apps() -> Result<Vec<String>> {
 }
 
 #[test]
-#[ignore]
 fn deploys_and_runs_all_apps() -> Result<()> {
     let relf = Path::new("target/snippets.relf");
-    assert_cmd::Command::cargo_bin("reo")
-        .unwrap()
+    assert_cmd::Command::cargo_bin("reo")?
         .arg("compile")
         .arg("--home=target/eo/gmi")
         .arg(relf.as_os_str())
         .assert()
         .success();
     let mut uni = Universe::load(relf)?;
+    assert!(uni.inconsistencies().is_empty());
     for app in all_apps()? {
+        println!("{}", uni.inspect("Q.org.eolang.int")?);
+        println!("{}", uni.inspect(format!("Q.{}", app).as_str())?);
         let expected = da!(uni, format!("Φ.{}.expected", app));
         let actual = da!(uni, format!("Φ.{}", app));
         assert_eq!(expected, actual);

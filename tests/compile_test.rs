@@ -18,33 +18,67 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+mod common;
+
 use anyhow::Result;
+use filetime::FileTime;
 use predicates::prelude::predicate;
+use tempfile::TempDir;
 
 #[test]
 fn compiles_everything() -> Result<()> {
+    let tmp = TempDir::new()?;
+    let relf = tmp.path().join("foo.relf");
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .arg("--verbose")
         .arg("compile")
-        .arg("--home=target/eo/gmi/org/eolang/math")
-        .arg("target/snippets-math.relf")
+        .arg("--home=target/eo/gmi/org/eolang/reo")
+        .arg(relf.as_os_str())
         .assert()
         .success();
+    assert!(relf.exists());
+    Ok(())
+}
+
+#[test]
+fn skips_compilation_if_file_present() -> Result<()> {
+    let tmp = TempDir::new()?;
+    let relf = tmp.path().join("foo.relf");
+    assert_cmd::Command::cargo_bin("reo")
+        .unwrap()
+        .arg("compile")
+        .arg("--home=target/eo/gmi/org/eolang/reo")
+        .arg(relf.as_os_str())
+        .assert()
+        .success();
+    let size = std::fs::metadata(&relf)?.len();
+    let mtime = FileTime::from_last_modification_time(&std::fs::metadata(&relf)?);
+    assert_cmd::Command::cargo_bin("reo")
+        .unwrap()
+        .arg("compile")
+        .arg("--home=target/eo/gmi/org/eolang/reo")
+        .arg(relf.as_os_str())
+        .assert()
+        .success();
+    assert_eq!(size, std::fs::metadata(&relf)?.len());
+    assert_eq!(
+        mtime,
+        FileTime::from_last_modification_time(&std::fs::metadata(&relf)?)
+    );
     Ok(())
 }
 
 #[test]
 fn fails_when_directory_is_absent() -> Result<()> {
+    let path = "/usr/boom";
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .arg("compile")
-        .arg("--home=/usr/boom")
+        .arg(format!("--home={}", path))
         .arg("target/failure.relf")
         .assert()
         .code(1)
-        .stderr(predicate::str::contains(
-            "Directory '/usr/boom' doesn't exist",
-        ));
+        .stderr(predicate::str::contains(format!("Can't access '{}'", path)));
     Ok(())
 }

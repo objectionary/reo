@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use crate::universe::{Edge, Universe, Vertex};
+use crate::universe::{Edge, Universe};
 use anyhow::{Context, Result};
 use log::trace;
 
@@ -29,33 +29,27 @@ impl Universe {
         let edge = self.edges.get(&e1).context(format!("Can't find ε{}", e1))?;
         let v1 = edge.from;
         let v2 = edge.to;
-        let vtx2 = (*self
+        let mut vtx2 = (*self
             .vertices
             .get(&v2)
             .context(format!("Can't find ν{}", v2))?)
         .clone();
-        self.vertices.insert(v3, vtx2);
+        let mut vtx3 = vtx2.clone();
         let a = edge.a.clone();
         self.edges.remove(&e1);
         self.edges.insert(e2, Edge::new(v1, v3, a.to_string()));
-        self.vertices.insert(v2, Vertex::empty());
         for e in self.edges.values_mut().filter(|e| e.from == v2) {
             e.from = v3;
         }
-        self.vertices
-            .get_mut(&v2)
-            .context(format!("Can't find ν{}", v2))?
-            .lambda = self
-            .vertices
-            .get(&v3)
-            .context(format!("Can't find ν{}", v3))?
-            .lambda;
-        self.vertices
-            .get_mut(&v3)
-            .context(format!("Can't find ν{}", v3))?
-            .lambda = None;
         let e3 = self.next_e();
         self.edges.insert(e3, Edge::new(v3, v2, "π".to_string()));
+        vtx2.data = None;
+        vtx2.lambda = vtx3.lambda;
+        vtx2.lambda_name = vtx3.lambda_name;
+        vtx3.lambda = None;
+        vtx3.lambda_name = "".to_string();
+        self.vertices.insert(v2, vtx2);
+        self.vertices.insert(v3, vtx3);
         trace!(
             "#copy(ε{}, ν{}, ε{}): ν{}-ε{}>ν{} restructured as ν{}-ε{}>ν{}-ε{}(π)>ν{}",
             e1,
@@ -74,24 +68,37 @@ impl Universe {
     }
 }
 
+#[cfg(test)]
+use crate::data::Data;
+
+#[cfg(test)]
+use crate::{add, bind, copy};
+
+#[cfg(test)]
+use crate::universe::i_atom::not_implemented_yet;
+
 #[test]
 fn makes_simple_copy() -> Result<()> {
     let mut uni = Universe::empty();
-    let v1 = uni.next_v();
-    uni.add(v1)?;
-    let v2 = uni.next_v();
-    uni.add(v2)?;
-    let e1 = uni.next_e();
-    uni.bind(e1, v1, v2, "x")?;
-    let v4 = uni.next_v();
-    uni.add(v4)?;
-    let e3 = uni.next_e();
-    uni.bind(e3, v2, v4, "y")?;
-    let v3 = uni.next_v();
-    let e2 = uni.next_e();
-    uni.copy(e1, v3, e2)?;
+    let v1 = add!(uni);
+    let v2 = add!(uni);
+    uni.data(v2, Data::from_int(42))?;
+    let e1 = bind!(uni, v1, v2, "x");
+    uni.register("niy", not_implemented_yet);
+    uni.atom(v2, "niy")?;
+    let v4 = add!(uni);
+    bind!(uni, v2, v4, "y");
+    let v3 = copy!(uni, e1);
     assert!(uni.inconsistencies().is_empty());
     assert_eq!(v2, uni.find(v1, "x.π")?);
     assert_eq!(v4, uni.find(v1, "x.y")?);
+    let vtx2 = uni.vertices.get(&v2).unwrap();
+    assert!(!vtx2.lambda_name.is_empty());
+    assert!(vtx2.lambda.is_some());
+    let vtx3 = uni.vertices.get(&v3).unwrap();
+    assert!(vtx3.lambda_name.is_empty());
+    assert!(vtx3.lambda.is_none());
+    assert!(vtx3.data.is_some());
+    println!("{}", uni.to_graph()?);
     Ok(())
 }

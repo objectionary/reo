@@ -50,7 +50,8 @@ pub fn setup(uni: &mut Universe, dir: &Path) -> Result<u32> {
         let mut gmi = Gmi::from_file(path).context(format!("Can't read {}", path.display()))?;
         let mut root: u32 = 0;
         let mut pk = "".to_owned();
-        for p in pkg.split(".") {
+        trace!("#setup: package is '{}'", pkg);
+        for p in pkg.split(".").filter(|i| !i.is_empty()) {
             pk.push_str(format!(".{}", p).as_str());
             match pkgs.get(&pk) {
                 Some(v) => {
@@ -67,6 +68,7 @@ pub fn setup(uni: &mut Universe, dir: &Path) -> Result<u32> {
             }
         }
         gmi.set_root(root);
+        trace!("#setup: root set to ν{}", root);
         let instructions = gmi
             .deploy_to(uni)
             .context(format!("Failed to deploy '{}'", path.display()))?;
@@ -78,4 +80,50 @@ pub fn setup(uni: &mut Universe, dir: &Path) -> Result<u32> {
         total += instructions;
     }
     Ok(total)
+}
+
+#[cfg(test)]
+use tempfile::TempDir;
+
+#[cfg(test)]
+use std::fs::File;
+
+#[cfg(test)]
+use std::io::Write;
+
+#[test]
+fn sets_up_simple_directory() -> Result<()> {
+    let tmp = TempDir::new()?;
+    File::create(tmp.path().join("foo.gmi"))?.write_all(
+        "
+        ADD('$ν1');
+        BIND('$ε2', 'ν0', '$ν1', 'foo');
+        DATA('$ν1', '00 00 00 00 00 00 00 01');
+        "
+        .as_bytes(),
+    )?;
+    let mut uni = Universe::empty();
+    uni.add(0)?;
+    setup(&mut uni, tmp.path())?;
+    assert_eq!(1, uni.dataize("Φ.foo")?.as_int()?);
+    Ok(())
+}
+
+#[test]
+fn sets_up_with_subdirectories() -> Result<()> {
+    let tmp = TempDir::new()?;
+    std::fs::create_dir(tmp.path().join("abc"))?;
+    File::create(tmp.path().join("abc/foo.gmi"))?.write_all(
+        "
+        ADD('$ν1');
+        BIND('$ε2', 'ν0', '$ν1', 'foo');
+        DATA('$ν1', '00 00 00 00 00 00 00 02');
+        "
+        .as_bytes(),
+    )?;
+    let mut uni = Universe::empty();
+    uni.add(0)?;
+    setup(&mut uni, tmp.path())?;
+    assert_eq!(2, uni.dataize("Φ.abc.foo")?.as_int()?);
+    Ok(())
 }

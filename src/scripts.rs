@@ -20,16 +20,15 @@
 
 use crate::data::Data;
 use crate::universe::Universe;
+use crate::{add, bind};
 use anyhow::Result;
 
 /// Makes a copy of `org.eolang.int` in the Universe. It is assumed
 /// that it already exists there.
 pub fn copy_of_int(uni: &mut Universe, data: i64) -> Result<u32> {
-    let v = uni.next_v();
-    uni.add(v)?;
+    let v = add!(uni);
     let int = uni.find(0, "org.eolang.int")?;
-    let e = uni.next_e();
-    uni.bind(e, v, int, "π")?;
+    bind!(uni, v, int, "π");
     uni.data(v, Data::from_int(data))?;
     Ok(v)
 }

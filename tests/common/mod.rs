@@ -18,25 +18,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use std::process::Command;
+#![deny(warnings)]
 
-fn main() {
-    if std::env::var("PROFILE").unwrap() == "debug" {
-        println!("cargo:rerun-if-changed=eo-tests");
-        println!("cargo:rerun-if-changed=build.rs");
-        println!("cargo:rerun-if-changed=test-pom.xml");
-        println!("cargo:rerun-if-changed=target/eo");
-        assert!(Command::new("mvn")
-            .arg("--batch-mode")
-            .arg("--errors")
-            .arg("--debug")
-            .arg("--file")
-            .arg("test-pom.xml")
-            .arg("process-resources")
-            .spawn()
-            .unwrap()
-            .wait()
-            .unwrap()
-            .success());
-    }
+use log::LevelFilter;
+use simple_logger::SimpleLogger;
+
+#[ctor::ctor]
+fn init() {
+    SimpleLogger::new()
+        .without_timestamps()
+        .with_level(LevelFilter::Trace)
+        .init()
+        .unwrap();
 }

@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+mod common;
+
 use anyhow::Result;
 use predicates::prelude::predicate;
 use std::fs::File;
@@ -25,7 +27,7 @@ use std::io::Write;
 use tempfile::TempDir;
 
 #[test]
-fn inspect_existed() -> Result<()> {
+fn inspect_existing() -> Result<()> {
     let tmp = TempDir::new()?;
     File::create(tmp.path().join("foo.gmi"))?.write_all(
         "
@@ -48,20 +50,22 @@ fn inspect_existed() -> Result<()> {
         .unwrap()
         .arg("inspect")
         .arg(relf.as_os_str())
+        .arg("Q")
         .assert()
         .success()
-        .stdout(predicate::str::contains("Universe is: "));
+        .stdout(predicate::str::contains(".foo ➞ ν"));
     Ok(())
 }
 
 #[test]
-fn inspect_nonexisted() -> Result<()> {
+fn inspect_nonexisting() -> Result<()> {
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .arg("inspect")
-        .arg(format!("foo.relf"))
+        .arg("broken-file-name.relf")
+        .arg("foo")
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Can't read from foo"));
+        .stderr(predicate::str::contains("Can't read from "));
     Ok(())
 }

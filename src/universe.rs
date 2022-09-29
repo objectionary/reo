@@ -19,21 +19,23 @@
 // SOFTWARE.
 
 mod dataize;
+mod graph;
 mod i_add;
 mod i_atom;
 mod i_bind;
 mod i_copy;
 mod i_data;
+mod inconsistencies;
+mod inspect;
 mod serialization;
 
 use crate::data::Data;
 use anyhow::Result;
-use log::error;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Eq, PartialOrd, PartialEq, Ord)]
 struct Edge {
     from: u32,
     to: u32,
@@ -154,7 +156,7 @@ impl Universe {
         self.atoms.insert(name.to_string(), m);
     }
 
-    /// Merge universe into inself
+    /// Merge this new universe into itself.
     pub fn merge(&mut self, uni: &Universe) {
         let mut matcher: HashMap<u32, u32> = HashMap::new();
         for vert in uni.vertices.iter() {
@@ -176,33 +178,64 @@ impl Universe {
         }
     }
 
-    /// Validate the Universe and return all found data
-    /// inconsistencies. This is mostly used for testing.
-    pub fn inconsistencies(&self) -> Vec<String> {
-        let mut errors = Vec::new();
-        for e in self.edges.iter() {
-            if !self.vertices.contains_key(&e.1.to) {
-                errors.push(format!("Edge ε{} arrives to lost ν{}", e.0, e.1.to));
+    /// Take a slice of the universe, keeping only the vertex specified
+    /// by the locator.
+    pub fn slice(&mut self, loc: String) -> Result<Universe> {
+        let mut todo = HashSet::new();
+        let mut done = HashSet::new();
+        todo.insert(self.find(0, loc.as_str())?);
+        loop {
+            if todo.is_empty() {
+                break;
             }
-            if !self.vertices.contains_key(&e.1.from) {
-                errors.push(format!("Edge ε{} departs from lost ν{}", e.0, e.1.from));
+            let before: Vec<u32> = todo.drain().collect();
+            for v in before {
+                done.insert(v);
+                for to in self
+                    .edges
+                    .values()
+                    .filter(|e| e.a != "ρ" && e.a != "σ")
+                    .filter(|e| e.from == v)
+                    .map(|e| e.to)
+                {
+                    if done.contains(&to) {
+                        continue;
+                    }
+                    done.insert(to);
+                    todo.insert(to);
+                }
             }
         }
-        for e in errors.to_vec() {
-            error!("{}", e)
+        let mut new_vertices = HashMap::new();
+        for (v, vtx) in self.vertices.iter().filter(|(v, _)| done.contains(v)) {
+            new_vertices.insert(*v, vtx.clone());
         }
-        errors
+        let mut new_edges = HashMap::new();
+        for (e, edge) in self
+            .edges
+            .iter()
+            .filter(|(_, edge)| done.contains(&edge.from) || done.contains(&edge.to))
+        {
+            new_edges.insert(*e, edge.clone());
+        }
+        Ok(Universe {
+            vertices: new_vertices,
+            edges: new_edges,
+            atoms: HashMap::new(),
+            latest_v: self.latest_v,
+            latest_e: self.latest_e,
+        })
     }
 }
 
 #[cfg(test)]
+use crate::{add, bind, copy};
+
+#[cfg(test)]
 fn rand(uni: &mut Universe, _v: u32) -> Result<u32> {
     let v2 = uni.find(0, "int")?;
-    let e1 = uni.next_e();
-    uni.bind(e1, 0, v2, format!("i{}", e1).as_str())?;
-    let v3 = uni.next_v();
-    let e2 = uni.next_e();
-    uni.copy(e1, v3, e2)?;
+    let e1 = bind!(uni, 0, v2, format!("i{}", v2).as_str());
+    let v3 = copy!(uni, e1);
     uni.data(v3, Data::from_int(rand::random::<i64>()))?;
     Ok(v3)
 }
@@ -229,20 +262,28 @@ fn safely_generates_unique_ids() -> Result<()> {
 fn generates_random_int() -> Result<()> {
     let mut uni = Universe::empty();
     uni.add(0)?;
-    let v1 = uni.next_v();
-    uni.add(v1)?;
-    let e1 = uni.next_e();
-    uni.bind(e1, 0, v1, "int")?;
-    let v2 = uni.next_v();
-    uni.add(v2)?;
-    let e2 = uni.next_e();
-    uni.bind(e2, 0, v2, "rand")?;
-    let e3 = uni.next_e();
-    uni.bind(e3, 0, v2, "x")?;
+    let v1 = add!(uni);
+    bind!(uni, 0, v1, "int");
+    let v2 = add!(uni);
+    bind!(uni, 0, v2, "rand");
+    bind!(uni, 0, v2, "x");
     uni.register("rand", rand);
     uni.atom(v2, "rand")?;
     let first = uni.dataize("Φ.x.Δ")?.as_int()?;
     let second = uni.dataize("Φ.x.Δ")?.as_int()?;
     assert_ne!(first, second);
+    Ok(())
+}
+
+#[test]
+fn makes_a_slice() -> Result<()> {
+    let mut uni = Universe::empty();
+    uni.add(0)?;
+    let v1 = add!(uni);
+    bind!(uni, 0, v1, "foo");
+    let v2 = add!(uni);
+    bind!(uni, 0, v2, "bar");
+    let slice = uni.slice("Φ.bar".to_string())?;
+    assert_eq!(1, slice.vertices.len());
     Ok(())
 }

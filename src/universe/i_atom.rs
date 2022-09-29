@@ -77,13 +77,15 @@ fn dummy(_uni: &mut Universe, _v: u32) -> Result<u32> {
     Ok(0)
 }
 
+#[cfg(test)]
+use crate::add;
+
 #[test]
 fn evaluates_dummy_atom() -> Result<()> {
     let mut uni = Universe::empty();
     uni.register("dummy", dummy);
-    let v1 = uni.next_v();
+    let v1 = add!(uni);
     uni.add(0)?;
-    uni.add(v1)?;
     uni.atom(v1, "dummy")?;
     assert!(uni.inconsistencies().is_empty());
     assert_eq!(0, uni.find(v1, "Δ")?);
