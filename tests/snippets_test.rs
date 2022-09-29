@@ -50,7 +50,6 @@ fn all_apps() -> Result<Vec<String>> {
 }
 
 #[test]
-#[ignore]
 fn deploys_and_runs_all_apps() -> Result<()> {
     let relf = Path::new("target/snippets.relf");
     assert_cmd::Command::cargo_bin("reo")?
@@ -62,6 +61,7 @@ fn deploys_and_runs_all_apps() -> Result<()> {
     let mut uni = Universe::load(relf)?;
     assert!(uni.inconsistencies().is_empty());
     for app in all_apps()? {
+        println!("{}", uni.inspect("Q.org.eolang.int")?);
         println!("{}", uni.inspect(format!("Q.{}", app).as_str())?);
         let expected = da!(uni, format!("Φ.{}.expected", app));
         let actual = da!(uni, format!("Φ.{}", app));

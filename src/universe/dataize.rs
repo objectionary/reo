@@ -57,7 +57,10 @@ impl Universe {
     /// starts from the vertex `v`, but the locator may jump to
     /// the root vertex, if it starts with "Φ".
     pub fn find(&mut self, v1: u32, loc: &str) -> Result<u32> {
+        trace!("#find(ν{}, '{}'): starting...", v1, loc);
         let mut v = v1;
+        let mut xi = v;
+        let mut xis = VecDeque::new();
         let mut locator: VecDeque<String> = VecDeque::new();
         loc.split('.')
             .for_each(|k| locator.push_back(k.to_string()));
@@ -86,9 +89,20 @@ impl Universe {
                 trace!("#find: ν{}.Δ is found!", v);
                 break;
             }
+            if k == "▲" {
+                xi = xis.pop_back().unwrap();
+                trace!("#find: ξ loaded to ν{} by ▲", xi);
+                continue;
+            }
+            if k == "▼" {
+                xis.push_back(xi);
+                trace!("#find: ξ=ν{} saved by ▼", xi);
+                continue;
+            }
             if k.starts_with("ν") {
                 let num: String = k.chars().skip(1).collect::<Vec<_>>().into_iter().collect();
                 v = u32::from_str(num.as_str())?;
+                xi = v;
                 trace!("#find: jumping directly to ν{}", v);
                 continue;
             }
@@ -99,22 +113,26 @@ impl Universe {
             }
             if k == "Φ" || k == "Q" {
                 v = 0;
+                xi = v;
                 trace!("#find: Φ/ν{}", v);
                 continue;
             }
             if let Some(to) = self.edge(v, k.as_str()) {
                 trace!("#find: ν{}.{} -> ν{}", v, k, to);
                 v = to;
+                xi = v;
                 continue;
             };
             if let Some(to) = self.edge(v, "π") {
                 trace!("#find: ν{}.π -> ν{} (.{} not found)", v, to, k);
                 v = to;
+                locator.push_front(k);
                 continue;
             }
             if let Some(to) = self.edge(v, "φ") {
                 trace!("#find: ν{}.φ -> ν{} (.{} not found)", v, to, k);
                 v = to;
+                xi = v;
                 locator.push_front(k);
                 continue;
             }
@@ -123,6 +141,7 @@ impl Universe {
                 let lname = vtx.lambda_name.clone();
                 if lname.starts_with("S/") {
                     locator.push_front(k);
+                    locator.push_front("▲".to_string());
                     let p: String = lname
                         .chars()
                         .skip(2)
@@ -132,11 +151,12 @@ impl Universe {
                     for i in p.split('.').rev() {
                         locator.push_front(i.to_string());
                     }
+                    locator.push_front("▼".to_string());
                 } else {
-                    trace!("#find: calling λ{}(ν{})...", lname, v);
-                    let to = vtx.lambda.unwrap()(self, v)?;
+                    trace!("#find: at ν{} calling λ{}(ξ=ν{})...", v, lname, xi);
+                    let to = vtx.lambda.unwrap()(self, xi)?;
                     locator.push_front(format!("ν{}", to));
-                    trace!("#find: λ{} in ν{} returned ν{}", lname, v, to);
+                    trace!("#find: λ{} in ν{}(ξ=ν{}) returned ν{}", lname, v, xi, to);
                 }
                 trace!(
                     "#find: reset locator to '{}'",

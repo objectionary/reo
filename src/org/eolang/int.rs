@@ -25,7 +25,7 @@ use anyhow::Result;
 
 /// Register all known atoms in the Universe.
 pub fn register(uni: &mut Universe) {
-    uni.register("org.eolang.int$plus", int_plus);
+    uni.register("org.eolang.int.plus", int_plus);
 }
 
 /// EO atom `int.plus`.
