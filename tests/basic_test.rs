@@ -21,8 +21,6 @@
 mod common;
 
 use anyhow::{Context, Result};
-use glob::glob;
-use predicates::prelude::predicate;
 use std::fs::File;
 use std::io::Write;
 use tempfile::TempDir;
@@ -93,32 +91,5 @@ fn dataizes_in_eoc_mode() -> Result<()> {
         .assert()
         .success()
         .stdout("CA-FE\n");
-    Ok(())
-}
-
-#[test]
-fn dataizes_all_gmi_tests() -> Result<()> {
-    let tmp = TempDir::new()?;
-    let relf = tmp.path().join("temp.relf");
-    for f in glob("gmi-tests/*.gmi")? {
-        let p = f?;
-        let path = p.as_path();
-        assert_cmd::Command::cargo_bin("reo")
-            .unwrap()
-            .arg("compile")
-            .arg(format!("--file={}", path.display()))
-            .arg(relf.as_os_str())
-            .assert()
-            .success();
-        assert_cmd::Command::cargo_bin("reo")
-            .unwrap()
-            .arg("--verbose")
-            .arg("dataize")
-            .arg(format!("--relf={}", relf.display()))
-            .arg("foo")
-            .assert()
-            .success()
-            .stdout(predicate::str::contains("Dataization result"));
-    }
     Ok(())
 }

@@ -21,42 +21,40 @@
 mod common;
 mod runtime;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use glob::glob;
+use std::path::Path;
+use tempfile::TempDir;
 use reo::da;
+use reo::universe::Universe;
 use crate::runtime::load_everything;
 
-fn all_apps() -> Result<Vec<String>> {
-    let mut apps = Vec::new();
-    for f in glob("eo-tests/**/*.eo")? {
+fn all_scripts() -> Result<Vec<String>> {
+    let mut scripts = Vec::new();
+    for f in glob("gmi-tests/**/*.gmi")? {
         let p = f?;
-        let path = p.as_path();
-        let app = path
-            .to_str()
-            .context(format!("Can't get str from '{}'", path.display()))?
-            .splitn(2, "/")
-            .nth(1)
-            .context(format!("Can't take path from '{}'", path.display()))?
-            .split(".")
-            .collect::<Vec<&str>>()
-            .split_last()
-            .context(format!("Can't take split_last from '{}'", path.display()))?
-            .1
-            .join(".")
-            .replace("/", ".");
-        apps.push(app.to_string());
+        scripts.push(p.into_os_string().into_string().unwrap());
     }
-    Ok(apps)
+    Ok(scripts)
 }
 
 #[test]
-#[ignore]
-fn deploys_and_runs_all_apps() -> Result<()> {
-    let mut uni = load_everything()?;
-    for app in all_apps()? {
-        let expected = da!(uni, format!("Φ.{}.expected", app));
-        let actual = da!(uni, format!("Φ.{}", app));
-        assert_eq!(expected, actual, "{} failed", app);
+fn dataizes_all_gmi_tests() -> Result<()> {
+    for path in all_scripts()? {
+        let tmp = TempDir::new()?;
+        let relf = tmp.path().join("temp.relf");
+        assert_cmd::Command::cargo_bin("reo")
+            .unwrap()
+            .arg("compile")
+            .arg(format!("--file={}", path))
+            .arg(relf.as_os_str())
+            .assert()
+            .success();
+        let extra = Universe::load(relf.as_path())?;
+        let mut uni = load_everything()?;
+        uni.merge(&extra);
+        let object = Path::new(&path).file_name().unwrap().to_str().unwrap().replace(".gmi", "");
+        da!(uni, format!("Φ.{}", object));
     }
     Ok(())
 }

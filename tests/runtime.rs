@@ -18,40 +18,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use crate::da;
-use crate::scripts::copy_of_int;
-use crate::universe::Universe;
+use std::fs::File;
 use anyhow::Result;
+use std::path::Path;
+use std::io::Write;
+use reo::universe::Universe;
 
-/// Register all known atoms in the Universe.
-pub fn register(uni: &mut Universe) {
-    uni.register("org.eolang.int.plus", int_plus);
-    uni.register("org.eolang.int.times", int_times);
-    uni.register("org.eolang.int.div", int_div);
-}
-
-/// EO atom `int.plus`.
-pub fn int_plus(uni: &mut Universe, v: u32) -> Result<u32> {
-    let rho = da!(uni, format!("ν{}.ρ", v)).as_int()?;
-    let x = da!(uni, format!("ν{}.α0", v)).as_int()?;
-    copy_of_int(uni, rho + x)
-}
-
-/// EO atom `int.times`.
-pub fn int_times(uni: &mut Universe, v: u32) -> Result<u32> {
-    let rho = da!(uni, format!("ν{}.ρ", v)).as_int()?;
-    let x = da!(uni, format!("ν{}.α0", v)).as_int()?;
-    copy_of_int(uni, rho * x)
-}
-
-/// EO atom `int.div`.
-pub fn int_div(uni: &mut Universe, v: u32) -> Result<u32> {
-    let rho = da!(uni, format!("ν{}.ρ", v)).as_int()?;
-    let x = da!(uni, format!("ν{}.α0", v)).as_int()?;
-    copy_of_int(uni, rho / x)
-}
-
-#[test]
-fn simple() {
-    // assert_eq!(1, total);
+pub fn load_everything() -> Result<Universe> {
+    let relf = Path::new("target/runtime.relf");
+    assert_cmd::Command::cargo_bin("reo")?
+        .arg("compile")
+        .arg("--home=target/eo/gmi")
+        .arg(relf.as_os_str())
+        .assert()
+        .success();
+    let uni = Universe::load(relf)?;
+    assert!(uni.inconsistencies().is_empty());
+    File::create(Path::new("target/runtime-inspect.txt"))?.write_all(
+        uni.inspect("Q")?.as_bytes()
+    )?;
+    Ok(uni)
 }

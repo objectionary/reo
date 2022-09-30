@@ -22,7 +22,10 @@
 
 +package org.eolang.reo.simple
 
-[] > sum
+[] > rho
   43 > expected
-  42.plus 1 > @
+  5 > x
+  kid 8 > @
 
+[y] > kid
+  ^.x.plus y > @

@@ -64,6 +64,9 @@ impl Gmi {
         let lines = txt.split("\n").map(|t| t.trim()).filter(|t| !t.is_empty());
         let mut total = 0;
         for (pos, t) in lines.enumerate() {
+            if t.starts_with("#") {
+                continue;
+            }
             trace!("#deploy_to: deploying line no.{} '{}'...", pos + 1, t);
             self.deploy_one(t, uni)
                 .context(format!("Failure at the line no.{}: '{}'", pos, t))?;
@@ -223,6 +226,7 @@ fn deploys_simple_commands() -> Result<()> {
 fn repositions_root() -> Result<()> {
     let mut gmi = Gmi::from_string(
         "
+        # Just a simple object with a edge from root
         ADD('$ν1');
         BIND('$ε1', 'ν0', '$ν1', 'foo');
         "

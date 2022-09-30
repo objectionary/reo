@@ -65,10 +65,10 @@ impl Universe {
             .map(|(_, e)| e)
             .sorted()
             .for_each(|e| {
-                let skip = seen.contains(&e.to) || e.a == "ρ" || e.a == "σ";
+                let skip = seen.contains(&e.to);
                 let to = self.vertices.get(&e.to).unwrap().clone();
                 let line = format!(
-                    "  .{} ➞ ν{}{}{}",
+                    "  .{} ➞ ν{}{}{}{}",
                     e.a,
                     e.to,
                     if to.lambda_name.is_empty() || skip {
@@ -78,6 +78,11 @@ impl Universe {
                     },
                     if to.data.is_some() && !skip {
                         format!(" Δ{}", to.data.unwrap().as_hex())
+                    } else {
+                        "".to_string()
+                    },
+                    if skip {
+                        "…".to_string()
                     } else {
                         "".to_string()
                     }

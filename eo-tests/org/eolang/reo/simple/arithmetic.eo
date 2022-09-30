@@ -22,7 +22,19 @@
 
 +package org.eolang.reo.simple
 
-[] > sum
-  43 > expected
-  42.plus 1 > @
-
+#  times. > @
+#    div.
+#      plus.
+#        minus.
+#          2
+#          5
+#        minus.
+#          10
+#          3
+#      times.
+#        1
+#        2
+#    7
+[] > arithmetic
+  3 > expected
+  3 > @

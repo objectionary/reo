@@ -77,7 +77,7 @@ impl Universe {
                 return Err(anyhow!("System error, the locator is empty"));
             }
             jumps += 1;
-            if jumps > 64 {
+            if jumps > 200 {
                 return Err(anyhow!(
                     "Too many jumps ({}), locator length is {}: '{}'",
                     jumps,
@@ -159,7 +159,8 @@ impl Universe {
                     trace!("#find: λ{} in ν{}(ξ=ν{}) returned ν{}", lname, v, xi, to);
                 }
                 trace!(
-                    "#find: reset locator to '{}'",
+                    "#find: λ at λ{} reset locator to '{}'",
+                    v,
                     itertools::join(locator.clone(), ".")
                 );
                 continue;
@@ -206,22 +207,19 @@ impl Universe {
     }
 }
 
+#[cfg(test)]
+use crate::{add, bind};
+
 #[test]
 fn search_atom_works() -> Result<()> {
     let mut uni = Universe::empty();
     uni.add(0)?;
-    let v1 = uni.next_v();
-    uni.add(v1)?;
-    let e1 = uni.next_e();
-    uni.bind(e1, 0, v1, "a")?;
-    let v2 = uni.next_v();
-    uni.add(v2)?;
-    let e2 = uni.next_e();
-    uni.bind(e2, 0, v2, "b")?;
-    let v3 = uni.next_v();
-    uni.add(v3)?;
-    let e4 = uni.next_e();
-    uni.bind(e4, v2, v3, "c")?;
+    let v1 = add!(uni);
+    bind!(uni, 0, v1, "a");
+    let v2 = add!(uni);
+    bind!(uni, 0, v2, "b");
+    let v3 = add!(uni);
+    bind!(uni, v2, v3, "c");
     uni.atom(v1, "S/Φ.b")?;
     assert_eq!(uni.find(v1, "Φ.a.c")?, v3);
     Ok(())

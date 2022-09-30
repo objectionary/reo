@@ -34,6 +34,7 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fmt;
+use log::debug;
 
 #[derive(Clone, Serialize, Deserialize, Eq, PartialOrd, PartialEq, Ord)]
 struct Edge {
@@ -176,6 +177,11 @@ impl Universe {
             };
             self.edges.insert(id, edge);
         }
+        debug!(
+            "Merged {} vertices and {} edges into the existing Universe",
+            uni.vertices.len(),
+            uni.edges.len()
+        );
     }
 
     /// Take a slice of the universe, keeping only the vertex specified
