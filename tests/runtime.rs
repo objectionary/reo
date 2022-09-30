@@ -18,11 +18,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use std::fs::File;
 use anyhow::Result;
-use std::path::Path;
-use std::io::Write;
 use reo::universe::Universe;
+use std::fs::File;
+use std::io::Write;
+use std::path::Path;
 
 pub fn load_everything() -> Result<Universe> {
     let relf = Path::new("target/runtime.relf");
@@ -34,8 +34,7 @@ pub fn load_everything() -> Result<Universe> {
         .success();
     let uni = Universe::load(relf)?;
     assert!(uni.inconsistencies().is_empty());
-    File::create(Path::new("target/runtime-inspect.txt"))?.write_all(
-        uni.inspect("Q")?.as_bytes()
-    )?;
+    File::create(Path::new("target/runtime-inspect.txt"))?
+        .write_all(uni.inspect("Q")?.as_bytes())?;
     Ok(uni)
 }

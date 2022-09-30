@@ -21,13 +21,13 @@
 mod common;
 mod runtime;
 
+use crate::runtime::load_everything;
 use anyhow::Result;
 use glob::glob;
-use std::path::Path;
-use tempfile::TempDir;
 use reo::da;
 use reo::universe::Universe;
-use crate::runtime::load_everything;
+use std::path::Path;
+use tempfile::TempDir;
 
 fn all_scripts() -> Result<Vec<String>> {
     let mut scripts = Vec::new();
@@ -53,7 +53,12 @@ fn dataizes_all_gmi_tests() -> Result<()> {
         let extra = Universe::load(relf.as_path())?;
         let mut uni = load_everything()?;
         uni.merge(&extra);
-        let object = Path::new(&path).file_name().unwrap().to_str().unwrap().replace(".gmi", "");
+        let object = Path::new(&path)
+            .file_name()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .replace(".gmi", "");
         da!(uni, format!("Φ.{}", object));
     }
     Ok(())

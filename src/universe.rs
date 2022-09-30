@@ -31,10 +31,10 @@ mod serialization;
 
 use crate::data::Data;
 use anyhow::Result;
+use log::debug;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fmt;
-use log::debug;
 
 #[derive(Clone, Serialize, Deserialize, Eq, PartialOrd, PartialEq, Ord)]
 struct Edge {

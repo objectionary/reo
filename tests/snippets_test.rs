@@ -21,10 +21,10 @@
 mod common;
 mod runtime;
 
+use crate::runtime::load_everything;
 use anyhow::{Context, Result};
 use glob::glob;
 use reo::da;
-use crate::runtime::load_everything;
 
 fn all_apps() -> Result<Vec<String>> {
     let mut apps = Vec::new();
