@@ -22,7 +22,7 @@ extern crate reo;
 
 use anyhow::Context;
 use anyhow::Result;
-use clap::{crate_version, AppSettings, Arg, ArgAction, Command};
+use clap::{crate_version, Arg, ArgAction, ColorChoice, Command};
 use filetime::FileTime;
 use glob::glob;
 use log::{info, LevelFilter};
@@ -56,7 +56,7 @@ fn mtime(dir: &Path) -> Result<FileTime> {
 
 pub fn main() -> Result<()> {
     let matches = Command::new("reo")
-        .setting(AppSettings::ColorNever)
+        .color(ColorChoice::Never)
         .about("GMI to Rust compiler and runner")
         .version(crate_version!())
         .arg(
@@ -77,7 +77,7 @@ pub fn main() -> Result<()> {
         .allow_external_subcommands(true)
         .subcommand(
             Command::new("compile")
-                .setting(AppSettings::ColorNever)
+                .color(ColorChoice::Never)
                 .about("Compile all instructions into a binary .relf file")
                 .arg(
                     Arg::new("eoc")
@@ -122,7 +122,7 @@ pub fn main() -> Result<()> {
         )
         .subcommand(
             Command::new("dataize")
-                .setting(AppSettings::ColorNever)
+                .color(ColorChoice::Never)
                 .about("Dataizes an object")
                 .arg(
                     Arg::new("relf")
@@ -143,7 +143,7 @@ pub fn main() -> Result<()> {
         )
         .subcommand(
             Command::new("inspect")
-                .setting(AppSettings::ColorNever)
+                .color(ColorChoice::Never)
                 .about("Read a binary universe and print all the details")
                 .arg(
                     Arg::new("relf")
@@ -163,7 +163,7 @@ pub fn main() -> Result<()> {
         )
         .subcommand(
             Command::new("link")
-                .setting(AppSettings::ColorNever)
+                .color(ColorChoice::Never)
                 .about("Take a list of .relf files and join them all into one")
                 .arg(
                     Arg::new("relf")
