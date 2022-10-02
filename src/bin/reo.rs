@@ -307,9 +307,9 @@ pub fn main() -> Result<()> {
             let target = Path::new(subs.value_of("relf").unwrap());
             let mut uni = Universe::load(target).unwrap();
             let linked = subs
-                .values_of("relfs")
+                .get_many::<String>("relfs")
                 .unwrap()
-                .collect::<Vec<&str>>()
+                .collect::<Vec<&String>>()
                 .into_iter()
                 .map(|f| Universe::load(Path::new(f)).unwrap())
                 .inspect(|u| uni.merge(&u))
