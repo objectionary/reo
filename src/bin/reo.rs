@@ -206,7 +206,7 @@ pub fn main() -> Result<()> {
             );
             let mut uni = Universe::empty();
             if subs.contains_id("file") {
-                let file = Path::new(subs.value_of("file").context("Path of file is required")?);
+                let file = Path::new(subs.get_one::<String>("file").map(|s| s.as_str()).context("Path of file is required")?);
                 let recent = FileTime::from_last_modification_time(&fs::metadata(file)?);
                 if relf.exists()
                     && recent < FileTime::from_last_modification_time(&fs::metadata(relf)?)
@@ -233,7 +233,7 @@ pub fn main() -> Result<()> {
                     info!("Running in eoc-compatible mode");
                     ".eoc/gmi"
                 } else {
-                    subs.value_of("dir").unwrap()
+                    subs.get_one::<String>("dir").map(|s| s.as_str()).unwrap()
                 };
                 info!("Home requested as '{}'", home);
                 let full_home =
@@ -275,7 +275,7 @@ pub fn main() -> Result<()> {
                 .get_one::<String>("object")
                 .context("Object name is required")?;
             let relf = Path::new(
-                subs.value_of("relf")
+                subs.get_one::<String>("relf").map(|s| s.as_str())
                     .context("Path of .relf file is required")?,
             );
             info!("Deserializing a relf file '{}'", relf.display());
@@ -291,7 +291,7 @@ pub fn main() -> Result<()> {
             println!("{}", ret);
         }
         Some(("inspect", subs)) => {
-            let relf = Path::new(subs.value_of("relf").unwrap());
+            let relf = Path::new(subs.get_one::<String>("relf").map(|s| s.as_str()).unwrap());
             let object = subs
                 .get_one::<String>("object")
                 .context("Object name is required")?;
@@ -304,7 +304,7 @@ pub fn main() -> Result<()> {
             println!("{}", uni.inspect(object.as_str())?);
         }
         Some(("link", subs)) => {
-            let target = Path::new(subs.value_of("relf").unwrap());
+            let target = Path::new(subs.get_one::<String>("relf").map(|s| s.as_str()).unwrap());
             let mut uni = Universe::load(target).unwrap();
             let linked = subs
                 .get_many::<String>("relfs")
