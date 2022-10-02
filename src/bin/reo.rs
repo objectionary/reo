@@ -99,7 +99,7 @@ pub fn main() -> Result<()> {
                     Arg::new("home")
                         .long("home")
                         .default_value(".")
-                        .name("dir")
+                        .id("dir")
                         .required(false)
                         .help("Directory with .gmi files")
                         .takes_value(true)
