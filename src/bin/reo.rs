@@ -175,7 +175,7 @@ pub fn main() -> Result<()> {
                 .arg(
                     Arg::new("relfs")
                         .required(true)
-                        .multiple(true)
+                        .multiple_values(true)
                         .help("Names of a binary .relf files to use as sources")
                         .takes_value(true)
                         .action(ArgAction::Set),
