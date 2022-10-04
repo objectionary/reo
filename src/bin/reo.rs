@@ -63,15 +63,15 @@ pub fn main() -> Result<()> {
             Arg::new("verbose")
                 .long("verbose")
                 .required(false)
-                .takes_value(false)
-                .help("Print all debug messages"),
+                .help("Print all debug messages")
+                .action(ArgAction::IncOccurrence),
         )
         .arg(
             Arg::new("trace")
                 .long("trace")
                 .required(false)
-                .takes_value(false)
-                .help("Print all debug AND trace messages (be careful!)"),
+                .help("Print all debug AND trace messages (be careful!)")
+                .action(ArgAction::Set),
         )
         .subcommand_required(true)
         .allow_external_subcommands(true)
@@ -83,8 +83,8 @@ pub fn main() -> Result<()> {
                     Arg::new("eoc")
                         .long("eoc")
                         .required(false)
-                        .takes_value(false)
-                        .help("Compatibility with eoc command-line toolkit"),
+                        .help("Compatibility with eoc command-line toolkit")
+                        .action(ArgAction::IncOccurrence),
                 )
                 .arg(
                     Arg::new("file")
@@ -92,7 +92,6 @@ pub fn main() -> Result<()> {
                         .short('f')
                         .required(false)
                         .help("Name of a single .gmi file to work with")
-                        .takes_value(true)
                         .action(ArgAction::Set),
                 )
                 .arg(
@@ -102,22 +101,20 @@ pub fn main() -> Result<()> {
                         .id("dir")
                         .required(false)
                         .help("Directory with .gmi files")
-                        .takes_value(true)
                         .action(ArgAction::Set),
                 )
                 .arg(
                     Arg::new("relf")
                         .required(true)
                         .help("Name of a binary .relf file to create")
-                        .takes_value(true)
                         .action(ArgAction::Set),
                 )
                 .arg(
                     Arg::new("force")
                         .long("force")
                         .required(false)
-                        .takes_value(false)
-                        .help("Compile anyway, even if the binary file is up to date"),
+                        .help("Compile anyway, even if the binary file is up to date")
+                        .action(ArgAction::Set),
                 ),
         )
         .subcommand(
@@ -129,14 +126,12 @@ pub fn main() -> Result<()> {
                         .long("relf")
                         .required(true)
                         .help("Name of a binary .relf file to use")
-                        .takes_value(true)
                         .action(ArgAction::Set),
                 )
                 .arg(
                     Arg::new("object")
                         .required(true)
                         .help("Fully qualified object name")
-                        .takes_value(false)
                         .action(ArgAction::Set),
                 )
                 .arg_required_else_help(true),
@@ -149,14 +144,12 @@ pub fn main() -> Result<()> {
                     Arg::new("relf")
                         .required(true)
                         .help("Name of a binary .relf file to use")
-                        .takes_value(true)
                         .action(ArgAction::Set),
                 )
                 .arg(
                     Arg::new("object")
                         .required(true)
                         .help("Fully qualified object name")
-                        .takes_value(false)
                         .action(ArgAction::Set),
                 )
                 .arg_required_else_help(true),
@@ -169,7 +162,6 @@ pub fn main() -> Result<()> {
                     Arg::new("relf")
                         .required(true)
                         .help("Name of a binary .relf file to create")
-                        .takes_value(true)
                         .action(ArgAction::Set),
                 )
                 .arg(
@@ -177,7 +169,6 @@ pub fn main() -> Result<()> {
                         .required(true)
                         .multiple_values(true)
                         .help("Names of a binary .relf files to use as sources")
-                        .takes_value(true)
                         .action(ArgAction::Set),
                 )
                 .arg_required_else_help(true),
