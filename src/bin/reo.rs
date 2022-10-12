@@ -246,6 +246,7 @@ pub fn main() -> Result<()> {
                     );
                     return Ok(());
                 }
+
                 info!(
                     "Deploying instructions from a directory '{}'",
                     cwd.display()
