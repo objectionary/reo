@@ -197,7 +197,11 @@ pub fn main() -> Result<()> {
             );
             let mut uni = Universe::empty();
             if subs.contains_id("file") {
-                let file = Path::new(subs.get_one::<String>("file").map(|s| s.as_str()).context("Path of file is required")?);
+                let file = Path::new(
+                    subs.get_one::<String>("file")
+                        .map(|s| s.as_str())
+                        .context("Path of file is required")?,
+                );
                 let recent = FileTime::from_last_modification_time(&fs::metadata(file)?);
                 if relf.exists()
                     && recent < FileTime::from_last_modification_time(&fs::metadata(relf)?)
@@ -267,7 +271,8 @@ pub fn main() -> Result<()> {
                 .get_one::<String>("object")
                 .context("Object name is required")?;
             let relf = Path::new(
-                subs.get_one::<String>("relf").map(|s| s.as_str())
+                subs.get_one::<String>("relf")
+                    .map(|s| s.as_str())
                     .context("Path of .relf file is required")?,
             );
             info!("Deserializing a relf file '{}'", relf.display());
