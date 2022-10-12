@@ -64,7 +64,7 @@ pub fn main() -> Result<()> {
                 .long("verbose")
                 .required(false)
                 .help("Print all debug messages")
-                .action(ArgAction::IncOccurrence),
+                .action(ArgAction::SetTrue),
         )
         .arg(
             Arg::new("trace")
@@ -84,7 +84,7 @@ pub fn main() -> Result<()> {
                         .long("eoc")
                         .required(false)
                         .help("Compatibility with eoc command-line toolkit")
-                        .action(ArgAction::IncOccurrence),
+                        .action(ArgAction::SetTrue),
                 )
                 .arg(
                     Arg::new("file")
@@ -167,7 +167,7 @@ pub fn main() -> Result<()> {
                 .arg(
                     Arg::new("relfs")
                         .required(true)
-                        .multiple_values(true)
+                        .num_args(1..)
                         .help("Names of a binary .relf files to use as sources")
                         .action(ArgAction::Set),
                 )
@@ -175,7 +175,7 @@ pub fn main() -> Result<()> {
         )
         .get_matches();
     let mut logger = SimpleLogger::new().without_timestamps();
-    logger = logger.with_level(if matches.contains_id("verbose") {
+    logger = logger.with_level(if matches.get_flag("verbose") {
         LevelFilter::Info
     } else if matches.contains_id("trace") {
         LevelFilter::Trace
@@ -220,7 +220,7 @@ pub fn main() -> Result<()> {
                     start.elapsed()
                 );
             } else {
-                let home = if subs.contains_id("eoc") {
+                let home = if subs.get_flag("eoc") {
                     info!("Running in eoc-compatible mode");
                     ".eoc/gmi"
                 } else {
@@ -254,6 +254,7 @@ pub fn main() -> Result<()> {
                     start.elapsed()
                 );
             }
+            print!("HELLO");
             let size = uni.save(relf)?;
             info!(
                 "The universe saved to '{}' ({} bytes)",
