@@ -258,7 +258,6 @@ pub fn main() -> Result<()> {
                     start.elapsed()
                 );
             }
-            print!("HELLO");
             let size = uni.save(relf)?;
             info!(
                 "The universe saved to '{}' ({} bytes)",
