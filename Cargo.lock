@@ -848,6 +848,6 @@ checksum = "f40009d85759725a34da6d89a94e63d7bdc50a862acf0dbc7c8e488f1edcb6f5"
 
 [[package]]
 name = "xml-builder"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6aff3eebeb8c12d38dd6dcbd07082929a55764d13ad695632c35132ff7cf61ec"
+checksum = "ccb75a3f8ef413a4fb3eb7203031bc6707c220f110e18983134866fd44ce02b3"

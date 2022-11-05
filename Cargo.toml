@@ -19,7 +19,7 @@ sxd-xpath = "0.4.2"
 sxd-document = "0.3.2"
 clap = { version = "4.0.14", features = ["cargo", "wrap_help"] }
 simple_logger = "2.3.0"
-xml-builder = "0.5.0"
+xml-builder = "0.5.1"
 ctor = "0.1.26"
 itertools = "0.10.5"
 glob = "0.3.0"
