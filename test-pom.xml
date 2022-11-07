@@ -45,22 +45,22 @@ SOFTWARE.
             </configuration>
           </execution>
           <execution>
-            <id>gmi-graphs</id>
+            <id>sodg-graphs</id>
             <goals>
-              <goal>gmi</goal>
+              <goal>sodg</goal>
             </goals>
             <configuration>
-              <gmiIncludes>org.eolang.reo.**</gmiIncludes>
-              <generateGmiXmlFiles>true</generateGmiXmlFiles>
+              <sodgIncludes>org.eolang.reo.**</sodgIncludes>
+              <generateSodgXmlFiles>true</generateSodgXmlFiles>
               <generateDotFiles>true</generateDotFiles>
               <generateGraphFiles>true</generateGraphFiles>
               <generateXemblyFiles>true</generateXemblyFiles>
             </configuration>
           </execution>
           <execution>
-            <id>gmi-everything</id>
+            <id>sodg-everything</id>
             <goals>
-              <goal>gmi</goal>
+              <goal>sodg</goal>
             </goals>
           </execution>
         </executions>
