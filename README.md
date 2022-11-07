@@ -1,4 +1,4 @@
-<img alt="logo" src="https://www.yegor256.com/images/books/elegant-objects/cactus.svg" height="100px" />
+<img alt="logo" src="https://www.objectionary.com/cactus.svg" height="100px" />
 
 [![EO principles respected here](https://www.elegantobjects.org/badge.svg)](https://www.elegantobjects.org)
 [![We recommend IntelliJ IDEA](https://www.elegantobjects.org/intellij-idea.svg)](https://www.jetbrains.com/idea/)
@@ -37,10 +37,10 @@ Then, create a simple EO program in `app.eo` file:
     "Hello, world!\n"
 ```
 
-Then, compile it to GMI using [eoc](https://github.com/objectionary/eoc):
+Then, compile it to Sot using [eoc](https://github.com/objectionary/eoc):
 
 ```
-$ eoc gmi
+$ eoc sodg
 ```
 
 Finally, run it:

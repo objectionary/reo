@@ -30,7 +30,7 @@ fn prints_help() {
         .arg("--help")
         .assert()
         .success()
-        .stdout(predicate::str::contains("GMI to Rust").and(predicate::str::contains("--help")));
+        .stdout(predicate::str::contains("SODG to Rust").and(predicate::str::contains("--help")));
 }
 
 #[test]

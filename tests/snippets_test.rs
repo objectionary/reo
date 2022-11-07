@@ -54,8 +54,8 @@ fn all_apps() -> Result<Vec<String>> {
 fn deploys_and_runs_all_apps() -> Result<()> {
     let mut uni = load_everything()?;
     for app in all_apps()? {
-        let expected = da!(uni, format!("Φ.{}.expected", app));
-        let actual = da!(uni, format!("Φ.{}", app));
+        let expected = uni.dataize(format!("Φ.{}.expected", app).as_str());
+        let actual = uni.dataize(format!("Φ.{}", app).as_str());
         assert_eq!(expected, actual, "{} failed", app);
     }
     Ok(())

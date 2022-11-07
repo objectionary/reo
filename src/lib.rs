@@ -18,21 +18,40 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+//! This is an experimental evaluator of a SODG:
+//!
+//! ```
+//! use reo::Universe;
+//! let mut uni = Universe::empty();
+//! ```
+
+#![doc(html_root_url = "https://docs.rs/reo/0.0.0")]
 // #![deny(warnings)]
 
-pub mod data;
-pub mod gmi;
-pub mod macros;
-pub mod org;
-pub mod scripts;
-pub mod setup;
-pub mod universe;
+mod org;
+mod scripts;
+mod setup;
+mod universe;
+mod dataize;
+
+use anyhow::Result;
+use std::collections::HashMap;
+
+/// A single atom.
+pub type Atom = fn(&mut Universe, v: u32) -> Result<u32>;
+
+/// A universe.
+pub struct Universe {
+    g: Sodg,
+    atoms: HashMap<String, Atom>
+}
 
 #[cfg(test)]
 use simple_logger::SimpleLogger;
 
 #[cfg(test)]
 use log::LevelFilter;
+use sodg::Sodg;
 
 #[cfg(test)]
 #[ctor::ctor]

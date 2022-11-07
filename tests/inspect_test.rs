@@ -29,27 +29,27 @@ use tempfile::TempDir;
 #[test]
 fn inspect_existing() -> Result<()> {
     let tmp = TempDir::new()?;
-    File::create(tmp.path().join("foo.gmi"))?.write_all(
+    File::create(tmp.path().join("foo.g"))?.write_all(
         "
-        ADD('$ν1');
-        BIND('$ε2', 'ν0', '$ν1', 'foo');
-        DATA('$ν1', 'ff ff');
+        ADD($ν1);
+        BIND(ν0, $ν1, foo);
+        DATA($ν1, ff-ff);
         "
         .as_bytes(),
     )?;
-    let relf = tmp.path().join("temp.relf");
+    let elf = tmp.path().join("temp.elf");
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .current_dir(tmp.path())
         .arg("compile")
         .arg(format!("--home={}", tmp.path().display()))
-        .arg(relf.as_os_str())
+        .arg(elf.as_os_str())
         .assert()
         .success();
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .arg("inspect")
-        .arg(relf.as_os_str())
+        .arg(elf.as_os_str())
         .arg("Q")
         .assert()
         .success()
@@ -62,7 +62,7 @@ fn inspect_nonexisting() -> Result<()> {
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .arg("inspect")
-        .arg("broken-file-name.relf")
+        .arg("broken-file-name.elf")
         .arg("foo")
         .assert()
         .failure()

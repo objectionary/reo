@@ -151,7 +151,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "44533bbbb3bb3c1fa17d9f2e4e38bbbaf8396ba82193c4cb1b6445d711445d36"
 dependencies = [
  "atty",
- "humantime",
+ "humantime 1.3.0",
  "log",
  "regex",
  "termcolor",
@@ -243,6 +243,12 @@ checksum = "df004cfca50ef23c36850aaaa59ad52cc70d0e90243c3c7737a4dd32dc7a3c4f"
 dependencies = [
  "quick-error",
 ]
+
+[[package]]
+name = "humantime"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 
 [[package]]
 name = "indexmap"
@@ -500,9 +506,11 @@ dependencies = [
  "serde",
  "serde_json",
  "simple_logger",
+ "sodg",
  "sxd-document",
  "sxd-xpath",
  "tempfile",
+ "timediff",
  "xml-builder",
 ]
 
@@ -554,6 +562,27 @@ dependencies = [
  "log",
  "time",
  "winapi",
+]
+
+[[package]]
+name = "sodg"
+version = "0.0.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b6e22cab7fca1735da82de43457506f312e0aeef3dd44ff55ac41548d88ec2b9"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "ctor",
+ "hex",
+ "itertools",
+ "lazy_static",
+ "log",
+ "regex",
+ "serde",
+ "simple_logger",
+ "sxd-document",
+ "sxd-xpath",
+ "xml-builder",
 ]
 
 [[package]]
@@ -646,6 +675,15 @@ name = "time-macros"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "42657b1a6f4d817cda8e7a0ace261fe0cc946cf3a80314390b22cc61ae080792"
+
+[[package]]
+name = "timediff"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2ec397e7943b73844bbf8329640375f30d62fc65ee0180489ccf54e0b32462cd"
+dependencies = [
+ "humantime 2.1.0",
+]
 
 [[package]]
 name = "typed-arena"

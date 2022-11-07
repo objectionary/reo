@@ -26,30 +26,30 @@ use std::io::Write;
 use tempfile::TempDir;
 
 #[test]
-fn dataizes_simple_gmi() -> Result<()> {
+fn dataizes_simple_sodg() -> Result<()> {
     let tmp = TempDir::new()?;
-    File::create(tmp.path().join("foo.gmi"))?.write_all(
+    File::create(tmp.path().join("foo.g"))?.write_all(
         "
-        ADD('$ν1');
-        BIND('$ε2', 'ν0', '$ν1', 'foo');
-        DATA('$ν1', 'ff ff');
+        ADD($ν1);
+        BIND(0, $ν1, foo);
+        PUT($ν1, ff-ff);
         "
         .as_bytes(),
     )?;
-    let relf = tmp.path().join("temp.relf");
+    let elf = tmp.path().join("temp.elf");
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .current_dir(tmp.path())
         .arg("--verbose")
         .arg("compile")
         .arg(format!("--home={}", tmp.path().display()))
-        .arg(relf.as_os_str())
+        .arg(elf.as_os_str())
         .assert()
         .success();
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .arg("dataize")
-        .arg(format!("--relf={}", relf.display()))
+        .arg(format!("--elf={}", elf.display()))
         .arg("foo")
         .assert()
         .success()
@@ -60,33 +60,33 @@ fn dataizes_simple_gmi() -> Result<()> {
 #[test]
 fn dataizes_in_eoc_mode() -> Result<()> {
     let tmp = TempDir::new()?;
-    let dir = tmp.path().join(".eoc").join("gmi");
+    let dir = tmp.path().join(".eoc").join("sodg");
     fsutils::mkdir(
         dir.to_str()
             .context(format!("Broken path {}", dir.display()))?,
     );
-    File::create(dir.join("foo.gmi"))?.write_all(
+    File::create(dir.join("foo.g"))?.write_all(
         "
-        ADD('$ν1');
-        BIND('$ε1', 'ν0', '$ν1', 'foo');
-        DATA('$ν1', 'ca fe');
+        ADD($ν1');
+        BIND(0, $ν1, foo);
+        PUT($ν1, ca-fe);
         "
         .as_bytes(),
     )?;
-    let relf = tmp.path().join("temp.relf");
+    let elf = tmp.path().join("temp.elf");
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .current_dir(tmp.path())
         .arg("compile")
         .arg("--eoc")
-        .arg(relf.as_os_str())
+        .arg(elf.as_os_str())
         .assert()
         .success();
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .current_dir(tmp.path())
         .arg("dataize")
-        .arg(format!("--relf={}", relf.display()))
+        .arg(format!("--elf={}", elf.display()))
         .arg("foo")
         .assert()
         .success()

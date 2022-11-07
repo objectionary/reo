@@ -28,43 +28,43 @@ use tempfile::TempDir;
 #[test]
 fn compiles_everything() -> Result<()> {
     let tmp = TempDir::new()?;
-    let relf = tmp.path().join("foo.relf");
+    let elf = tmp.path().join("foo.elf");
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .arg("--verbose")
         .arg("compile")
-        .arg("--home=target/eo/gmi/org/eolang/reo")
-        .arg(relf.as_os_str())
+        .arg("--home=target/eo/sodg/org/eolang/reo")
+        .arg(elf.as_os_str())
         .assert()
         .success();
-    assert!(relf.exists());
+    assert!(elf.exists());
     Ok(())
 }
 
 #[test]
 fn skips_compilation_if_file_present() -> Result<()> {
     let tmp = TempDir::new()?;
-    let relf = tmp.path().join("foo.relf");
+    let elf = tmp.path().join("foo.elf");
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .arg("compile")
-        .arg("--home=target/eo/gmi/org/eolang/reo")
-        .arg(relf.as_os_str())
+        .arg("--home=target/eo/sodg/org/eolang/reo")
+        .arg(elf.as_os_str())
         .assert()
         .success();
-    let size = std::fs::metadata(&relf)?.len();
-    let mtime = FileTime::from_last_modification_time(&std::fs::metadata(&relf)?);
+    let size = std::fs::metadata(&elf)?.len();
+    let mtime = FileTime::from_last_modification_time(&std::fs::metadata(&elf)?);
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .arg("compile")
-        .arg("--home=target/eo/gmi/org/eolang/reo")
-        .arg(relf.as_os_str())
+        .arg("--home=target/eo/sodg/org/eolang/reo")
+        .arg(elf.as_os_str())
         .assert()
         .success();
-    assert_eq!(size, std::fs::metadata(&relf)?.len());
+    assert_eq!(size, std::fs::metadata(&elf)?.len());
     assert_eq!(
         mtime,
-        FileTime::from_last_modification_time(&std::fs::metadata(&relf)?)
+        FileTime::from_last_modification_time(&std::fs::metadata(&elf)?)
     );
     Ok(())
 }
@@ -76,7 +76,7 @@ fn fails_when_directory_is_absent() -> Result<()> {
         .unwrap()
         .arg("compile")
         .arg(format!("--home={}", path))
-        .arg("target/failure.relf")
+        .arg("target/failure.elf")
         .assert()
         .code(1)
         .stderr(predicate::str::contains(format!("Can't access '{}'", path)));

@@ -18,30 +18,49 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use crate::data::Data;
-use crate::universe::Universe;
-use anyhow::{Context, Result};
-use log::trace;
+mod common;
+mod runtime;
 
-impl Universe {
-    /// Set vertex data.
-    pub fn data(&mut self, v: u32, d: Data) -> Result<()> {
-        self.vertices
-            .get_mut(&v)
-            .context(format!("Can't find ν{}", v))?
-            .data = Some(d.clone());
-        trace!("#data(ν{}, '{}'): data set", v, d.as_hex());
-        Ok(())
+use crate::runtime::load_everything;
+use anyhow::Result;
+use glob::glob;
+use reo::da;
+use reo::Universe;
+use std::path::Path;
+use itertools::Itertools;
+use tempfile::TempDir;
+
+fn all_scripts() -> Result<Vec<String>> {
+    let mut scripts = Vec::new();
+    for f in glob("sodg-tests/**/*.g")? {
+        let p = f?;
+        scripts.push(p.into_os_string().into_string().unwrap());
     }
+    Ok(scripts)
 }
 
 #[test]
-fn sets_simple_data() -> Result<()> {
-    let mut uni = Universe::empty();
-    let data = 42;
-    uni.add(0)?;
-    uni.data(0, Data::from_int(data))?;
-    assert_eq!(data, uni.dataize("Φ")?.as_int()?);
-    assert!(uni.inconsistencies().is_empty());
+fn dataizes_all_sodg_tests() -> Result<()> {
+    for path in all_scripts()? {
+        let tmp = TempDir::new()?;
+        let elf = tmp.path().join("temp.elf");
+        assert_cmd::Command::cargo_bin("reo")
+            .unwrap()
+            .arg("compile")
+            .arg(format!("--file={}", path))
+            .arg(elf.as_os_str())
+            .assert()
+            .success();
+        let extra = Universe::load(elf.as_path())?;
+        let mut uni = load_everything()?;
+        uni.merge(&extra);
+        let object = Path::new(&path)
+            .file_name()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .replace(".g", "");
+        da!(uni, format!("Φ.{}", object));
+    }
     Ok(())
 }

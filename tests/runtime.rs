@@ -19,20 +19,20 @@
 // SOFTWARE.
 
 use anyhow::Result;
-use reo::universe::Universe;
+use reo::Universe;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 
 pub fn load_everything() -> Result<Universe> {
-    let relf = Path::new("target/runtime.relf");
+    let elf = Path::new("target/runtime.elf");
     assert_cmd::Command::cargo_bin("reo")?
         .arg("compile")
-        .arg("--home=target/eo/gmi")
-        .arg(relf.as_os_str())
+        .arg("--home=target/eo/sodg")
+        .arg(elf.as_os_str())
         .assert()
         .success();
-    let uni = Universe::load(relf)?;
+    let uni = Universe::load(elf)?;
     assert!(uni.inconsistencies().is_empty());
     File::create(Path::new("target/runtime-inspect.txt"))?
         .write_all(uni.inspect("Q")?.as_bytes())?;
