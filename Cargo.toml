@@ -11,7 +11,7 @@ keywords = ["eolang", "compiler", "oop"]
 categories = ["command-line-utilities"]
 
 [dependencies]
-anyhow = "1.0.66"
+anyhow = "1.0.67"
 regex = "1.7.0"
 lazy_static = "1.4.0"
 log = "0.4.17"
