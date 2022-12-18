@@ -37,7 +37,7 @@ impl Universe {
         let mut vtx3 = vtx2.clone();
         let a = edge.a.clone();
         self.edges.remove(&e1);
-        self.edges.insert(e2, Edge::new(v1, v3, a.to_string()));
+        self.edges.insert(e2, Edge::new(v1, v3, a));
         for e in self.edges.values_mut().filter(|e| e.from == v2) {
             e.from = v3;
         }

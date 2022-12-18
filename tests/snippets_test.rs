@@ -33,17 +33,15 @@ fn all_apps() -> Result<Vec<String>> {
         let path = p.as_path();
         let app = path
             .to_str()
-            .context(format!("Can't get str from '{}'", path.display()))?
-            .splitn(2, "/")
-            .nth(1)
+            .context(format!("Can't get str from '{}'", path.display()))?.split_once('/').map(|x| x.1)
             .context(format!("Can't take path from '{}'", path.display()))?
-            .split(".")
+            .split('.')
             .collect::<Vec<&str>>()
             .split_last()
             .context(format!("Can't take split_last from '{}'", path.display()))?
             .1
             .join(".")
-            .replace("/", ".");
+            .replace('/', ".");
         apps.push(app.to_string());
     }
     Ok(apps)

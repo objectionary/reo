@@ -99,7 +99,7 @@ impl Universe {
                 trace!("#find: ξ=ν{} saved by ▼", xi);
                 continue;
             }
-            if k.starts_with("ν") {
+            if k.starts_with('ν') {
                 let num: String = k.chars().skip(1).collect::<Vec<_>>().into_iter().collect();
                 v = u32::from_str(num.as_str())?;
                 xi = v;

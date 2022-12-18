@@ -39,17 +39,17 @@ pub struct Gmi {
 impl Gmi {
     /// Read them from a file.
     pub fn from_file(file: &Path) -> Result<Gmi> {
-        return Gmi::from_string(
+        Gmi::from_string(
             fs::read_to_string(file).context(format!("Can't read from \"{}\"", file.display()))?,
-        );
+        )
     }
 
     /// Read them from a string.
     pub fn from_string(text: String) -> Result<Gmi> {
-        return Ok(Gmi {
+        Ok(Gmi {
             text,
             vars: HashMap::new(),
-        });
+        })
     }
 
     /// Set root.
@@ -61,10 +61,10 @@ impl Gmi {
     /// number of GMI instructions deployed.
     pub fn deploy_to(&mut self, uni: &mut Universe) -> Result<u32> {
         let txt = &self.text.clone();
-        let lines = txt.split("\n").map(|t| t.trim()).filter(|t| !t.is_empty());
+        let lines = txt.split('\n').map(|t| t.trim()).filter(|t| !t.is_empty());
         let mut total = 0;
         for (pos, t) in lines.enumerate() {
-            if t.starts_with("#") {
+            if t.starts_with('#') {
                 continue;
             }
             trace!("#deploy_to: deploying line no.{} '{}'...", pos + 1, t);
@@ -94,13 +94,13 @@ impl Gmi {
             .collect();
         match &cap[1] {
             "ADD" => {
-                let v = self.parse(&args[0], uni)?;
+                let v = self.parse(args[0], uni)?;
                 uni.add(v).context(format!("Failed to ADD({})", &args[0]))
             }
             "BIND" => {
-                let e = self.parse(&args[0], uni)?;
-                let v1 = self.parse(&args[1], uni)?;
-                let v2 = self.parse(&args[2], uni)?;
+                let e = self.parse(args[0], uni)?;
+                let v1 = self.parse(args[1], uni)?;
+                let v2 = self.parse(args[2], uni)?;
                 let a = &args[3];
                 uni.bind(e, v1, v2, a).context(format!(
                     "Failed to BIND({}, {}, {})",
@@ -108,21 +108,21 @@ impl Gmi {
                 ))
             }
             "COPY" => {
-                let e1 = self.parse(&args[0], uni)?;
-                let v3 = self.parse(&args[1], uni)?;
-                let e2 = self.parse(&args[2], uni)?;
+                let e1 = self.parse(args[0], uni)?;
+                let v3 = self.parse(args[1], uni)?;
+                let e2 = self.parse(args[2], uni)?;
                 uni.copy(e1, v3, e2).context(format!(
                     "Failed to COPY({}, {}, {})",
                     &args[0], &args[1], &args[2]
                 ))
             }
             "DATA" => {
-                let v = self.parse(&args[0], uni)?;
-                uni.data(v, Self::parse_data(&args[1])?)
+                let v = self.parse(args[0], uni)?;
+                uni.data(v, Self::parse_data(args[1])?)
                     .context(format!("Failed to DATA({})", &args[0]))
             }
             "ATOM" => {
-                let v = self.parse(&args[0], uni)?;
+                let v = self.parse(args[0], uni)?;
                 let m = &args[1];
                 uni.atom(v, m)
                     .context(format!("Failed to ATOM({})", &args[0]))
@@ -146,7 +146,7 @@ impl Gmi {
             Data::from_bytes(bytes)
         } else {
             let (t, tail) = d
-                .splitn(2, "/")
+                .splitn(2, '/')
                 .collect_tuple()
                 .context(format!("Strange data format: '{}'", d))?;
             match t {
@@ -174,14 +174,14 @@ impl Gmi {
                 0
             });
         }
-        let head = s.chars().next().context(format!("Empty identifier"))?;
+        let head = s.chars().next().context("Empty identifier".to_string())?;
         let tail: String = s.chars().skip(1).collect::<Vec<_>>().into_iter().collect();
         if head == '$' {
             Ok(*self.vars.entry(tail.to_string()).or_insert_with(|| {
                 match tail
                     .chars()
                     .next()
-                    .context(format!("Empty prefix"))
+                    .context("Empty prefix".to_string())
                     .unwrap()
                 {
                     'ν' => uni.next_v(),

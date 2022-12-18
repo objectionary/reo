@@ -77,7 +77,7 @@ impl Vertex {
     pub fn clone(&self) -> Self {
         Vertex {
             data: self.data.clone(),
-            lambda: self.lambda.clone(),
+            lambda: self.lambda,
             lambda_name: self.lambda_name.clone(),
             search: self.search.clone(),
         }
@@ -107,9 +107,9 @@ impl fmt::Debug for Universe {
                 .map(|(j, e)| format!("\n\t{} ε{}➞ ν{}", e.a, j, e.to))
                 .collect::<Vec<String>>();
             if let Some(d) = &v.data {
-                attrs.push(format!("{}", d.as_hex()));
+                attrs.push(d.as_hex().to_string());
             }
-            if let Some(_) = &v.lambda {
+            if v.lambda.is_some() {
                 attrs.push("λ".to_string());
             }
             lines.push(format!("ν{} -> ⟦{}⟧", i, attrs.join(", ")));

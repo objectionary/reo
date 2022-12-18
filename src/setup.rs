@@ -46,12 +46,12 @@ pub fn setup(uni: &mut Universe, dir: &Path) -> Result<u32> {
             .context(format!("Can't get parent from '{}'", rel.display()))?
             .to_str()
             .context(format!("Can't turn path '{}' to str", rel.display()))?
-            .replace("/", ".");
+            .replace('/', ".");
         let mut gmi = Gmi::from_file(path).context(format!("Can't read {}", path.display()))?;
         let mut root: u32 = 0;
         let mut pk = "".to_owned();
         trace!("#setup: package is '{}'", pkg);
-        for p in pkg.split(".").filter(|i| !i.is_empty()) {
+        for p in pkg.split('.').filter(|i| !i.is_empty()) {
             pk.push_str(format!(".{}", p).as_str());
             match pkgs.get(&pk) {
                 Some(v) => {

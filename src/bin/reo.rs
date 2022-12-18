@@ -308,7 +308,7 @@ pub fn main() -> Result<()> {
                 .collect::<Vec<&String>>()
                 .into_iter()
                 .map(|f| Universe::load(Path::new(f)).unwrap())
-                .inspect(|u| uni.merge(&u))
+                .inspect(|u| uni.merge(u))
                 .count();
             let size = uni.save(target)?;
             info!(
