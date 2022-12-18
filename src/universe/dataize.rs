@@ -107,7 +107,6 @@ impl Universe {
                 continue;
             }
             if k == "ξ" {
-                v = v;
                 trace!("#find: ν{}.ξ -> {}", v, v);
                 continue;
             }

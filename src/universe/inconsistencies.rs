@@ -32,7 +32,7 @@ impl Universe {
         for e in self.exclusive_trio() {
             errors.push(e);
         }
-        for e in errors.to_vec() {
+        for e in &errors {
             error!("{}", e)
         }
         errors

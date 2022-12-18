@@ -82,7 +82,7 @@ impl Data {
     }
 
     /// From STR.
-    pub fn from_str(d: &str) -> Self {
+    pub fn from_ptr_str(d: &str) -> Self {
         Self::from_bytes(d.to_string().as_bytes().to_vec())
     }
 
@@ -205,7 +205,7 @@ fn compares_with_data() {
 #[test]
 fn prints_bytes() {
     let txt = "привет";
-    let d = Data::from_str(txt);
+    let d = Data::from_ptr_str(txt);
     assert_eq!("D0-BF-D1-80-D0-B8-D0-B2-D0-B5-D1-82", d.as_hex());
     assert_eq!(txt, Data::from_hex(d.as_hex()).as_string().unwrap());
 }
@@ -213,7 +213,7 @@ fn prints_bytes() {
 #[test]
 fn prints_empty_bytes() {
     let txt = "";
-    let d = Data::from_str(txt);
+    let d = Data::from_ptr_str(txt);
     assert_eq!("--", d.as_hex());
 }
 
