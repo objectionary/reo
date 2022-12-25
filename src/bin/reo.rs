@@ -29,60 +29,17 @@ use log::{info, LevelFilter};
 use reo::Universe;
 use simple_logger::SimpleLogger;
 use std::fs;
+use std::fs::metadata;
 use std::path::Path;
 use std::time::{Duration, Instant};
 use sodg::Script;
 use sodg::Sodg;
 use timediff::TimeDiff;
 
-fn mtime(dir: &Path) -> Result<FileTime> {
-    let mut total = 0;
-    let mut recent: FileTime = FileTime::from_unix_time(0, 0);
-    for f in glob(format!("{}/**/*.sodg", dir.display()).as_str())? {
-        let mtime = FileTime::from_last_modification_time(&fs::metadata(f.unwrap()).unwrap());
-        if mtime > recent {
-            recent = mtime;
-        }
-        total += 1;
-    }
-    info!(
-        "There are {} .sodg files in {}, the latest modification is {}",
-        total,
-        dir.display(),
-        TimeDiff::to_diff_duration(
-            Duration::new(
-                (FileTime::now().seconds() - recent.seconds()).try_into().unwrap(),
-                0
-            )
-        ).parse()?
-    );
-    Ok(recent)
-}
-
-/// Returns TRUE if file `f1` is newer than file `f2`.
-fn newer(f1: &Path, f2: &Path) -> bool {
-    let m2 = if f2.exists() {
-        FileTime::from_last_modification_time(&fs::metadata(f2).unwrap())
-    } else {
-        FileTime::from_unix_time(0, 0)
-    };
-    newer_ft(f1, m2)
-}
-
-/// Returns TRUE if file `f1` is newer than file `f2`.
-fn newer_ft(f1: &Path, m2: FileTime) -> bool {
-    let m1 = if f1.exists() {
-        FileTime::from_last_modification_time(&fs::metadata(f1).unwrap())
-    } else {
-        FileTime::from_unix_time(0, 0)
-    };
-    m1 > m2
-}
-
 pub fn main() -> Result<()> {
     let matches = Command::new("reo")
         .setting(AppSettings::ColorNever)
-        .about("SODG to Rust compiler and runner")
+        .about("SODG-based Virtual Machine for EO Programs")
         .version(crate_version!())
         .arg(
             Arg::new("verbose")
@@ -103,7 +60,7 @@ pub fn main() -> Result<()> {
         .subcommand(
             Command::new("compile")
                 .setting(AppSettings::ColorNever)
-                .about("Compile all instructions into a binary .elf file")
+                .about("Compile all instructions into a binary .reo file")
                 .arg(
                     Arg::new("eoc")
                         .long("eoc")
@@ -112,48 +69,38 @@ pub fn main() -> Result<()> {
                         .help("Compatibility with eoc command-line toolkit"),
                 )
                 .arg(
-                    Arg::new("file")
-                        .long("file")
-                        .short('f')
-                        .required(false)
-                        .help("Name of a single .sodg file to work with")
-                        .takes_value(true)
-                        .action(ArgAction::Set),
-                )
-                .arg(
-                    Arg::new("home")
-                        .long("home")
-                        .default_value(".")
-                        .name("dir")
-                        .required(false)
-                        .help("Directory with .sodg files")
-                        .takes_value(true)
-                        .action(ArgAction::Set),
-                )
-                .arg(
-                    Arg::new("elf")
+                    Arg::new("binary")
+                        .long("binary")
+                        .short("b")
                         .required(true)
-                        .help("Name of a binary .elf file to create")
+                        .help("Name of a binary .reo file to create")
                         .takes_value(true)
                         .action(ArgAction::Set),
                 )
                 .arg(
                     Arg::new("force")
                         .long("force")
+                        .short("f")
                         .required(false)
                         .takes_value(false)
                         .help("Compile anyway, even if the binary file is up to date"),
-                ),
+                )
+                .arg(
+                    Arg::new("file")
+                        .required(true)
+                        .help("Name of SODG file to use (or directory with files)")
+                        .takes_value(true)
+                        .action(ArgAction::Set),
+                )
         )
         .subcommand(
             Command::new("dataize")
                 .setting(AppSettings::ColorNever)
                 .about("Dataizes an object")
                 .arg(
-                    Arg::new("elf")
-                        .long("elf")
+                    Arg::new("file")
                         .required(true)
-                        .help("Name of a binary .elf file to use")
+                        .help("Name of a binary .reo file to use")
                         .takes_value(true)
                         .action(ArgAction::Set),
                 )
@@ -162,47 +109,6 @@ pub fn main() -> Result<()> {
                         .required(true)
                         .help("Fully qualified object name")
                         .takes_value(false)
-                        .action(ArgAction::Set),
-                )
-                .arg_required_else_help(true),
-        )
-        .subcommand(
-            Command::new("inspect")
-                .setting(AppSettings::ColorNever)
-                .about("Read a binary universe and print all the details")
-                .arg(
-                    Arg::new("elf")
-                        .required(true)
-                        .help("Name of a binary .elf file to use")
-                        .takes_value(true)
-                        .action(ArgAction::Set),
-                )
-                .arg(
-                    Arg::new("object")
-                        .required(true)
-                        .help("Fully qualified object name")
-                        .takes_value(false)
-                        .action(ArgAction::Set),
-                )
-                .arg_required_else_help(true),
-        )
-        .subcommand(
-            Command::new("link")
-                .setting(AppSettings::ColorNever)
-                .about("Take a list of .elf files and join them all into one")
-                .arg(
-                    Arg::new("elf")
-                        .required(true)
-                        .help("Name of a binary .elf file to create")
-                        .takes_value(true)
-                        .action(ArgAction::Set),
-                )
-                .arg(
-                    Arg::new("elfs")
-                        .required(true)
-                        .multiple(true)
-                        .help("Names of a binary .elf files to use as sources")
-                        .takes_value(true)
                         .action(ArgAction::Set),
                 )
                 .arg_required_else_help(true),
@@ -224,124 +130,91 @@ pub fn main() -> Result<()> {
     info!("pwd: {}", std::env::current_dir()?.as_path().display());
     let start = Instant::now();
     match matches.subcommand() {
-        // Some(("compile", subs)) => {
-        //     let elf = Path::new(
-        //         subs.get_one::<String>("elf")
-        //             .context("Path of .elf file is required")?,
-        //     );
-        //     let mut g = Sodg::empty();
-        //     if subs.contains_id("file") {
-        //         let recent = Path::new(subs.value_of("file").context("Path of file is required")?);
-        //         if newer(elf, recent) && !subs.contains_id("force") {
-        //             info!(
-        //                 "Relf file '{}' is up to date ({} bytes), no need to compile (use --force to compile anyway)",
-        //                 elf.display(), fs::metadata(elf)?.len()
-        //             );
-        //             return Ok(());
-        //         }
-        //         info!(
-        //             "Deploying SODG instructions from a single file '{}'",
-        //             recent.display()
-        //         );
-        //         let mut s = Script::from_string(fs::read_to_string(recent).unwrap());
-        //         let total = s.deploy_to(&mut g)?;
-        //         info!(
-        //             "Deployed {} SODG instructions in {:?}",
-        //             total,
-        //             start.elapsed()
-        //         );
-        //     } else {
-        //         let home = if subs.contains_id("eoc") {
-        //             info!("Running in eoc-compatible mode");
-        //             ".eoc/sodg"
-        //         } else {
-        //             subs.value_of("dir").unwrap()
-        //         };
-        //         info!("Home requested as '{}'", home);
-        //         let full_home =
-        //             fs::canonicalize(home).context(format!("Can't access '{}'", home))?;
-        //         let cwd = full_home.as_path();
-        //         info!("Home is set to {}", cwd.display());
-        //         if newer_ft(elf, mtime(cwd)?) && !subs.contains_id("force") {
-        //             info!(
-        //                 "Relf file '{}' ({} bytes) is newer than that directory, no need to compile (use --force to compile anyway)",
-        //                 elf.display(), fs::metadata(elf)?.len()
-        //             );
-        //             return Ok(());
-        //         }
-        //         info!(
-        //             "Deploying instructions from a directory '{}'",
-        //             cwd.display()
-        //         );
-        //         g.add(0)?;
-        //         let total = g.setup(cwd)?;
-        //         info!(
-        //             "Deployed {} GMI instructions in {:?}",
-        //             total,
-        //             start.elapsed()
-        //         );
-        //     }
-        //     let size = g.save(elf)?;
-        //     info!(
-        //         "The SODG saved to '{}' ({} bytes)",
-        //         elf.display(),
-        //         size
-        //     );
-        // }
-        // Some(("dataize", subs)) => {
-        //     let object = subs
-        //         .get_one::<String>("object")
-        //         .context("Object name is required")?;
-        //     let elf = Path::new(
-        //         subs.value_of("elf")
-        //             .context("Path of .elf file is required")?,
-        //     );
-        //     info!("Deserializing a elf file '{}'", elf.display());
-        //     let mut g = Sodg::load(elf)?;
-        //     info!(
-        //         "Deserialized {} bytes in {:?}",
-        //         fs::metadata(elf)?.len(),
-        //         start.elapsed()
-        //     );
-        //     info!("Dataizing '{}' object...", object);
-        //     let mut uni = Universe::empty();
-        //     let ret = uni.dataize(format!("Φ.{}", object).as_str()).as_hex();
-        //     info!("Dataization result, in {:?} is: {}", start.elapsed(), ret);
-        //     println!("{}", ret);
-        // }
-        Some(("inspect", subs)) => {
-            let elf = Path::new(subs.value_of("elf").unwrap());
+        Some(("compile", subs)) => {
+            let bin = Path::new(subs.get_one::<String>("binary")?);
+            let mut src;
+            if subs.contains_id("eoc") {
+                info!("Running in eoc-compatible mode");
+                src = Path::new(".eoc/sodg");
+            } else {
+                src = Path::new(
+                    subs.get_one::<String>("file")
+                        .context("Path of .sodg file is required (or directory with them)")?
+                );
+            }
+            let mut g = Sodg::empty();
+            if metadata(src).unwrap().is_file() {
+                if newer(elf, recent) && !subs.contains_id("force") {
+                    info!(
+                        "The binary file '{}' is up to date ({} bytes), no need to compile (use --force to compile anyway)",
+                        bin.display(), fs::metadata(bin)?.len()
+                    );
+                    return Ok(());
+                }
+                info!(
+                    "Compiling SODG instructions from a single file '{}' into '{}'",
+                    src.display(), bin.display()
+                );
+                let mut s = Script::from_string(fs::read_to_string(src).unwrap());
+                let total = s.deploy_to(&mut g)?;
+                info!(
+                    "Deployed {} SODG instructions in {:?}",
+                    total,
+                    start.elapsed()
+                );
+            } else {
+                info!("Home requested as '{}'", src.display());
+                let full_home =
+                    fs::canonicalize(src).context(format!("Can't access '{}'", src.display()))?;
+                let cwd = full_home.as_path();
+                info!("Home is set to {}", cwd.display());
+                if newer_ft(bin, mtime(cwd)?) && !subs.contains_id("force") {
+                    info!(
+                        "The binary file '{}' ({} bytes) is newer than that directory '{}', no need to compile (use --force to compile anyway)",
+                        bin.display(), fs::metadata(bin)?.len(), src.display()
+                    );
+                    return Ok(());
+                }
+                info!(
+                    "Compiling instructions from the directory '{}' into '{}'",
+                    cwd.display(), bin.display()
+                );
+                g.add(0)?;
+                let total = g.setup(cwd)?;
+                info!(
+                    "Deployed {} SODG instructions in {:?}",
+                    total,
+                    start.elapsed()
+                );
+            }
+            let size = g.save(bin)?;
+            info!(
+                "The SODG saved to '{}' ({} bytes)",
+                bin.display(),
+                size
+            );
+        }
+        Some(("dataize", subs)) => {
+            let bin = Path::new(
+                subs.value_of("file")
+                    .context("Path of .reo file is required")?,
+            );
             let object = subs
                 .get_one::<String>("object")
                 .context("Object name is required")?;
-            let g = Sodg::load(elf).unwrap();
+            info!("Deserializing the binary file '{}'", bin.display());
+            let mut g = Sodg::load(bin)?;
             info!(
                 "Deserialized {} bytes in {:?}",
-                fs::metadata(elf).unwrap().len(),
+                fs::metadata(bin)?.len(),
                 start.elapsed()
             );
-            println!("{}", g.inspect(object.as_str())?);
+            info!("Dataizing the '{}' object...", object);
+            let mut uni = Universe::from_graph(g);
+            let ret = uni.dataize(format!("Φ.{}", object).as_str()).as_hex();
+            info!("Dataization result, in {:?} is: {}", start.elapsed(), ret);
+            println!("{}", ret);
         }
-        // Some(("link", subs)) => {
-        //     let target = Path::new(subs.value_of("elf").unwrap());
-        //     let mut uni = Universe::load(target).unwrap();
-        //     let linked = subs
-        //         .values_of("elfs")
-        //         .unwrap()
-        //         .collect::<Vec<&str>>()
-        //         .into_iter()
-        //         .map(|f| Sodg::load(Path::new(f)).unwrap())
-        //         .inspect(|x| uni.merge(&x))
-        //         .count();
-        //     let size = g.save(target)?;
-        //     info!(
-        //         "The SODG made of {} parts saved to '{}' ({} bytes) in {:?}",
-        //         linked,
-        //         target.display(),
-        //         size,
-        //         start.elapsed()
-        //     );
-        // }
         _ => unreachable!(),
     }
     Ok(())

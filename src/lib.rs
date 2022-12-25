@@ -18,7 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-//! This is an experimental evaluator of a SODG:
+//! This is an experimental [SODG](https://github.com/objectionary/sodg)-based
+//! virtual machine for
+//! [EO](https://www.eolang.org) programs:
 //!
 //! ```
 //! use reo::Universe;
@@ -32,7 +34,6 @@ mod org;
 mod scripts;
 mod setup;
 mod universe;
-mod dataize;
 
 use anyhow::Result;
 use std::collections::HashMap;
