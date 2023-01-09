@@ -28,16 +28,16 @@ use tempfile::TempDir;
 #[test]
 fn compiles_everything() -> Result<()> {
     let tmp = TempDir::new()?;
-    let elf = tmp.path().join("foo.elf");
+    let target = tmp.path().join("target");
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .arg("--verbose")
         .arg("compile")
-        .arg("--home=target/eo/sodg/org/eolang/reo")
-        .arg(elf.as_os_str())
+        .arg("target/eo/sodg/org/eolang/reo")
+        .arg(target.as_os_str())
         .assert()
         .success();
-    assert!(elf.exists());
+    assert!(target.join("org/eolang/int.reo").exists());
     Ok(())
 }
 
@@ -75,8 +75,8 @@ fn fails_when_directory_is_absent() -> Result<()> {
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .arg("compile")
-        .arg(format!("--home={}", path))
-        .arg("target/failure.elf")
+        .arg(path)
+        .arg("/usr/target")
         .assert()
         .code(1)
         .stderr(predicate::str::contains(format!("Can't access '{}'", path)));

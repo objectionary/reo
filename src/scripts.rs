@@ -26,8 +26,8 @@ use sodg::Hex;
 /// that it already exists there.
 pub fn copy_of_int(uni: &mut Universe, data: i64) -> Result<u32> {
     let v = uni.add();
-    let int = uni.find(0, "org.eolang.int")?;
-    uni.bind(v, int, "π");
-    uni.put(v, Hex::from_i64(data));
+    let int = uni.find("org.eolang.int")?;
+    uni.bind(v.clone(), int, "π");
+    uni.put(v.clone(), Hex::from_i64(data));
     Ok(v)
 }

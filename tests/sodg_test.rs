@@ -32,7 +32,7 @@ use tempfile::TempDir;
 
 fn all_scripts() -> Result<Vec<String>> {
     let mut scripts = Vec::new();
-    for f in glob("sodg-tests/**/*.g")? {
+    for f in glob("sodg-tests/**/*.sodg")? {
         let p = f?;
         scripts.push(p.into_os_string().into_string().unwrap());
     }

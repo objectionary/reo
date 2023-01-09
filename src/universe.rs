@@ -18,11 +18,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet, VecDeque};
-use std::fmt;
+use std::collections::HashMap;
 use std::str::FromStr;
-use anyhow::{anyhow, Context};
+use anyhow::{anyhow, Context, Result};
+use log::trace;
 use sodg::Hex;
 use sodg::Sodg;
 use crate::{Atom, Universe};
@@ -71,31 +70,16 @@ impl Universe {
         self.g.bind(v1, v2, a).unwrap();
     }
 
-    /// Save data into a vertex.
+    /// Save data into a vertex. If there is no vertex `v`, the function
+    /// will panic.
     pub fn put(&mut self, v: u32, d: Hex) {
         self.g.put(v, d).unwrap();
     }
 
-    /// Get data.
+    /// Get the `Hex` from the vertex.
+    /// If there is no vertex `v`, the function will panic.
     pub fn data(&mut self, v: u32) -> Hex {
-        self.g.data(v).unwrap().tail(1)
-    }
-
-    /// Get lambda.
-    pub fn lambda(&mut self, v: u32) -> String {
-        self.g.data(v).unwrap().tail(1).to_string()
-    }
-
-    /// Has data.
-    pub fn has_data(&mut self, v: u32) -> bool {
-        let d = self.g.data(v).unwrap();
-        !d.is_empty() && d.byte_at(0) == 0x01
-    }
-
-    /// Has lambda.
-    pub fn has_lambda(&mut self, v: u32) -> bool {
-        let d = self.g.data(v).unwrap();
-        !d.is_empty() && d.byte_at(0) == 0x02
+        self.g.data(v).unwrap()
     }
 
     /// Dataize by absolute locator. The search always starts from the
@@ -103,146 +87,99 @@ impl Universe {
     /// from "Φ". If you need to find any vertex starting from non-root
     /// one, use `find` method.
     pub fn dataize(&mut self, loc: &str) -> Result<Hex> {
-        if self.g.is_empty() {
-            return Err(anyhow!("The Universe is empty, can't dataize {}", loc));
-        }
-        let v = self
-            .find(0, loc)
-            .context(format!("Failed to find {}", loc))?;
+        let v = self.find(loc)?;
         let data = self.g.data(v)
-            .context(format!("There is no data in ν{}", v))?
+            .context(format!("There is no data in ν{v}"))?
             .tail(1);
         trace!(
-            "#dataize: data found in ν{} ({} bytes), all good!",
-            v,
+            "#dataize: data found in ν{v} ({} bytes), all good!",
             data.len()
         );
         Ok(data)
     }
 
-    /// Find a vertex in the Universe by its locator. The search
-    /// starts from the vertex `v`, but the locator may jump to
-    /// the root vertex, if it starts with "Φ".
-    pub fn find(&mut self, v1: u32, loc: &str) -> Result<u32> {
-        trace!("#find(ν{}, '{}'): starting...", v1, loc);
-        let mut v = v1;
-        let mut xi = v;
-        let mut xis = VecDeque::new();
-        let mut locator: VecDeque<String> = VecDeque::new();
-        loc.split('.')
-            .for_each(|k| locator.push_back(k.to_string()));
-        let mut jumps = 0;
-        loop {
-            let next = locator.pop_front();
-            if next.is_none() {
-                trace!("#find: end of locator, we are at ν{}", v);
-                break;
-            }
-            let k = next.unwrap().to_string();
-            if k.is_empty() {
-                return Err(anyhow!("System error, the locator is empty"));
-            }
-            jumps += 1;
-            if jumps > 200 {
-                return Err(anyhow!(
-                    "Too many jumps ({}), locator length is {}: '{}'",
-                    jumps,
-                    locator.len(),
-                    itertools::join(locator.clone(), ".")
-                ));
-            }
-            if k == "Δ" && self.has_data(v) {
-                trace!("#find: ν{}.Δ is found!", v);
-                break;
-            }
-            if k == "▲" {
-                xi = xis.pop_back().unwrap();
-                trace!("#find: ξ loaded to ν{} by ▲", xi);
-                continue;
-            }
-            if k == "▼" {
-                xis.push_back(xi);
-                trace!("#find: ξ=ν{} saved by ▼", xi);
-                continue;
-            }
-            if k.starts_with("ν") {
-                let num: String = k.chars().skip(1).collect::<Vec<_>>().into_iter().collect();
-                v = u32::from_str(num.as_str())?;
-                xi = v;
-                trace!("#find: jumping directly to ν{}", v);
-                continue;
-            }
-            if k == "ξ" {
-                v = v;
-                trace!("#find: ν{}.ξ -> {}", v, v);
-                continue;
-            }
-            if k == "Φ" || k == "Q" {
-                v = 0;
-                xi = v;
-                trace!("#find: Φ/ν{}", v);
-                continue;
-            }
-            if let Some(to) = self.g.kid(v, k.as_str()) {
-                trace!("#find: ν{}.{} -> ν{}", v, k, to);
-                v = to;
-                xi = v;
-                continue;
-            };
-            if let Some(to) = self.g.kid(v, "π") {
-                trace!("#find: ν{}.π -> ν{} (.{} not found)", v, to, k);
-                v = to;
-                locator.push_front(k);
-                continue;
-            }
-            if let Some(to) = self.g.kid(v, "φ") {
-                trace!("#find: ν{}.φ -> ν{} (.{} not found)", v, to, k);
-                v = to;
-                xi = v;
-                locator.push_front(k);
-                continue;
-            }
-            if self.has_lambda(v) {
-                let lname = self.lambda(v);
-                trace!("#find: at ν{} calling λ{}(ξ=ν{})...", v, lname, xi);
-                // let to = vtx.lambda.unwrap()(self, xi)?;
-                let to = 0;
-                locator.push_front(format!("ν{}", to));
-                trace!("#find: λ{} in ν{}(ξ=ν{}) returned ν{}", lname, v, xi, to);
-                trace!(
-                    "#find: λ at λ{} reset locator to '{}'",
-                    v,
-                    itertools::join(locator.clone(), ".")
-                );
-                continue;
-            }
-            let others : Vec<String> = self.g.kids(v)?.into_iter().map(|(a, to)| a).collect();
-            return Err(anyhow!(
-                "Can't find .{} in ν{} among other {} attribute{}: {}",
-                k,
-                v,
-                others.len(),
-                if others.len() == 1 { "" } else { "s" },
-                others.join(", ")
-            ));
+    /// Find vertex by absolute locator. The search always starts from the
+    /// root node of the tree. It is recommended to start the locator
+    /// from "Φ".
+    pub fn find(&mut self, loc: &str) -> Result<u32> {
+        if self.g.is_empty() {
+            return Err(anyhow!("The Universe is empty, can't dataize {loc}"));
         }
-        trace!("#find: found ν{} by '{}'", v1, loc);
+        let v = self.g
+            .find_with_closure(0, loc, |v, a, b| {
+                // return self.resolve(v, a, b);
+                return Ok("boom".to_string());
+            })
+            .context(format!("Failed to find {loc}"))?;
         Ok(v)
     }
-}
 
-#[cfg(test)]
-use anyhow::Result;
-use log::trace;
-
-#[test]
-fn pi_and_phi_together() -> Result<()> {
-    let mut uni = Universe::empty();
-    let v1 = uni.add();
-    let v2 = uni.add();
-    uni.bind(v1, v2, "π");
-    uni.bind(v1, v2, "φ");
-    Ok(())
+    /// Resolve a locator on a vertex, if it's not found.
+    fn resolve(&mut self, at: u32, a: &str, b: &str) -> Result<String> {
+        trace!("#resolve(ν{at}, '{a}', '{b}'): starting...");
+        // if k == "▲" {
+        //     xi = xis.pop_back().unwrap();
+        //     trace!("#find: ξ loaded to ν{} by ▲", xi);
+        //     continue;
+        // }
+        // if k == "▼" {
+        //     xis.push_back(xi);
+        //     trace!("#find: ξ=ν{} saved by ▼", xi);
+        //     continue;
+        // }
+        if a.starts_with("ν") {
+            let num: String = a.chars().skip(1).collect::<Vec<_>>().into_iter().collect();
+            let v = u32::from_str(num.as_str())?;
+            // xi = v;
+            trace!("#resolve: jumping directly to ν{v}");
+            return Ok(format!("ν{v}"));
+        }
+        if a == "ξ" || a == "$" {
+            trace!("#resolve: ν{at}.ξ -> {at}");
+            return Ok(format!("ν{at}"));
+        }
+        if a == "Φ" || a == "Q" {
+            // xi = v;
+            trace!("#resolve: Φ/ν{at}");
+            return Ok("ν0".to_string());
+        }
+        if let Some(to) = self.g.kid(at, "ξ") {
+            trace!("#resolve: ν{at}.ξ -> ν{to} (.{a} not found)");
+            // locator.push_front(k);
+            return Ok(format!("ν{to}"));
+        }
+        if let Some(to) = self.g.kid(at, "π") {
+            trace!("#resolve: ν{at}.π -> ν{to} (.{a} not found)");
+            // locator.push_front(k);
+            return Ok(format!("ν{to}"));
+        }
+        if let Some(to) = self.g.kid(at, "φ") {
+            trace!("#resolve: ν{at}.φ -> ν{to} (.{a} not found)");
+            // xi = v;
+            // locator.push_front(k);
+            return Ok(format!("ν{to}"));
+        }
+        if let Some(lv) = self.g.kid(at, "λ") {
+            let lambda = self.data(lv).to_utf8().unwrap();
+            trace!("#resolve: at ν{at} calling λ{lambda}(ξ=ν?)...");
+            let to = self.atoms.get(lambda.as_str()).unwrap()(self, 0)?;
+            // locator.push_front(format!("ν{}", to));
+            trace!("#resolve: λ{lambda} in ν{at}(ξ=ν?) returned ν{to}");
+            // trace!(
+            //     "#find: λ at λ{} reset locator to '{}'",
+            //     v,
+            //     itertools::join(locator.clone(), ".")
+            // );
+            return Ok(format!("ν{to}"));
+        }
+        let others : Vec<String> = self.g.kids(at.clone())?.into_iter().map(|(k, a, b)| k).collect();
+        return Err(anyhow!(
+            "Can't find .{a} in ν{at} among other {} attribute{}: {}",
+            others.len(),
+            if others.len() == 1 { "" } else { "s" },
+            others.join(", ")
+        ));
+    }
 }
 
 #[cfg(test)]
@@ -256,13 +193,17 @@ fn rand(uni: &mut Universe, _: u32) -> Result<u32> {
 #[test]
 fn generates_random_int() -> Result<()> {
     let mut uni = Universe::empty();
+    let root = uni.add();
+    assert_eq!(0, root);
     let v1 = uni.add();
-    uni.bind(0, v1, "int");
+    uni.bind(root, v1, "int");
     let v2 = uni.add();
-    uni.bind(0, v2, "rand");
-    uni.bind(0, v2, "x");
+    uni.bind(root, v2, "rand");
+    uni.bind(root, v2, "x");
     uni.register("rand", rand);
-    uni.put(v2, Hex::from_str("rand"));
+    let lambda = uni.add();
+    uni.bind(v2, lambda, "λ");
+    uni.put(lambda, Hex::from_str("rand"));
     let first = uni.dataize("Φ.x.Δ")?.to_i64()?;
     let second = uni.dataize("Φ.x.Δ")?.to_i64()?;
     assert_ne!(first, second);

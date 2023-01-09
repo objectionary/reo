@@ -25,16 +25,35 @@ use anyhow::Result;
 use clap::{crate_version, AppSettings, Arg, ArgAction, Command};
 use filetime::FileTime;
 use glob::glob;
-use log::{info, LevelFilter};
+use log::{debug, info, LevelFilter};
 use reo::Universe;
 use simple_logger::SimpleLogger;
 use std::fs;
 use std::fs::metadata;
 use std::path::Path;
-use std::time::{Duration, Instant};
+use std::time::{Instant};
 use sodg::Script;
 use sodg::Sodg;
-use timediff::TimeDiff;
+
+/// Returns TRUE if file `f1` is newer than file `f2`.
+fn newer(f1: &Path, f2: &Path) -> bool {
+    let m2 = if f2.exists() {
+        FileTime::from_last_modification_time(&metadata(f2).unwrap())
+    } else {
+        FileTime::from_unix_time(0, 0)
+    };
+    newer_ft(f1, m2)
+}
+
+/// Returns TRUE if file `f1` is newer than file `f2`.
+fn newer_ft(f1: &Path, m2: FileTime) -> bool {
+    let m1 = if f1.exists() {
+        FileTime::from_last_modification_time(&metadata(f1).unwrap())
+    } else {
+        FileTime::from_unix_time(0, 0)
+    };
+    m1 > m2
+}
 
 pub fn main() -> Result<()> {
     let matches = Command::new("reo")
@@ -60,43 +79,61 @@ pub fn main() -> Result<()> {
         .subcommand(
             Command::new("compile")
                 .setting(AppSettings::ColorNever)
-                .about("Compile all instructions into a binary .reo file")
+                .about("Compile .sodg files into binary .reo files")
                 .arg(
-                    Arg::new("eoc")
-                        .long("eoc")
-                        .required(false)
-                        .takes_value(false)
-                        .help("Compatibility with eoc command-line toolkit"),
+                    Arg::new("sources")
+                        .required(true)
+                        .help("Directory with .sodg files to compile")
+                        .takes_value(true)
+                        .action(ArgAction::Set),
                 )
                 .arg(
-                    Arg::new("binary")
-                        .long("binary")
-                        .short("b")
+                    Arg::new("target")
                         .required(true)
-                        .help("Name of a binary .reo file to create")
+                        .help("Directory with .reo binary files to create")
                         .takes_value(true)
                         .action(ArgAction::Set),
                 )
                 .arg(
                     Arg::new("force")
                         .long("force")
-                        .short("f")
+                        .short('f')
                         .required(false)
                         .takes_value(false)
-                        .help("Compile anyway, even if the binary file is up to date"),
+                        .help("Compile anyway, even if a binary file is up to date"),
                 )
+        )
+        .subcommand(
+            Command::new("merge")
+                .setting(AppSettings::ColorNever)
+                .about("Merge binary .reo files into a single .reo file")
                 .arg(
                     Arg::new("file")
                         .required(true)
-                        .help("Name of SODG file to use (or directory with files)")
+                        .help("Name of a binary .reo file to create")
                         .takes_value(true)
                         .action(ArgAction::Set),
+                )
+                .arg(
+                    Arg::new("target")
+                        .required(true)
+                        .help("Directory with .reo binary files")
+                        .takes_value(true)
+                        .action(ArgAction::Set),
+                )
+                .arg(
+                    Arg::new("force")
+                        .long("force")
+                        .short('f')
+                        .required(false)
+                        .takes_value(false)
+                        .help("Merge anyway, even if a binary file is up to date"),
                 )
         )
         .subcommand(
             Command::new("dataize")
                 .setting(AppSettings::ColorNever)
-                .about("Dataizes an object")
+                .about("Dataize an object in .reo file")
                 .arg(
                     Arg::new("file")
                         .required(true)
@@ -123,76 +160,56 @@ pub fn main() -> Result<()> {
         LevelFilter::Warn
     });
     logger.init()?;
-    info!(
+    debug!(
         "argv: {}",
         std::env::args().collect::<Vec<String>>().join(" ")
     );
-    info!("pwd: {}", std::env::current_dir()?.as_path().display());
+    debug!("pwd: {}", std::env::current_dir()?.as_path().display());
     let start = Instant::now();
     match matches.subcommand() {
         Some(("compile", subs)) => {
-            let bin = Path::new(subs.get_one::<String>("binary")?);
-            let mut src;
-            if subs.contains_id("eoc") {
-                info!("Running in eoc-compatible mode");
-                src = Path::new(".eoc/sodg");
-            } else {
-                src = Path::new(
-                    subs.get_one::<String>("file")
-                        .context("Path of .sodg file is required (or directory with them)")?
-                );
-            }
-            let mut g = Sodg::empty();
-            if metadata(src).unwrap().is_file() {
-                if newer(elf, recent) && !subs.contains_id("force") {
-                    info!(
-                        "The binary file '{}' is up to date ({} bytes), no need to compile (use --force to compile anyway)",
-                        bin.display(), fs::metadata(bin)?.len()
-                    );
-                    return Ok(());
+            let sources = Path::new(
+                subs.get_one::<String>("sources")
+                    .context("Path of directory with .sodg files is required")?
+            );
+            debug!("sources: {}", sources.display());
+            let target = Path::new(
+                subs.get_one::<String>("target")
+                    .context("Path of directory with .reo files is required")?
+            );
+            debug!("target: {}", target.display());
+            let mut total = 0;
+            for f in glob(format!("{}/**/*.sodg", sources.display()).as_str())? {
+                let p = f?;
+                if p.is_dir() {
+                    continue;
                 }
-                info!(
-                    "Compiling SODG instructions from a single file '{}' into '{}'",
-                    src.display(), bin.display()
-                );
-                let mut s = Script::from_string(fs::read_to_string(src).unwrap());
-                let total = s.deploy_to(&mut g)?;
-                info!(
-                    "Deployed {} SODG instructions in {:?}",
-                    total,
-                    start.elapsed()
-                );
-            } else {
-                info!("Home requested as '{}'", src.display());
-                let full_home =
-                    fs::canonicalize(src).context(format!("Can't access '{}'", src.display()))?;
-                let cwd = full_home.as_path();
-                info!("Home is set to {}", cwd.display());
-                if newer_ft(bin, mtime(cwd)?) && !subs.contains_id("force") {
+                let src = p.as_path();
+                debug!("source: {}", src.display());
+                let rel = src.strip_prefix(sources)?;
+                let b = target.join(rel);
+                let bin = b.as_path();
+                debug!("bin: {}", bin.display());
+                if newer(bin, src) && !subs.contains_id("force") {
                     info!(
-                        "The binary file '{}' ({} bytes) is newer than that directory '{}', no need to compile (use --force to compile anyway)",
+                        "The binary file '{}' is up to date ({} bytes), no need to compile the source file '{}' (use --force to compile anyway)",
                         bin.display(), fs::metadata(bin)?.len(), src.display()
                     );
-                    return Ok(());
+                    continue;
                 }
+                let mut g = Sodg::empty();
                 info!(
-                    "Compiling instructions from the directory '{}' into '{}'",
-                    cwd.display(), bin.display()
+                    "Compiling SODG instructions from '{}' to '{}'",
+                    src.display(), bin.display()
                 );
-                g.add(0)?;
-                let total = g.setup(cwd)?;
-                info!(
-                    "Deployed {} SODG instructions in {:?}",
-                    total,
-                    start.elapsed()
-                );
+                let mut s = Script::from_str(fs::read_to_string(src)?.as_str());
+                let ints = s.deploy_to(&mut g).context(format!("Failed with '{}'", src.display()))?;
+                info!("Deployed {ints} instructions from {}", src.display());
+                let size = g.save(bin)?;
+                info!("The SODG saved to '{}' ({size} bytes)", bin.display());
+                total += 1;
             }
-            let size = g.save(bin)?;
-            info!(
-                "The SODG saved to '{}' ({} bytes)",
-                bin.display(),
-                size
-            );
+            info!("{total} files compiled to {}", target.display());
         }
         Some(("dataize", subs)) => {
             let bin = Path::new(
@@ -203,17 +220,17 @@ pub fn main() -> Result<()> {
                 .get_one::<String>("object")
                 .context("Object name is required")?;
             info!("Deserializing the binary file '{}'", bin.display());
-            let mut g = Sodg::load(bin)?;
+            let g = Sodg::load(bin)?;
             info!(
                 "Deserialized {} bytes in {:?}",
                 fs::metadata(bin)?.len(),
                 start.elapsed()
             );
-            info!("Dataizing the '{}' object...", object);
+            info!("Dataizing the '{object}' object...");
             let mut uni = Universe::from_graph(g);
-            let ret = uni.dataize(format!("Φ.{}", object).as_str()).as_hex();
-            info!("Dataization result, in {:?} is: {}", start.elapsed(), ret);
-            println!("{}", ret);
+            let ret = uni.dataize(format!("Φ.{}", object).as_str())?.print();
+            info!("Dataization result, in {:?} is: {ret}", start.elapsed());
+            println!("{ret}");
         }
         _ => unreachable!(),
     }

@@ -23,8 +23,14 @@
 //! [EO](https://www.eolang.org) programs:
 //!
 //! ```
+//! use sodg::Hex;
 //! use reo::Universe;
 //! let mut uni = Universe::empty();
+//! let root = uni.add();
+//! let v1 = uni.add();
+//! uni.bind(root, v1, "foo");
+//! uni.put(v1, Hex::from_i64(42));
+//! assert_eq!(42, uni.dataize("Φ.foo").unwrap().to_i64());
 //! ```
 
 #![doc(html_root_url = "https://docs.rs/reo/0.0.0")]
@@ -32,7 +38,6 @@
 
 mod org;
 mod scripts;
-mod setup;
 mod universe;
 
 use anyhow::Result;
@@ -41,7 +46,7 @@ use std::collections::HashMap;
 /// A single atom.
 pub type Atom = fn(&mut Universe, v: u32) -> Result<u32>;
 
-/// A universe.
+/// A Universe.
 pub struct Universe {
     g: Sodg,
     atoms: HashMap<String, Atom>

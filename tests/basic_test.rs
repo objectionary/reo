@@ -23,33 +23,44 @@ mod common;
 use anyhow::{Context, Result};
 use std::fs::File;
 use std::io::Write;
+use clap::arg;
 use tempfile::TempDir;
 
 #[test]
 fn dataizes_simple_sodg() -> Result<()> {
     let tmp = TempDir::new()?;
-    File::create(tmp.path().join("foo.g"))?.write_all(
+    File::create(tmp.path().join("foo.sodg"))?.write_all(
         "
+        ADD(0);
         ADD($ν1);
         BIND(0, $ν1, foo);
-        PUT($ν1, ff-ff);
+        PUT($ν1, 00-ff-ff);
         "
         .as_bytes(),
     )?;
-    let elf = tmp.path().join("temp.elf");
+    let bin = tmp.path().join("temp.reo");
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .current_dir(tmp.path())
         .arg("--verbose")
         .arg("compile")
-        .arg(format!("--home={}", tmp.path().display()))
-        .arg(elf.as_os_str())
+        .arg(tmp.path().as_os_str())
+        .arg(tmp.path().as_os_str())
+        .assert()
+        .success();
+    assert_cmd::Command::cargo_bin("reo")
+        .unwrap()
+        .current_dir(tmp.path())
+        .arg("--verbose")
+        .arg("merge")
+        .arg(tmp.path().as_os_str())
+        .arg(bin.as_os_str())
         .assert()
         .success();
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .arg("dataize")
-        .arg(format!("--elf={}", elf.display()))
+        .arg(bin.as_os_str())
         .arg("foo")
         .assert()
         .success()

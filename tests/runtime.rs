@@ -25,14 +25,14 @@ use std::io::Write;
 use std::path::Path;
 
 pub fn load_everything() -> Result<Universe> {
-    let elf = Path::new("target/runtime.elf");
+    let bin = Path::new("target/runtime.reo");
     assert_cmd::Command::cargo_bin("reo")?
         .arg("compile")
-        .arg("--home=target/eo/sodg")
-        .arg(elf.as_os_str())
+        .arg("target/eo/sodg")
+        .arg(bin.as_os_str())
         .assert()
         .success();
-    let uni = Universe::load(elf)?;
+    let uni = Universe::load(bin)?;
     assert!(uni.inconsistencies().is_empty());
     File::create(Path::new("target/runtime-inspect.txt"))?
         .write_all(uni.inspect("Q")?.as_bytes())?;
