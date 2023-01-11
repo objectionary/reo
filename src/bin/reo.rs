@@ -30,8 +30,11 @@ use reo::Universe;
 use simple_logger::SimpleLogger;
 use std::fs;
 use std::fs::metadata;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::{Instant};
+use clap::builder::TypedValueParser;
+use clap::ErrorKind::EmptyValue;
+use itertools::Itertools;
 use sodg::Script;
 use sodg::Sodg;
 
@@ -53,6 +56,30 @@ fn newer_ft(f1: &Path, m2: FileTime) -> bool {
         FileTime::from_unix_time(0, 0)
     };
     m1 > m2
+}
+
+#[derive(Copy, Clone, Debug)]
+struct PathValueParser {}
+
+impl TypedValueParser for PathValueParser {
+    type Value = PathBuf;
+    fn parse_ref(
+        &self,
+        _cmd: &Command,
+        _arg: Option<&Arg>,
+        value: &std::ffi::OsStr,
+    ) -> Result<PathBuf, clap::Error> {
+        if value.is_empty() {
+            return Err(clap::Error::raw(EmptyValue, "Can't be empty"));
+        }
+        let path = Path::new(value.to_str().unwrap());
+        let abs = if path.exists() {
+            fs::canonicalize(path).unwrap()
+        } else {
+            path.to_path_buf()
+        };
+        Ok(abs)
+    }
 }
 
 pub fn main() -> Result<()> {
@@ -83,6 +110,7 @@ pub fn main() -> Result<()> {
                 .arg(
                     Arg::new("sources")
                         .required(true)
+                        .value_parser(PathValueParser {})
                         .help("Directory with .sodg files to compile")
                         .takes_value(true)
                         .action(ArgAction::Set),
@@ -91,6 +119,7 @@ pub fn main() -> Result<()> {
                     Arg::new("target")
                         .required(true)
                         .help("Directory with .reo binary files to create")
+                        .value_parser(PathValueParser {})
                         .takes_value(true)
                         .action(ArgAction::Set),
                 )
@@ -110,6 +139,7 @@ pub fn main() -> Result<()> {
                 .arg(
                     Arg::new("file")
                         .required(true)
+                        .value_parser(PathValueParser {})
                         .help("Name of a binary .reo file to create")
                         .takes_value(true)
                         .action(ArgAction::Set),
@@ -117,6 +147,7 @@ pub fn main() -> Result<()> {
                 .arg(
                     Arg::new("target")
                         .required(true)
+                        .value_parser(PathValueParser {})
                         .help("Directory with .reo binary files")
                         .takes_value(true)
                         .action(ArgAction::Set),
@@ -137,6 +168,7 @@ pub fn main() -> Result<()> {
                 .arg(
                     Arg::new("file")
                         .required(true)
+                        .value_parser(PathValueParser {})
                         .help("Name of a binary .reo file to use")
                         .takes_value(true)
                         .action(ArgAction::Set),
@@ -168,16 +200,19 @@ pub fn main() -> Result<()> {
     let start = Instant::now();
     match matches.subcommand() {
         Some(("compile", subs)) => {
-            let sources = Path::new(
-                subs.get_one::<String>("sources")
-                    .context("Path of directory with .sodg files is required")?
-            );
+            let sources = subs.get_one::<PathBuf>("sources")
+                .context("Path of directory with .sodg files is required")
+                .unwrap();
             debug!("sources: {}", sources.display());
-            let target = Path::new(
-                subs.get_one::<String>("target")
-                    .context("Path of directory with .reo files is required")?
-            );
+            let target = subs.get_one::<PathBuf>("target")
+                .context("Path of directory with .reo files is required")
+                .unwrap();
             debug!("target: {}", target.display());
+            if !target.exists() {
+                if fsutils::mkdir(target.clone().into_os_string().to_str().unwrap()) {
+                    info!("Directory created: '{}'", target.display());
+                }
+            }
             let mut total = 0;
             for f in glob(format!("{}/**/*.sodg", sources.display()).as_str())? {
                 let p = f?;
@@ -186,7 +221,7 @@ pub fn main() -> Result<()> {
                 }
                 let src = p.as_path();
                 debug!("source: {}", src.display());
-                let rel = src.strip_prefix(sources)?;
+                let rel = src.strip_prefix(sources.as_path())?;
                 let b = target.join(rel);
                 let bin = b.as_path();
                 debug!("bin: {}", bin.display());
@@ -212,15 +247,16 @@ pub fn main() -> Result<()> {
             info!("{total} files compiled to {}", target.display());
         }
         Some(("dataize", subs)) => {
-            let bin = Path::new(
-                subs.value_of("file")
-                    .context("Path of .reo file is required")?,
-            );
+            let bin = subs.get_one::<PathBuf>("file")
+                .context("Path of .reo file is required")
+                .unwrap();
+            debug!("bin: {}", bin.display());
             let object = subs
                 .get_one::<String>("object")
                 .context("Object name is required")?;
+            debug!("object: {}", object);
             info!("Deserializing the binary file '{}'", bin.display());
-            let g = Sodg::load(bin)?;
+            let g = Sodg::load(bin.as_path())?;
             info!(
                 "Deserialized {} bytes in {:?}",
                 fs::metadata(bin)?.len(),

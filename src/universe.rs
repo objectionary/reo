@@ -22,7 +22,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use anyhow::{anyhow, Context, Result};
 use log::trace;
-use sodg::Hex;
+use sodg::{Hex, Relay};
 use sodg::Sodg;
 use crate::{Atom, Universe};
 
@@ -106,16 +106,15 @@ impl Universe {
             return Err(anyhow!("The Universe is empty, can't dataize {loc}"));
         }
         let v = self.g
-            .find_with_closure(0, loc, |v, a, b| {
-                // return self.resolve(v, a, b);
-                return Ok("boom".to_string());
-            })
+            .find(0, loc, self)
             .context(format!("Failed to find {loc}"))?;
         Ok(v)
     }
+}
 
+impl Relay for Universe {
     /// Resolve a locator on a vertex, if it's not found.
-    fn resolve(&mut self, at: u32, a: &str, b: &str) -> Result<String> {
+    fn re(&mut self, at: u32, a: &str, b: &str) -> Result<String> {
         trace!("#resolve(ν{at}, '{a}', '{b}'): starting...");
         // if k == "▲" {
         //     xi = xis.pop_back().unwrap();
@@ -172,13 +171,7 @@ impl Universe {
             // );
             return Ok(format!("ν{to}"));
         }
-        let others : Vec<String> = self.g.kids(at.clone())?.into_iter().map(|(k, a, b)| k).collect();
-        return Err(anyhow!(
-            "Can't find .{a} in ν{at} among other {} attribute{}: {}",
-            others.len(),
-            if others.len() == 1 { "" } else { "s" },
-            others.join(", ")
-        ));
+        return Err(anyhow!("There is no .{a} in ν{at}"));
     }
 }
 
@@ -186,7 +179,7 @@ impl Universe {
 fn rand(uni: &mut Universe, _: u32) -> Result<u32> {
     let v = uni.add();
     uni.bind(v, 0, "π/int");
-    uni.put(v, Hex::from_i64(rand::random::<i64>()));
+    uni.put(v, Hex::from(rand::random::<i64>()));
     Ok(v)
 }
 
@@ -203,7 +196,7 @@ fn generates_random_int() -> Result<()> {
     uni.register("rand", rand);
     let lambda = uni.add();
     uni.bind(v2, lambda, "λ");
-    uni.put(lambda, Hex::from_str("rand"));
+    uni.put(lambda, Hex::from_str_bytes("rand"));
     let first = uni.dataize("Φ.x.Δ")?.to_i64()?;
     let second = uni.dataize("Φ.x.Δ")?.to_i64()?;
     assert_ne!(first, second);
