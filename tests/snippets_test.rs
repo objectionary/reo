@@ -33,7 +33,9 @@ fn all_apps() -> Result<Vec<String>> {
         let path = p.as_path();
         let app = path
             .to_str()
-            .context(format!("Can't get str from '{}'", path.display()))?.split_once('/').map(|x| x.1)
+            .context(format!("Can't get str from '{}'", path.display()))?
+            .split_once('/')
+            .map(|x| x.1)
             .context(format!("Can't take path from '{}'", path.display()))?
             .split('.')
             .collect::<Vec<&str>>()
