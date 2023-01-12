@@ -24,7 +24,6 @@ mod runtime;
 use crate::runtime::load_everything;
 use anyhow::{Context, Result};
 use glob::glob;
-use reo::da;
 
 fn all_apps() -> Result<Vec<String>> {
     let mut apps = Vec::new();

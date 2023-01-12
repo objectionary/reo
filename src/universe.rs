@@ -87,10 +87,8 @@ impl Universe {
     /// from "Φ". If you need to find any vertex starting from non-root
     /// one, use `find` method.
     pub fn dataize(&mut self, loc: &str) -> Result<Hex> {
-        let v = self.find(loc)?;
-        let data = self.g.data(v)
-            .context(format!("There is no data in ν{v}"))?
-            .tail(1);
+        let v = self.find(format!("{loc}.Δ").as_str())?;
+        let data = self.g.data(v).context(format!("There is no data in ν{v}"))?;
         trace!(
             "#dataize: data found in ν{v} ({} bytes), all good!",
             data.len()
@@ -114,8 +112,24 @@ impl Universe {
 
 impl Relay for Universe {
     /// Resolve a locator on a vertex, if it's not found.
-    fn re(&mut self, at: u32, a: &str, b: &str) -> Result<String> {
-        trace!("#resolve(ν{at}, '{a}', '{b}'): starting...");
+    fn re(&self, at: u32, a: &str, b: &str) -> Result<String> {
+        unsafe {
+            let cp = self as *const Self;
+            let mp = cp as *mut Self;
+            let uni = &mut *mp;
+            Self::mut_re(uni, at, a, b)
+        }
+    }
+}
+
+impl Universe {
+    /// Resolve a locator on a vertex, if it's not found.
+    fn mut_re(uni: &mut Universe, at: u32, a: &str, b: &str) -> Result<String> {
+        trace!("#re(ν{at}, '{a}/{b}'): starting...");
+        if a == "Δ" && uni.g.full(at).unwrap() {
+            trace!("#re: ν{at}.Δ found");
+            return Ok(format!("ν{at}"));
+        }
         // if k == "▲" {
         //     xi = xis.pop_back().unwrap();
         //     trace!("#find: ξ loaded to ν{} by ▲", xi);
@@ -130,40 +144,40 @@ impl Relay for Universe {
             let num: String = a.chars().skip(1).collect::<Vec<_>>().into_iter().collect();
             let v = u32::from_str(num.as_str())?;
             // xi = v;
-            trace!("#resolve: jumping directly to ν{v}");
+            trace!("#re: jumping directly to ν{v}");
             return Ok(format!("ν{v}"));
         }
         if a == "ξ" || a == "$" {
-            trace!("#resolve: ν{at}.ξ -> {at}");
+            trace!("#re: ν{at}.ξ -> {at}");
             return Ok(format!("ν{at}"));
         }
         if a == "Φ" || a == "Q" {
             // xi = v;
-            trace!("#resolve: Φ/ν{at}");
+            trace!("#re: Φ/ν{at} found");
             return Ok("ν0".to_string());
         }
-        if let Some(to) = self.g.kid(at, "ξ") {
-            trace!("#resolve: ν{at}.ξ -> ν{to} (.{a} not found)");
+        if let Some(to) = uni.g.kid(at, "ξ") {
+            trace!("#re: ν{at}.ξ -> ν{to} (.{a} not found)");
             // locator.push_front(k);
             return Ok(format!("ν{to}"));
         }
-        if let Some(to) = self.g.kid(at, "π") {
-            trace!("#resolve: ν{at}.π -> ν{to} (.{a} not found)");
+        if let Some(to) = uni.g.kid(at, "π") {
+            trace!("#re: ν{at}.π -> ν{to} (.{a} not found)");
             // locator.push_front(k);
             return Ok(format!("ν{to}"));
         }
-        if let Some(to) = self.g.kid(at, "φ") {
-            trace!("#resolve: ν{at}.φ -> ν{to} (.{a} not found)");
+        if let Some(to) = uni.g.kid(at, "φ") {
+            trace!("#re: ν{at}.φ -> ν{to} (.{a} not found)");
             // xi = v;
             // locator.push_front(k);
             return Ok(format!("ν{to}"));
         }
-        if let Some(lv) = self.g.kid(at, "λ") {
-            let lambda = self.data(lv).to_utf8().unwrap();
-            trace!("#resolve: at ν{at} calling λ{lambda}(ξ=ν?)...");
-            let to = self.atoms.get(lambda.as_str()).unwrap()(self, 0)?;
+        if let Some(lv) = uni.g.kid(at, "λ") {
+            let lambda = uni.g.data(lv).unwrap().to_utf8().unwrap();
+            trace!("#re: at ν{at} calling λ{lambda}(ξ=ν?)...");
+            let to = uni.atoms.get(lambda.as_str()).unwrap()(uni, 0)?;
             // locator.push_front(format!("ν{}", to));
-            trace!("#resolve: λ{lambda} in ν{at}(ξ=ν?) returned ν{to}");
+            trace!("#re: λ{lambda} in ν{at}(ξ=ν?) returned ν{to}");
             // trace!(
             //     "#find: λ at λ{} reset locator to '{}'",
             //     v,
@@ -197,8 +211,8 @@ fn generates_random_int() -> Result<()> {
     let lambda = uni.add();
     uni.bind(v2, lambda, "λ");
     uni.put(lambda, Hex::from_str_bytes("rand"));
-    let first = uni.dataize("Φ.x.Δ")?.to_i64()?;
-    let second = uni.dataize("Φ.x.Δ")?.to_i64()?;
+    let first = uni.dataize("Φ.x")?.to_i64()?;
+    let second = uni.dataize("Φ.x")?.to_i64()?;
     assert_ne!(first, second);
     Ok(())
 }

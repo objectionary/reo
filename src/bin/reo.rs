@@ -20,7 +20,7 @@
 
 extern crate reo;
 
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use anyhow::Result;
 use clap::{crate_version, AppSettings, Arg, ArgAction, Command};
 use filetime::FileTime;
@@ -34,7 +34,6 @@ use std::path::{Path, PathBuf};
 use std::time::{Instant};
 use clap::builder::TypedValueParser;
 use clap::ErrorKind::EmptyValue;
-use itertools::Itertools;
 use sodg::Script;
 use sodg::Sodg;
 
@@ -221,7 +220,7 @@ pub fn main() -> Result<()> {
                 }
                 let src = p.as_path();
                 debug!("source: {}", src.display());
-                let rel = src.strip_prefix(sources.as_path())?;
+                let rel = src.strip_prefix(sources.as_path())?.with_extension("reo");
                 let b = target.join(rel);
                 let bin = b.as_path();
                 debug!("bin: {}", bin.display());
@@ -251,6 +250,9 @@ pub fn main() -> Result<()> {
                 .context("Path of .reo file is required")
                 .unwrap();
             debug!("bin: {}", bin.display());
+            if !bin.exists() {
+                return Err(anyhow!("The file '{}' doesn't exist", bin.display()));
+            }
             let object = subs
                 .get_one::<String>("object")
                 .context("Object name is required")?;

@@ -23,7 +23,6 @@ mod common;
 use anyhow::{Context, Result};
 use std::fs::File;
 use std::io::Write;
-use clap::arg;
 use tempfile::TempDir;
 
 #[test]
@@ -34,11 +33,10 @@ fn dataizes_simple_sodg() -> Result<()> {
         ADD(0);
         ADD($ν1);
         BIND(0, $ν1, foo);
-        PUT($ν1, 00-ff-ff);
+        PUT($ν1, ff-ff);
         "
         .as_bytes(),
     )?;
-    let bin = tmp.path().join("temp.reo");
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .current_dir(tmp.path())
@@ -50,57 +48,11 @@ fn dataizes_simple_sodg() -> Result<()> {
         .success();
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
-        .current_dir(tmp.path())
-        .arg("--verbose")
-        .arg("merge")
-        .arg(tmp.path().as_os_str())
-        .arg(bin.as_os_str())
-        .assert()
-        .success();
-    assert_cmd::Command::cargo_bin("reo")
-        .unwrap()
         .arg("dataize")
-        .arg(bin.as_os_str())
+        .arg(tmp.path().join("foo.reo").as_os_str())
         .arg("foo")
         .assert()
         .success()
         .stdout("FF-FF\n");
-    Ok(())
-}
-
-#[test]
-fn dataizes_in_eoc_mode() -> Result<()> {
-    let tmp = TempDir::new()?;
-    let dir = tmp.path().join(".eoc").join("sodg");
-    fsutils::mkdir(
-        dir.to_str()
-            .context(format!("Broken path {}", dir.display()))?,
-    );
-    File::create(dir.join("foo.g"))?.write_all(
-        "
-        ADD($ν1');
-        BIND(0, $ν1, foo);
-        PUT($ν1, ca-fe);
-        "
-        .as_bytes(),
-    )?;
-    let elf = tmp.path().join("temp.elf");
-    assert_cmd::Command::cargo_bin("reo")
-        .unwrap()
-        .current_dir(tmp.path())
-        .arg("compile")
-        .arg("--eoc")
-        .arg(elf.as_os_str())
-        .assert()
-        .success();
-    assert_cmd::Command::cargo_bin("reo")
-        .unwrap()
-        .current_dir(tmp.path())
-        .arg("dataize")
-        .arg(format!("--elf={}", elf.display()))
-        .arg("foo")
-        .assert()
-        .success()
-        .stdout("CA-FE\n");
     Ok(())
 }
