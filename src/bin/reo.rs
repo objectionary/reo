@@ -28,6 +28,7 @@ use filetime::FileTime;
 use glob::glob;
 use log::{debug, info, LevelFilter};
 use reo::Universe;
+use reo::org::eolang::register;
 use simple_logger::SimpleLogger;
 use std::fs;
 use std::fs::metadata;
@@ -281,6 +282,7 @@ pub fn main() -> Result<()> {
             );
             info!("Dataizing the '{object}' object...");
             let mut uni = Universe::from_graph(g);
+            register(&mut uni);
             let ret = uni.dataize(format!("Φ.{}", object).as_str())?.print();
             info!("Dataization result, in {:?} is: {ret}", start.elapsed());
             println!("{ret}");

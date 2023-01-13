@@ -26,8 +26,6 @@ use anyhow::Result;
 use glob::glob;
 use reo::Universe;
 use std::path::Path;
-use clap::arg;
-use itertools::Itertools;
 use sodg::Sodg;
 use tempfile::TempDir;
 

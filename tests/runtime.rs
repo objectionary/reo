@@ -19,9 +19,6 @@
 // SOFTWARE.
 
 use anyhow::Result;
-use reo::Universe;
-use std::fs::File;
-use std::io::Write;
 use std::path::Path;
 use sodg::Sodg;
 

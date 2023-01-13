@@ -20,7 +20,7 @@
 
 mod common;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use std::fs::File;
 use std::io::Write;
 use tempfile::TempDir;
