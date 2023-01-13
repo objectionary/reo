@@ -217,10 +217,10 @@ pub fn main() -> Result<()> {
             let mut job = HashMap::new();
             if sources.is_dir() {
                 debug!("the sources is a directory: {}", sources.display());
-                if !target.exists() {
-                    if fsutils::mkdir(target.clone().into_os_string().to_str().unwrap()) {
-                        info!("Directory created: '{}'", target.display());
-                    }
+                if !target.exists()
+                    && fsutils::mkdir(target.clone().into_os_string().to_str().unwrap())
+                {
+                    info!("Directory created: '{}'", target.display());
                 }
                 for f in glob(format!("{}/**/*.sodg", sources.display()).as_str())? {
                     let src = f?;
