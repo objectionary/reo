@@ -20,6 +20,7 @@
 
 extern crate reo;
 
+use std::collections::HashMap;
 use anyhow::{anyhow, Context};
 use anyhow::Result;
 use clap::{crate_version, AppSettings, Arg, ArgAction, Command};
@@ -210,22 +211,29 @@ pub fn main() -> Result<()> {
                 .context("Path of directory with .reo files is required")
                 .unwrap();
             debug!("target: {}", target.display());
-            if !target.exists() {
-                if fsutils::mkdir(target.clone().into_os_string().to_str().unwrap()) {
-                    info!("Directory created: '{}'", target.display());
+            let mut job = HashMap::new();
+            if sources.is_dir() {
+                debug!("the sources is a directory: {}", sources.display());
+                if !target.exists() {
+                    if fsutils::mkdir(target.clone().into_os_string().to_str().unwrap()) {
+                        info!("Directory created: '{}'", target.display());
+                    }
                 }
+                for f in glob(format!("{}/**/*.sodg", sources.display()).as_str())? {
+                    let src = f?;
+                    if src.is_dir() {
+                        continue;
+                    }
+                    let rel = src.as_path().strip_prefix(sources.as_path())?.with_extension("reo");
+                    let bin = target.join(rel);
+                    job.insert(src, bin);
+                }
+            } else {
+                debug!("the sources is a single file: {}", sources.display());
+                job.insert((*sources).clone(), (*target).clone());
             }
             let mut total = 0;
-            for f in glob(format!("{}/**/*.sodg", sources.display()).as_str())? {
-                let p = f?;
-                if p.is_dir() {
-                    continue;
-                }
-                let src = p.as_path();
-                debug!("source: {}", src.display());
-                let rel = src.strip_prefix(sources.as_path())?.with_extension("reo");
-                let b = target.join(rel);
-                let bin = b.as_path();
+            for (src, bin) in &job {
                 let parent = bin.parent().context(format!("Can't get parent of {}", bin.display()))?;
                 if fsutils::mkdir(parent.to_str().unwrap()) {
                     info!("Directory created: '{}'", parent.display());

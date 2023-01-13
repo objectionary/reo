@@ -29,8 +29,8 @@
 //! let root = uni.add();
 //! let v1 = uni.add();
 //! uni.bind(root, v1, "foo");
-//! uni.put(v1, Hex::from_i64(42));
-//! assert_eq!(42, uni.dataize("Φ.foo").unwrap().to_i64());
+//! uni.put(v1, Hex::from(42));
+//! assert_eq!(42, uni.dataize("Φ.foo").unwrap().to_i64().unwrap());
 //! ```
 
 #![doc(html_root_url = "https://docs.rs/reo/0.0.0")]

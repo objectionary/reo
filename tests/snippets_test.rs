@@ -24,6 +24,7 @@ mod runtime;
 use crate::runtime::load_everything;
 use anyhow::{Context, Result};
 use glob::glob;
+use reo::Universe;
 
 fn all_apps() -> Result<Vec<String>> {
     let mut apps = Vec::new();
@@ -51,10 +52,10 @@ fn all_apps() -> Result<Vec<String>> {
 #[test]
 #[ignore]
 fn deploys_and_runs_all_apps() -> Result<()> {
-    let mut uni = load_everything()?;
+    let mut uni = Universe::from_graph(load_everything()?);
     for app in all_apps()? {
-        let expected = uni.dataize(format!("Φ.{}.expected", app).as_str());
-        let actual = uni.dataize(format!("Φ.{}", app).as_str());
+        let expected = uni.dataize(format!("Φ.{}.expected", app).as_str()).unwrap();
+        let actual = uni.dataize(format!("Φ.{}", app).as_str()).unwrap();
         assert_eq!(expected, actual, "{} failed", app);
     }
     Ok(())
