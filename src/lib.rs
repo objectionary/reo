@@ -43,7 +43,12 @@ mod universe;
 use anyhow::Result;
 use std::collections::HashMap;
 
-/// A single atom.
+/// A single atom to be attached to a vertex.
+///
+/// It is a function that is called by [`Universe`] when it's impossible
+/// to get data from a vertex. The first argument provided is
+/// the [`Universe`] itself, while the second one is the ID of the
+/// vertex where the dataization is standing at the moment.
 pub type Atom = fn(&mut Universe, v: u32) -> Result<u32>;
 
 /// A Universe.

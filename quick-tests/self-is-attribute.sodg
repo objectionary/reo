@@ -4,8 +4,10 @@ ADD($v1);
 BIND(0, $v1, bar);
 ADD($v2);
 BIND($v1, $v2, a);
-PUT($v2, 00-00-00-00-00-00-00-2A);
-
 ADD($v3);
-BIND(0, $v3, foo);
-BIND($v3, $v1, ξ/.a);
+BIND($v2, $v3, b);
+PUT($v3, 00-00-00-00-00-00-00-2A);
+
+ADD($v4);
+BIND(0, $v4, foo);
+BIND($v4, $v1, ξ/.a.b);

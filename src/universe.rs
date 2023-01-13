@@ -196,7 +196,7 @@ impl Universe {
         if let Some(lv) = uni.g.kid(at, "λ") {
             let lambda = uni.g.data(lv).unwrap().to_utf8().unwrap();
             trace!("#re: at ν{at} calling λ{lambda}(ξ=ν?)...");
-            let to = uni.atoms.get(lambda.as_str()).unwrap()(uni, 0)?;
+            let to = uni.atoms.get(lambda.as_str()).unwrap()(uni, at)?;
             // locator.push_front(format!("ν{}", to));
             trace!("#re: λ{lambda} in ν{at}(ξ=ν?) returned ν{to}");
             // trace!(
