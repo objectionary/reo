@@ -263,3 +263,20 @@ fn dataizes_simple_copy_of() -> Result<()> {
     assert_eq!(42, uni.dataize("Φ.bar")?.to_i64()?);
     Ok(())
 }
+
+#[test]
+fn dataizes_simple_decorator() -> Result<()> {
+    let mut g = Sodg::empty();
+    Script::from_str(
+        "
+        ADD(0);
+        ADD($v1); BIND(0, $v1, foo); PUT($v1, 00-00-00-00-00-00-00-2A);
+        ADD($v2); BIND(0, $v1, bar); BIND($v2, $v1, φ);
+        ",
+    )
+    .deploy_to(&mut g)?;
+    let mut uni = Universe::from_graph(g);
+    register(&mut uni);
+    assert_eq!(42, uni.dataize("Φ.bar")?.to_i64()?);
+    Ok(())
+}
