@@ -130,6 +130,14 @@ impl Relay for Universe {
 }
 
 impl Universe {
+    fn edge_to(to: u32, loc: String) -> String {
+        if loc.starts_with('.') {
+            format!("ν{to}{loc}")
+        } else {
+            loc
+        }
+    }
+
     /// Resolve a locator on a vertex, if it's not found.
     fn mut_re(uni: &mut Universe, at: u32, a: &str, b: &str) -> Result<String> {
         trace!("#re(ν{at}, '{a}/{b}'): starting...");
@@ -166,19 +174,24 @@ impl Universe {
         if let Some(to) = uni.g.kid(at, "ξ") {
             // locator.push_front(k);
             let loc = uni.g.loc(at, "ξ").unwrap();
-            trace!("#re: ν{at}.ξ -> ν{to}{loc} (.{a} not found)");
-            return Ok(format!("ν{to}{loc}"));
+            let re = Self::edge_to(to, loc);
+            trace!("#re: ν{at}.ξ -> {re} (.{a} not found)");
+            return Ok(re);
         }
         if let Some(to) = uni.g.kid(at, "π") {
-            trace!("#re: ν{at}.π -> ν{to} (.{a} not found)");
+            let loc = uni.g.loc(at, "π").unwrap();
+            let re = Self::edge_to(to, loc);
+            trace!("#re: ν{at}.π -> {re} (.{a} not found)");
             // locator.push_front(k);
-            return Ok(format!("ν{to}"));
+            return Ok(re);
         }
         if let Some(to) = uni.g.kid(at, "φ") {
-            trace!("#re: ν{at}.φ -> ν{to} (.{a} not found)");
+            let loc = uni.g.loc(at, "φ").unwrap();
+            let re = Self::edge_to(to, loc);
+            trace!("#re: ν{at}.φ -> {re} (.{a} not found)");
             // xi = v;
             // locator.push_front(k);
-            return Ok(format!("ν{to}"));
+            return Ok(re);
         }
         if let Some(lv) = uni.g.kid(at, "λ") {
             let lambda = uni.g.data(lv).unwrap().to_utf8().unwrap();
