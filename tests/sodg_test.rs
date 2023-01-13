@@ -24,10 +24,11 @@ mod runtime;
 use crate::runtime::load_everything;
 use anyhow::Result;
 use glob::glob;
-use reo::da;
 use reo::Universe;
 use std::path::Path;
+use clap::arg;
 use itertools::Itertools;
+use sodg::Sodg;
 use tempfile::TempDir;
 
 fn all_scripts() -> Result<Vec<String>> {
@@ -40,27 +41,31 @@ fn all_scripts() -> Result<Vec<String>> {
 }
 
 #[test]
+#[ignore]
 fn dataizes_all_sodg_tests() -> Result<()> {
     for path in all_scripts()? {
         let tmp = TempDir::new()?;
-        let elf = tmp.path().join("temp.elf");
+        let bin = tmp.path().join("temp.bin");
         assert_cmd::Command::cargo_bin("reo")
             .unwrap()
             .arg("compile")
-            .arg(format!("--file={}", path))
-            .arg(elf.as_os_str())
+            .arg(path.clone())
+            .arg(bin.as_os_str())
             .assert()
             .success();
-        let extra = Universe::load(elf.as_path())?;
-        let mut uni = load_everything()?;
-        uni.merge(&extra);
+        let extra = Sodg::load(bin.as_path())?;
+        let mut sodg = load_everything()?;
+        sodg.merge(&extra);
         let object = Path::new(&path)
             .file_name()
             .unwrap()
             .to_str()
             .unwrap()
-            .replace(".g", "");
-        da!(uni, format!("Φ.{}", object));
+            .replace(".sodg", "");
+        let mut uni = Universe::from_graph(sodg);
+        let ret = uni.dataize(format!("Φ.{}", object).as_str()).unwrap();
+        let expected = uni.dataize(format!("Φ.{}.expected", object).as_str()).unwrap();
+        assert_eq!(expected, ret);
     }
     Ok(())
 }

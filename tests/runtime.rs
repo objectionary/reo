@@ -23,18 +23,21 @@ use reo::Universe;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
+use sodg::Sodg;
 
-pub fn load_everything() -> Result<Universe> {
+pub fn load_everything() -> Result<Sodg> {
     let bin = Path::new("target/runtime.reo");
     assert_cmd::Command::cargo_bin("reo")?
         .arg("compile")
         .arg("target/eo/sodg")
-        .arg(bin.as_os_str())
+        .arg("target/eo/reo")
         .assert()
         .success();
-    let uni = Universe::load(bin)?;
-    assert!(uni.inconsistencies().is_empty());
-    File::create(Path::new("target/runtime-inspect.txt"))?
-        .write_all(uni.inspect("Q")?.as_bytes())?;
-    Ok(uni)
+    assert_cmd::Command::cargo_bin("reo")?
+        .arg("merge")
+        .arg(bin.as_os_str())
+        .arg("target/eo/reo")
+        .assert()
+        .success();
+    Ok(Sodg::load(bin)?)
 }

@@ -33,7 +33,7 @@ fn compiles_everything() -> Result<()> {
         .unwrap()
         .arg("--verbose")
         .arg("compile")
-        .arg("target/eo/sodg/org/eolang/reo")
+        .arg("target/eo/sodg")
         .arg(target.as_os_str())
         .assert()
         .success();
@@ -44,28 +44,25 @@ fn compiles_everything() -> Result<()> {
 #[test]
 fn skips_compilation_if_file_present() -> Result<()> {
     let tmp = TempDir::new()?;
-    let elf = tmp.path().join("foo.elf");
-    assert_cmd::Command::cargo_bin("reo")
-        .unwrap()
-        .arg("compile")
-        .arg("--home=target/eo/sodg/org/eolang/reo")
-        .arg(elf.as_os_str())
-        .assert()
-        .success();
-    let size = std::fs::metadata(&elf)?.len();
-    let mtime = FileTime::from_last_modification_time(&std::fs::metadata(&elf)?);
-    assert_cmd::Command::cargo_bin("reo")
-        .unwrap()
-        .arg("compile")
-        .arg("--home=target/eo/sodg/org/eolang/reo")
-        .arg(elf.as_os_str())
-        .assert()
-        .success();
-    assert_eq!(size, std::fs::metadata(&elf)?.len());
-    assert_eq!(
-        mtime,
-        FileTime::from_last_modification_time(&std::fs::metadata(&elf)?)
-    );
+    let target = tmp.path().join("target");
+    let bin = target.join("org/eolang/int.reo");
+    let mut first = None;
+    for _ in 0..2 {
+        assert_cmd::Command::cargo_bin("reo")
+            .unwrap()
+            .arg("--verbose")
+            .arg("compile")
+            .arg("target/eo/sodg")
+            .arg(target.as_os_str())
+            .assert()
+            .success();
+        let now = FileTime::from_last_modification_time(&std::fs::metadata(&bin)?);
+        if let Some(before) = first {
+            assert_eq!(before, now);
+        } else {
+            first = Some(now)
+        }
+    }
     Ok(())
 }
 
@@ -76,9 +73,9 @@ fn fails_when_directory_is_absent() -> Result<()> {
         .unwrap()
         .arg("compile")
         .arg(path)
-        .arg("/usr/target")
+        .arg(path)
         .assert()
         .code(1)
-        .stderr(predicate::str::contains(format!("Can't access '{}'", path)));
+        .stderr(predicate::str::contains("not found"));
     Ok(())
 }

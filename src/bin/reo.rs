@@ -203,6 +203,9 @@ pub fn main() -> Result<()> {
                 .context("Path of directory with .sodg files is required")
                 .unwrap();
             debug!("sources: {}", sources.display());
+            if !sources.exists() {
+                return Err(anyhow!("The directory '{}' not found", sources.display()));
+            }
             let target = subs.get_one::<PathBuf>("target")
                 .context("Path of directory with .reo files is required")
                 .unwrap();
@@ -223,6 +226,10 @@ pub fn main() -> Result<()> {
                 let rel = src.strip_prefix(sources.as_path())?.with_extension("reo");
                 let b = target.join(rel);
                 let bin = b.as_path();
+                let parent = bin.parent().context(format!("Can't get parent of {}", bin.display()))?;
+                if fsutils::mkdir(parent.to_str().unwrap()) {
+                    info!("Directory created: '{}'", parent.display());
+                }
                 debug!("bin: {}", bin.display());
                 if newer(bin, src) && !subs.contains_id("force") {
                     info!(
