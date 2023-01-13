@@ -49,7 +49,7 @@ pub type Atom = fn(&mut Universe, v: u32) -> Result<u32>;
 /// A Universe.
 pub struct Universe {
     g: Sodg,
-    atoms: HashMap<String, Atom>
+    atoms: HashMap<String, Atom>,
 }
 
 #[cfg(test)]

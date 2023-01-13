@@ -20,24 +20,24 @@
 
 extern crate reo;
 
-use std::collections::HashMap;
-use anyhow::{anyhow, Context};
 use anyhow::Result;
+use anyhow::{anyhow, Context};
+use clap::builder::TypedValueParser;
+use clap::ErrorKind::EmptyValue;
 use clap::{crate_version, AppSettings, Arg, ArgAction, Command};
 use filetime::FileTime;
 use glob::glob;
 use log::{debug, info, LevelFilter};
-use reo::Universe;
 use reo::org::eolang::register;
+use reo::Universe;
 use simple_logger::SimpleLogger;
+use sodg::Script;
+use sodg::Sodg;
+use std::collections::HashMap;
 use std::fs;
 use std::fs::metadata;
 use std::path::{Path, PathBuf};
-use std::time::{Instant};
-use clap::builder::TypedValueParser;
-use clap::ErrorKind::EmptyValue;
-use sodg::Script;
-use sodg::Sodg;
+use std::time::Instant;
 
 /// Returns TRUE if file `f1` is newer than file `f2`.
 fn newer(f1: &Path, f2: &Path) -> bool {
@@ -131,7 +131,7 @@ pub fn main() -> Result<()> {
                         .required(false)
                         .takes_value(false)
                         .help("Compile anyway, even if a binary file is up to date"),
-                )
+                ),
         )
         .subcommand(
             Command::new("merge")
@@ -160,7 +160,7 @@ pub fn main() -> Result<()> {
                         .required(false)
                         .takes_value(false)
                         .help("Merge anyway, even if a binary file is up to date"),
-                )
+                ),
         )
         .subcommand(
             Command::new("dataize")
@@ -201,14 +201,16 @@ pub fn main() -> Result<()> {
     let start = Instant::now();
     match matches.subcommand() {
         Some(("compile", subs)) => {
-            let sources = subs.get_one::<PathBuf>("sources")
+            let sources = subs
+                .get_one::<PathBuf>("sources")
                 .context("Path of directory with .sodg files is required")
                 .unwrap();
             debug!("sources: {}", sources.display());
             if !sources.exists() {
                 return Err(anyhow!("The directory '{}' not found", sources.display()));
             }
-            let target = subs.get_one::<PathBuf>("target")
+            let target = subs
+                .get_one::<PathBuf>("target")
                 .context("Path of directory with .reo files is required")
                 .unwrap();
             debug!("target: {}", target.display());
@@ -225,7 +227,10 @@ pub fn main() -> Result<()> {
                     if src.is_dir() {
                         continue;
                     }
-                    let rel = src.as_path().strip_prefix(sources.as_path())?.with_extension("reo");
+                    let rel = src
+                        .as_path()
+                        .strip_prefix(sources.as_path())?
+                        .with_extension("reo");
                     let bin = target.join(rel);
                     job.insert(src, bin);
                 }
@@ -235,7 +240,9 @@ pub fn main() -> Result<()> {
             }
             let mut total = 0;
             for (src, bin) in &job {
-                let parent = bin.parent().context(format!("Can't get parent of {}", bin.display()))?;
+                let parent = bin
+                    .parent()
+                    .context(format!("Can't get parent of {}", bin.display()))?;
                 if fsutils::mkdir(parent.to_str().unwrap()) {
                     info!("Directory created: '{}'", parent.display());
                 }
@@ -250,10 +257,13 @@ pub fn main() -> Result<()> {
                 let mut g = Sodg::empty();
                 info!(
                     "Compiling SODG instructions from '{}' to '{}'",
-                    src.display(), bin.display()
+                    src.display(),
+                    bin.display()
                 );
                 let mut s = Script::from_str(fs::read_to_string(src)?.as_str());
-                let ints = s.deploy_to(&mut g).context(format!("Failed with '{}'", src.display()))?;
+                let ints = s
+                    .deploy_to(&mut g)
+                    .context(format!("Failed with '{}'", src.display()))?;
                 info!("Deployed {ints} instructions from {}", src.display());
                 let size = g.save(bin)?;
                 info!("The SODG saved to '{}' ({size} bytes)", bin.display());
@@ -262,7 +272,8 @@ pub fn main() -> Result<()> {
             info!("{total} files compiled to {}", target.display());
         }
         Some(("dataize", subs)) => {
-            let bin = subs.get_one::<PathBuf>("file")
+            let bin = subs
+                .get_one::<PathBuf>("file")
                 .context("Path of .reo file is required")
                 .unwrap();
             debug!("bin: {}", bin.display());

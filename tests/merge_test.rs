@@ -20,11 +20,11 @@
 
 mod common;
 
+use anyhow::Result;
+use reo::Universe;
+use sodg::Sodg;
 use std::fs::File;
 use std::io::Write;
-use anyhow::Result;
-use sodg::Sodg;
-use reo::Universe;
 use tempfile::TempDir;
 
 #[test]
@@ -40,7 +40,7 @@ fn link_two() -> Result<()> {
         BIND(ν0, $ν1, foo);
         PUT($ν1, d0-bf-d1-80-d0-b8-d0-b2-d0-b5-d1-82);
         "
-        .as_bytes()
+        .as_bytes(),
     )?;
     File::create(tmp.path().join("src/bar.sodg"))?.write_all(
         "
@@ -49,7 +49,7 @@ fn link_two() -> Result<()> {
         BIND(ν0, $ν1, bar);
         PUT($ν1, 40-41-42);
         "
-        .as_bytes()
+        .as_bytes(),
     )?;
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()

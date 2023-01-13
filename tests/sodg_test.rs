@@ -25,8 +25,8 @@ use crate::runtime::load_everything;
 use anyhow::Result;
 use glob::glob;
 use reo::Universe;
-use std::path::Path;
 use sodg::Sodg;
+use std::path::Path;
 use tempfile::TempDir;
 
 fn all_scripts() -> Result<Vec<String>> {

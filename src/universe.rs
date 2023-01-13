@@ -18,13 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use std::collections::HashMap;
-use std::str::FromStr;
+use crate::{Atom, Universe};
 use anyhow::{anyhow, Context, Result};
 use log::trace;
-use sodg::{Hex, Relay};
 use sodg::Sodg;
-use crate::{Atom, Universe};
+use sodg::{Hex, Relay};
+use std::collections::HashMap;
+use std::str::FromStr;
 
 impl Universe {
     /// Makes an empty Universe.
@@ -33,7 +33,10 @@ impl Universe {
         g.alert_on(|g, vx| {
             let mut errors = Vec::new();
             for v in vx.iter() {
-                let attrs = g.kids(*v).unwrap().iter()
+                let attrs = g
+                    .kids(*v)
+                    .unwrap()
+                    .iter()
                     .filter(|(a, _, _)| a == "π" || a == "φ")
                     .count();
                 if attrs > 1 {
@@ -88,7 +91,10 @@ impl Universe {
     /// one, use `find` method.
     pub fn dataize(&mut self, loc: &str) -> Result<Hex> {
         let v = self.find(format!("{loc}.Δ").as_str())?;
-        let data = self.g.data(v).context(format!("There is no data in ν{v}"))?;
+        let data = self
+            .g
+            .data(v)
+            .context(format!("There is no data in ν{v}"))?;
         trace!(
             "#dataize: data found in ν{v} ({} bytes), all good!",
             data.len()
@@ -103,7 +109,8 @@ impl Universe {
         if self.g.is_empty() {
             return Err(anyhow!("The Universe is empty, can't dataize {loc}"));
         }
-        let v = self.g
+        let v = self
+            .g
             .find(0, loc, self)
             .context(format!("Failed to find {loc}"))?;
         Ok(v)

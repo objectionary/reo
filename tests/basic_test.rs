@@ -35,7 +35,7 @@ fn dataizes_simple_sodg() -> Result<()> {
         BIND(0, $ν1, foo);
         PUT($ν1, ff-ff);
         "
-        .as_bytes()
+        .as_bytes(),
     )?;
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()

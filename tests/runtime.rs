@@ -19,8 +19,8 @@
 // SOFTWARE.
 
 use anyhow::Result;
-use std::path::Path;
 use sodg::Sodg;
+use std::path::Path;
 
 pub fn load_everything() -> Result<Sodg> {
     let bin = Path::new("target/runtime.reo");
