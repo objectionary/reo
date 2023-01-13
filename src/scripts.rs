@@ -27,7 +27,7 @@ use sodg::Hex;
 pub fn copy_of_int(uni: &mut Universe, data: i64) -> Result<u32> {
     let v = uni.add();
     let int = uni.find("org.eolang.int")?;
-    uni.bind(v.clone(), int, "π");
-    uni.put(v.clone(), Hex::from(data));
+    uni.bind(v, int, "π");
+    uni.put(v, Hex::from(data));
     Ok(v)
 }

@@ -147,7 +147,7 @@ impl Universe {
         //     trace!("#find: ξ=ν{} saved by ▼", xi);
         //     continue;
         // }
-        if a.starts_with("ν") {
+        if a.starts_with('ν') {
             let num: String = a.chars().skip(1).collect::<Vec<_>>().into_iter().collect();
             let v = u32::from_str(num.as_str())?;
             // xi = v;
@@ -192,7 +192,7 @@ impl Universe {
             // );
             return Ok(format!("ν{to}"));
         }
-        return Err(anyhow!("There is no .{a} in ν{at}"));
+        Err(anyhow!("There is no .{a} in ν{at}"))
     }
 }
 
