@@ -197,6 +197,12 @@ impl Universe {
 }
 
 #[cfg(test)]
+use sodg::Script;
+
+#[cfg(test)]
+use crate::org::eolang::register;
+
+#[cfg(test)]
 fn rand(uni: &mut Universe, _: u32) -> Result<u32> {
     let v = uni.add();
     uni.bind(v, 0, "π/int");
@@ -221,5 +227,39 @@ fn generates_random_int() -> Result<()> {
     let first = uni.dataize("Φ.x")?.to_i64()?;
     let second = uni.dataize("Φ.x")?.to_i64()?;
     assert_ne!(first, second);
+    Ok(())
+}
+
+#[test]
+fn dataizes_simple_self_ref() -> Result<()> {
+    let mut g = Sodg::empty();
+    Script::from_str(
+        "
+        ADD(0);
+        ADD($v1); BIND(0, $v1, foo); PUT($v1, 00-00-00-00-00-00-00-2A);
+        ADD($v2); BIND(0, $v1, bar); BIND($v2, $v1, ξ);
+        ",
+    )
+    .deploy_to(&mut g)?;
+    let mut uni = Universe::from_graph(g);
+    register(&mut uni);
+    assert_eq!(42, uni.dataize("Φ.bar")?.to_i64()?);
+    Ok(())
+}
+
+#[test]
+fn dataizes_simple_copy_of() -> Result<()> {
+    let mut g = Sodg::empty();
+    Script::from_str(
+        "
+        ADD(0);
+        ADD($v1); BIND(0, $v1, foo); PUT($v1, 00-00-00-00-00-00-00-2A);
+        ADD($v2); BIND(0, $v1, bar); BIND($v2, $v1, π);
+        ",
+    )
+    .deploy_to(&mut g)?;
+    let mut uni = Universe::from_graph(g);
+    register(&mut uni);
+    assert_eq!(42, uni.dataize("Φ.bar")?.to_i64()?);
     Ok(())
 }
