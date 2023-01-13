@@ -164,9 +164,10 @@ impl Universe {
             return Ok("ν0".to_string());
         }
         if let Some(to) = uni.g.kid(at, "ξ") {
-            trace!("#re: ν{at}.ξ -> ν{to} (.{a} not found)");
             // locator.push_front(k);
-            return Ok(format!("ν{to}"));
+            let loc = uni.g.loc(at, "ξ").unwrap();
+            trace!("#re: ν{at}.ξ -> ν{to}{loc} (.{a} not found)");
+            return Ok(format!("ν{to}{loc}"));
         }
         if let Some(to) = uni.g.kid(at, "π") {
             trace!("#re: ν{at}.π -> ν{to} (.{a} not found)");
@@ -203,6 +204,12 @@ use sodg::Script;
 use crate::org::eolang::register;
 
 #[cfg(test)]
+use std::fs;
+
+#[cfg(test)]
+use glob::glob;
+
+#[cfg(test)]
 fn rand(uni: &mut Universe, _: u32) -> Result<u32> {
     let v = uni.add();
     uni.bind(v, 0, "π/int");
@@ -231,52 +238,17 @@ fn generates_random_int() -> Result<()> {
 }
 
 #[test]
-fn dataizes_simple_self_ref() -> Result<()> {
-    let mut g = Sodg::empty();
-    Script::from_str(
-        "
-        ADD(0);
-        ADD($v1); BIND(0, $v1, foo); PUT($v1, 00-00-00-00-00-00-00-2A);
-        ADD($v2); BIND(0, $v1, bar); BIND($v2, $v1, ξ);
-        ",
-    )
-    .deploy_to(&mut g)?;
-    let mut uni = Universe::from_graph(g);
-    register(&mut uni);
-    assert_eq!(42, uni.dataize("Φ.bar")?.to_i64()?);
-    Ok(())
-}
-
-#[test]
-fn dataizes_simple_copy_of() -> Result<()> {
-    let mut g = Sodg::empty();
-    Script::from_str(
-        "
-        ADD(0);
-        ADD($v1); BIND(0, $v1, foo); PUT($v1, 00-00-00-00-00-00-00-2A);
-        ADD($v2); BIND(0, $v1, bar); BIND($v2, $v1, π);
-        ",
-    )
-    .deploy_to(&mut g)?;
-    let mut uni = Universe::from_graph(g);
-    register(&mut uni);
-    assert_eq!(42, uni.dataize("Φ.bar")?.to_i64()?);
-    Ok(())
-}
-
-#[test]
-fn dataizes_simple_decorator() -> Result<()> {
-    let mut g = Sodg::empty();
-    Script::from_str(
-        "
-        ADD(0);
-        ADD($v1); BIND(0, $v1, foo); PUT($v1, 00-00-00-00-00-00-00-2A);
-        ADD($v2); BIND(0, $v1, bar); BIND($v2, $v1, φ);
-        ",
-    )
-    .deploy_to(&mut g)?;
-    let mut uni = Universe::from_graph(g);
-    register(&mut uni);
-    assert_eq!(42, uni.dataize("Φ.bar")?.to_i64()?);
+fn quick_tests() -> Result<()> {
+    for f in glob("quick-tests/**/*.sodg")? {
+        let p = f?;
+        let mut s = Script::from_str(
+            fs::read_to_string(p.into_os_string().into_string().unwrap())?.as_str(),
+        );
+        let mut g = Sodg::empty();
+        s.deploy_to(&mut g)?;
+        let mut uni = Universe::from_graph(g);
+        register(&mut uni);
+        assert_eq!(42, uni.dataize("Φ.foo")?.to_i64()?);
+    }
     Ok(())
 }
