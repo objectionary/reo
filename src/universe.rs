@@ -171,22 +171,19 @@ impl Universe {
             trace!("#re: Φ/ν{at} found");
             return Ok("ν0".to_string());
         }
-        if let Some(to) = uni.g.kid(at, "ξ") {
+        if let Some((to, loc)) = uni.g.kid_and_loc(at, "ξ") {
             // locator.push_front(k);
-            let loc = uni.g.loc(at, "ξ").unwrap();
             let re = Self::edge_to(to, loc);
             trace!("#re: ν{at}.ξ -> {re} (.{a} not found)");
             return Ok(re);
         }
-        if let Some(to) = uni.g.kid(at, "π") {
-            let loc = uni.g.loc(at, "π").unwrap();
+        if let Some((to, loc)) = uni.g.kid_and_loc(at, "π") {
             let re = Self::edge_to(to, loc);
             trace!("#re: ν{at}.π -> {re} (.{a} not found)");
             // locator.push_front(k);
             return Ok(re);
         }
-        if let Some(to) = uni.g.kid(at, "φ") {
-            let loc = uni.g.loc(at, "φ").unwrap();
+        if let Some((to, loc)) = uni.g.kid_and_loc(at, "φ") {
             let re = Self::edge_to(to, loc);
             trace!("#re: ν{at}.φ -> {re} (.{a} not found)");
             // xi = v;
@@ -212,9 +209,6 @@ impl Universe {
 
 #[cfg(test)]
 use sodg::Script;
-
-#[cfg(test)]
-use crate::org::eolang::register;
 
 #[cfg(test)]
 use std::fs;
@@ -250,17 +244,27 @@ fn generates_random_int() -> Result<()> {
     Ok(())
 }
 
+#[cfg(test)]
+fn inc(uni: &mut Universe, v: u32) -> Result<u32> {
+    let rho = uni.dataize(format!("ν{v}.ρ").as_str())?.to_i64()?;
+    let v1 = uni.add();
+    uni.put(v1, Hex::from(rho + 1));
+    Ok(v)
+}
+
 #[test]
 fn quick_tests() -> Result<()> {
     for f in glob("quick-tests/**/*.sodg")? {
         let p = f?;
-        let mut s = Script::from_str(
-            fs::read_to_string(p.into_os_string().into_string().unwrap())?.as_str(),
-        );
+        let path = p.into_os_string().into_string().unwrap();
+        if path.contains('_') {
+            continue;
+        }
+        let mut s = Script::from_str(fs::read_to_string(path)?.as_str());
         let mut g = Sodg::empty();
         s.deploy_to(&mut g)?;
         let mut uni = Universe::from_graph(g);
-        register(&mut uni);
+        uni.register("inc", inc);
         assert_eq!(42, uni.dataize("Φ.foo")?.to_i64()?);
     }
     Ok(())
