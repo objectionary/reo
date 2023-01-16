@@ -141,51 +141,54 @@ impl Universe {
 
     /// Resolve a locator on a vertex, if it's not found.
     fn mut_re(uni: &mut Universe, at: u32, a: &str) -> Result<String> {
-        // if k == "▲" {
-        //     xi = xis.pop_back().unwrap();
-        //     trace!("#find: ξ loaded to ν{} by ▲", xi);
-        //     continue;
-        // }
-        // if k == "▼" {
-        //     xis.push_back(xi);
-        //     trace!("#find: ξ=ν{} saved by ▼", xi);
-        //     continue;
-        // }
         trace!("#re(ν{at}.{a}): starting...");
-        let found = if a == "Δ" && uni.g.full(at).unwrap() {
-            format!("ν{at}")
-        } else if a == "ξ" || a == "$" {
-            format!("ν{at}")
-        } else if a == "Φ" || a == "Q" {
-            // xi = v;
-            "ν0".to_string()
-        } else if let Some((to, loc)) = uni.g.kid(at, "ξ") {
-            let t = Self::relink(uni, to, loc)?;
-            // locator.push_front(k);
-            format!("ν{t}.{a}")
-        } else if let Some((to, loc)) = uni.g.kid(at, "π") {
-            let t = Self::relink(uni, to, loc)?;
-            trace!("#re: ν{at}.π -> ν{t}.{a} (ν{at}.{a} not found)");
-            // locator.push_front(k);
-            format!("ν{t}.{a}")
-        } else if let Some((to, loc)) = uni.g.kid(at, "φ") {
-            let t = Self::relink(uni, to, loc)?;
-            trace!("#re: ν{at}.φ -> ν{t} (ν{at}.{a} not found)");
-            // xi = v;
-            // locator.push_front(k);
-            format!("ν{t}")
-        } else if let Some((lv, _)) = uni.g.kid(at, "λ") {
+        let found = if let Some((lv, _)) = uni.g.kid(at, "λ") {
             let lambda = uni.g.data(lv)?.to_utf8()?;
             trace!("#re: calling ν{at}.λ⇓{lambda}(ξ=ν?)...");
             let to = uni.atoms.get(lambda.as_str()).unwrap()(uni, at)?;
-            // locator.push_front(format!("ν{}", to));
             trace!("#re: ν{at}.λ⇓{lambda}(ξ=ν?) returned ν{to}");
-            // trace!(
-            //     "#find: λ at λ{} reset locator to '{}'",
-            //     v,
-            //     itertools::join(locator.clone(), ".")
-            // );
             format!("ν{to}")
+        } else if a == "ξ" || a == "$" {
+            format!("ν{at}")
+        } else if a == "Φ" || a == "Q" {
+            "ν0".to_string()
+        } else if a == "Δ" && uni.g.full(at).unwrap() {
+            format!("ν{at}")
+        } else if let Some((to, loc)) = uni.g.kid(at, "ξ") {
+            let t = Self::relink(uni, to, loc)?;
+            format!("ν{t}.{a}")
+        } else if let Some((to, loc)) = uni.g.kid(at, "π") {
+            let t = Self::relink(uni, to, loc)?;
+            if let Some((kid, _)) = uni.g.kid(t, "λ") {
+                if uni.g.kid(at, "λ").is_none() {
+                    let v = uni.add();
+                    uni.bind(at, kid, "λ");
+                    let lambda = uni.data(kid);
+                    uni.put(v, lambda.clone());
+                    trace!("#re: ν{at}.π.λ->ν{kid} copied to ν{v} ({lambda}))");
+                }
+                format!("ν{at}.{a}")
+            } else {
+                let v = if a == "Δ" {
+                    t
+                } else {
+                    let v = uni.add();
+                    uni.bind(v, at, "ρ");
+                    if let Some((kid, _)) = uni.g.kid(t, a) {
+                        uni.bind(v, kid, "π");
+                        trace!("#re: ν{at}.π.{a}->ν{kid} copied to ν{v}");
+                    } else {
+                        uni.bind(v, t, format!("π/.{a}").as_str());
+                    }
+                    trace!("#re: ν{at}.π.{a} -> ν{t}");
+                    v
+                };
+                format!("ν{v}")
+            }
+        } else if let Some((to, loc)) = uni.g.kid(at, "φ") {
+            let t = Self::relink(uni, to, loc)?;
+            trace!("#re: ν{at}.φ -> ν{t} (ν{at}.{a} not found)");
+            format!("ν{t}")
         } else {
             return Err(anyhow!("There is no way to get .{a} from ν{at}"))
         };
@@ -236,7 +239,7 @@ fn inc(uni: &mut Universe, v: u32) -> Result<u32> {
     let rho = uni.dataize(format!("ν{v}.ρ").as_str())?.to_i64()?;
     let v1 = uni.add();
     uni.put(v1, Hex::from(rho + 1));
-    Ok(v)
+    Ok(v1)
 }
 
 #[test]
@@ -247,6 +250,7 @@ fn quick_tests() -> Result<()> {
         if path.contains('_') {
             continue;
         }
+        trace!("#quick_tests: {path}");
         let mut s = Script::from_str(fs::read_to_string(path)?.as_str());
         let mut g = Sodg::empty();
         s.deploy_to(&mut g)?;
