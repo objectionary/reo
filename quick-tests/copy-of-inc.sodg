@@ -4,6 +4,7 @@ ADD($v1);
 BIND(0, $v1, integer);
 ADD($v2);
 BIND($v1, $v2, inc);
+BIND($v2, $v1, ρ);
 ADD($v3);
 BIND($v2, $v3, λ);
 PUT($v3, 69-6E-63);
@@ -13,5 +14,5 @@ BIND($v4, $v1, π);
 PUT($v4, 00-00-00-00-00-00-00-29);
 
 ADD($v5);
-BIND(0, $v1, foo);
+BIND(0, $v5, foo);
 BIND($v5, $v4, ξ/.inc);

@@ -24,7 +24,6 @@ use log::trace;
 use sodg::Sodg;
 use sodg::{Hex, Relay};
 use std::collections::HashMap;
-use std::str::FromStr;
 
 impl Universe {
     /// Makes an empty Universe.
@@ -90,14 +89,15 @@ impl Universe {
     /// from "Φ". If you need to find any vertex starting from non-root
     /// one, use `find` method.
     pub fn dataize(&mut self, loc: &str) -> Result<Hex> {
-        let v = self.find(format!("{loc}.Δ").as_str())?;
+        let v = self.find(format!("{loc}.Δ").as_str())
+            .context(format!("Can't find {loc}"))?;
         let data = self
             .g
             .data(v)
             .context(format!("There is no data in ν{v}"))?;
         trace!(
-            "#dataize: data found in ν{v} ({} bytes), all good!",
-            data.len()
+            "#dataize: data found in ν{v} ({} bytes): {}",
+            data.len(), data
         );
         Ok(data)
     }
@@ -118,33 +118,29 @@ impl Universe {
 }
 
 impl Relay for Universe {
-    /// Resolve a locator on a vertex, if it's not found.
-    fn re(&self, at: u32, a: &str, b: &str) -> Result<String> {
+    /// Resolve a locator on a vertex, if it is not found.
+    fn re(&self, at: u32, a: &str) -> Result<String> {
         unsafe {
             let cp = self as *const Self;
             let mp = cp as *mut Self;
             let uni = &mut *mp;
-            Self::mut_re(uni, at, a, b)
+            Self::mut_re(uni, at, a)
         }
     }
 }
 
 impl Universe {
-    fn edge_to(to: u32, loc: String) -> String {
-        if loc.starts_with('.') {
-            format!("ν{to}{loc}")
+    fn relink(uni: &mut Universe, to: u32, loc: String) -> Result<u32> {
+        let v = if loc.starts_with('.') {
+            uni.find(format!("ν{to}{}", loc).as_str())?
         } else {
-            loc
-        }
+            to
+        };
+        Ok(v)
     }
 
     /// Resolve a locator on a vertex, if it's not found.
-    fn mut_re(uni: &mut Universe, at: u32, a: &str, b: &str) -> Result<String> {
-        trace!("#re(ν{at}, '{a}/{b}'): starting...");
-        if a == "Δ" && uni.g.full(at).unwrap() {
-            trace!("#re: ν{at}.Δ found");
-            return Ok(format!("ν{at}"));
-        }
+    fn mut_re(uni: &mut Universe, at: u32, a: &str) -> Result<String> {
         // if k == "▲" {
         //     xi = xis.pop_back().unwrap();
         //     trace!("#find: ξ loaded to ν{} by ▲", xi);
@@ -155,55 +151,46 @@ impl Universe {
         //     trace!("#find: ξ=ν{} saved by ▼", xi);
         //     continue;
         // }
-        if a.starts_with('ν') {
-            let num: String = a.chars().skip(1).collect::<Vec<_>>().into_iter().collect();
-            let v = u32::from_str(num.as_str())?;
+        trace!("#re(ν{at}.{a}): starting...");
+        let found = if a == "Δ" && uni.g.full(at).unwrap() {
+            format!("ν{at}")
+        } else if a == "ξ" || a == "$" {
+            format!("ν{at}")
+        } else if a == "Φ" || a == "Q" {
             // xi = v;
-            trace!("#re: jumping directly to ν{v}");
-            return Ok(format!("ν{v}"));
-        }
-        if a == "ξ" || a == "$" {
-            trace!("#re: ν{at}.ξ -> {at}");
-            return Ok(format!("ν{at}"));
-        }
-        if a == "Φ" || a == "Q" {
-            // xi = v;
-            trace!("#re: Φ/ν{at} found");
-            return Ok("ν0".to_string());
-        }
-        if let Some((to, loc)) = uni.g.kid_and_loc(at, "ξ") {
+            "ν0".to_string()
+        } else if let Some((to, loc)) = uni.g.kid(at, "ξ") {
+            let t = Self::relink(uni, to, loc)?;
             // locator.push_front(k);
-            let re = Self::edge_to(to, loc);
-            trace!("#re: ν{at}.ξ -> {re} (.{a} not found)");
-            return Ok(re);
-        }
-        if let Some((to, loc)) = uni.g.kid_and_loc(at, "π") {
-            let re = Self::edge_to(to, loc);
-            trace!("#re: ν{at}.π -> {re} (.{a} not found)");
+            format!("ν{t}.{a}")
+        } else if let Some((to, loc)) = uni.g.kid(at, "π") {
+            let t = Self::relink(uni, to, loc)?;
+            trace!("#re: ν{at}.π -> ν{t}.{a} (ν{at}.{a} not found)");
             // locator.push_front(k);
-            return Ok(re);
-        }
-        if let Some((to, loc)) = uni.g.kid_and_loc(at, "φ") {
-            let re = Self::edge_to(to, loc);
-            trace!("#re: ν{at}.φ -> {re} (.{a} not found)");
+            format!("ν{t}.{a}")
+        } else if let Some((to, loc)) = uni.g.kid(at, "φ") {
+            let t = Self::relink(uni, to, loc)?;
+            trace!("#re: ν{at}.φ -> ν{t} (ν{at}.{a} not found)");
             // xi = v;
             // locator.push_front(k);
-            return Ok(re);
-        }
-        if let Some(lv) = uni.g.kid(at, "λ") {
-            let lambda = uni.g.data(lv).unwrap().to_utf8().unwrap();
-            trace!("#re: at ν{at} calling λ{lambda}(ξ=ν?)...");
+            format!("ν{t}")
+        } else if let Some((lv, _)) = uni.g.kid(at, "λ") {
+            let lambda = uni.g.data(lv)?.to_utf8()?;
+            trace!("#re: calling ν{at}.λ⇓{lambda}(ξ=ν?)...");
             let to = uni.atoms.get(lambda.as_str()).unwrap()(uni, at)?;
             // locator.push_front(format!("ν{}", to));
-            trace!("#re: λ{lambda} in ν{at}(ξ=ν?) returned ν{to}");
+            trace!("#re: ν{at}.λ⇓{lambda}(ξ=ν?) returned ν{to}");
             // trace!(
             //     "#find: λ at λ{} reset locator to '{}'",
             //     v,
             //     itertools::join(locator.clone(), ".")
             // );
-            return Ok(format!("ν{to}"));
-        }
-        Err(anyhow!("There is no .{a} in ν{at}"))
+            format!("ν{to}")
+        } else {
+            return Err(anyhow!("There is no way to get .{a} from ν{at}"))
+        };
+        trace!("#re(ν{at}.{a}): found '{found}'");
+        Ok(found)
     }
 }
 
