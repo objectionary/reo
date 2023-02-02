@@ -15,8 +15,12 @@
 Most probably it doesn't work. Don't try to contribute, unless you know
 what you are doing.
 
-It's an experimental transpiler of
-[EO](https://www.eolang.org) programs to Rust functions.
+It's an experimental virtual machine of
+[EO](https://www.eolang.org) programs, 
+previously compiled to 
+[XMIR](https://news.eolang.org/2022-11-25-xmir-guide.html)
+and then to
+[SODG](https://github.com/objectionary/sodg).
 
 First, install
 [Rust](https://www.rust-lang.org/tools/install),
@@ -37,7 +41,7 @@ Then, create a simple EO program in `app.eo` file:
     "Hello, world!\n"
 ```
 
-Then, compile it to Sot using [eoc](https://github.com/objectionary/eoc):
+Then, compile it to SODG using [eoc](https://github.com/objectionary/eoc):
 
 ```
 $ eoc sodg
