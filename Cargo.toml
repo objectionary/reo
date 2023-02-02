@@ -20,8 +20,7 @@ simple_logger = "2.3.0"
 ctor = "0.1.23"
 itertools = "0.10.5"
 glob = "0.3.0"
-#sodg = "0.0.0"
-sodg = {path = "/code/objectionary/sodg", features = ["sober"]}
+sodg = {version = "0.0.23", features = ["sober"]}
 filetime = "0.2.17"
 predicates = "2.1.5"
 fsutils = "0.1.7"
