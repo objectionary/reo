@@ -17,10 +17,8 @@ what you are doing.
 
 It's an experimental virtual machine of
 [EO](https://www.eolang.org) programs, 
-previously compiled to 
-[XMIR](https://news.eolang.org/2022-11-25-xmir-guide.html)
-and then to
-[SODG](https://github.com/objectionary/sodg).
+represented as  
+[SODG](https://github.com/objectionary/sodg) graphs.
 
 First, install
 [Rust](https://www.rust-lang.org/tools/install),
