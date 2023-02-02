@@ -89,7 +89,8 @@ impl Universe {
     /// from "Φ". If you need to find any vertex starting from non-root
     /// one, use `find` method.
     pub fn dataize(&mut self, loc: &str) -> Result<Hex> {
-        let v = self.find(format!("{loc}.Δ").as_str())
+        let v = self
+            .find(format!("{loc}.Δ").as_str())
             .context(format!("Can't find {loc}"))?;
         let data = self
             .g
@@ -97,7 +98,8 @@ impl Universe {
             .context(format!("There is no data in ν{v}"))?;
         trace!(
             "#dataize: data found in ν{v} ({} bytes): {}",
-            data.len(), data
+            data.len(),
+            data
         );
         Ok(data)
     }
@@ -190,7 +192,7 @@ impl Universe {
             trace!("#re: ν{at}.φ -> ν{t} (ν{at}.{a} not found)");
             format!("ν{t}")
         } else {
-            return Err(anyhow!("There is no way to get .{a} from ν{at}"))
+            return Err(anyhow!("There is no way to get .{a} from ν{at}"));
         };
         trace!("#re(ν{at}.{a}): found '{found}'");
         Ok(found)
