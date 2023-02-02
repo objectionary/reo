@@ -18,9 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use crate::da;
 use crate::scripts::copy_of_int;
-use crate::universe::Universe;
+use crate::Universe;
 use anyhow::Result;
 
 /// Register all known atoms in the Universe.
@@ -32,22 +31,22 @@ pub fn register(uni: &mut Universe) {
 
 /// EO atom `int.plus`.
 pub fn int_plus(uni: &mut Universe, v: u32) -> Result<u32> {
-    let rho = da!(uni, format!("ν{}.ρ", v)).as_int()?;
-    let x = da!(uni, format!("ν{}.α0", v)).as_int()?;
+    let rho = uni.dataize(format!("ν{}.ρ", v).as_str())?.to_i64()?;
+    let x = uni.dataize(format!("ν{}.α0", v).as_str())?.to_i64()?;
     copy_of_int(uni, rho + x)
 }
 
 /// EO atom `int.times`.
 pub fn int_times(uni: &mut Universe, v: u32) -> Result<u32> {
-    let rho = da!(uni, format!("ν{}.ρ", v)).as_int()?;
-    let x = da!(uni, format!("ν{}.α0", v)).as_int()?;
+    let rho = uni.dataize(format!("ν{}.ρ", v).as_str())?.to_i64()?;
+    let x = uni.dataize(format!("ν{}.α0", v).as_str())?.to_i64()?;
     copy_of_int(uni, rho * x)
 }
 
 /// EO atom `int.div`.
 pub fn int_div(uni: &mut Universe, v: u32) -> Result<u32> {
-    let rho = da!(uni, format!("ν{}.ρ", v)).as_int()?;
-    let x = da!(uni, format!("ν{}.α0", v)).as_int()?;
+    let rho = uni.dataize(format!("ν{}.ρ", v).as_str())?.to_i64()?;
+    let x = uni.dataize(format!("ν{}.α0", v).as_str())?.to_i64()?;
     copy_of_int(uni, rho / x)
 }
 

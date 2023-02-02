@@ -19,22 +19,22 @@
 // SOFTWARE.
 
 use anyhow::Result;
-use reo::universe::Universe;
-use std::fs::File;
-use std::io::Write;
+use sodg::Sodg;
 use std::path::Path;
 
-pub fn load_everything() -> Result<Universe> {
-    let relf = Path::new("target/runtime.relf");
+pub fn load_everything() -> Result<Sodg> {
+    let bin = Path::new("target/runtime.reo");
     assert_cmd::Command::cargo_bin("reo")?
         .arg("compile")
-        .arg("--home=target/eo/gmi")
-        .arg(relf.as_os_str())
+        .arg("target/eo/sodg")
+        .arg("target/eo/reo")
         .assert()
         .success();
-    let uni = Universe::load(relf)?;
-    assert!(uni.inconsistencies().is_empty());
-    File::create(Path::new("target/runtime-inspect.txt"))?
-        .write_all(uni.inspect("Q")?.as_bytes())?;
-    Ok(uni)
+    assert_cmd::Command::cargo_bin("reo")?
+        .arg("merge")
+        .arg(bin.as_os_str())
+        .arg("target/eo/reo")
+        .assert()
+        .success();
+    Ok(Sodg::load(bin)?)
 }

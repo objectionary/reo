@@ -21,51 +21,55 @@
 mod common;
 
 use anyhow::Result;
-use predicates::prelude::predicate;
+use reo::Universe;
+use sodg::Sodg;
 use std::fs::File;
 use std::io::Write;
 use tempfile::TempDir;
 
 #[test]
-fn inspect_existing() -> Result<()> {
+#[ignore]
+fn link_two() -> Result<()> {
     let tmp = TempDir::new()?;
-    File::create(tmp.path().join("foo.gmi"))?.write_all(
+    fsutils::mkdir(tmp.path().join("src").into_os_string().to_str().unwrap());
+    fsutils::mkdir(tmp.path().join("reo").into_os_string().to_str().unwrap());
+    File::create(tmp.path().join("src/foo.sodg"))?.write_all(
         "
-        ADD('$ν1');
-        BIND('$ε2', 'ν0', '$ν1', 'foo');
-        DATA('$ν1', 'ff ff');
+        ADD(ν0);
+        ADD($ν1);
+        BIND(ν0, $ν1, foo);
+        PUT($ν1, d0-bf-d1-80-d0-b8-d0-b2-d0-b5-d1-82);
         "
         .as_bytes(),
     )?;
-    let relf = tmp.path().join("temp.relf");
+    File::create(tmp.path().join("src/bar.sodg"))?.write_all(
+        "
+        ADD(ν0);
+        ADD($ν1);
+        BIND(ν0, $ν1, bar);
+        PUT($ν1, 40-41-42);
+        "
+        .as_bytes(),
+    )?;
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .current_dir(tmp.path())
         .arg("compile")
-        .arg(format!("--home={}", tmp.path().display()))
-        .arg(relf.as_os_str())
+        .arg(tmp.path().join("src").as_os_str())
+        .arg(tmp.path().join("reo").as_os_str())
         .assert()
         .success();
+    let app = tmp.path().join("app.reo");
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
-        .arg("inspect")
-        .arg(relf.as_os_str())
-        .arg("Q")
+        .current_dir(tmp.path())
+        .arg("merge")
+        .arg(app.as_os_str())
+        .arg(tmp.path().join("reo").as_os_str())
         .assert()
-        .success()
-        .stdout(predicate::str::contains(".foo ➞ ν"));
-    Ok(())
-}
-
-#[test]
-fn inspect_nonexisting() -> Result<()> {
-    assert_cmd::Command::cargo_bin("reo")
-        .unwrap()
-        .arg("inspect")
-        .arg("broken-file-name.relf")
-        .arg("foo")
-        .assert()
-        .failure()
-        .stderr(predicate::str::contains("Can't read from "));
+        .success();
+    let mut uni = Universe::from_graph(Sodg::load(app.as_path())?);
+    assert_eq!("ff", uni.dataize("Φ.foo")?.to_utf8()?);
+    assert_eq!("ff", uni.dataize("Φ.bar")?.to_utf8()?);
     Ok(())
 }

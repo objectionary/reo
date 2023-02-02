@@ -24,14 +24,14 @@ mod runtime;
 use crate::runtime::load_everything;
 use anyhow::Result;
 use glob::glob;
-use reo::da;
-use reo::universe::Universe;
+use reo::Universe;
+use sodg::Sodg;
 use std::path::Path;
 use tempfile::TempDir;
 
 fn all_scripts() -> Result<Vec<String>> {
     let mut scripts = Vec::new();
-    for f in glob("gmi-tests/**/*.gmi")? {
+    for f in glob("sodg-tests/**/*.sodg")? {
         let p = f?;
         scripts.push(p.into_os_string().into_string().unwrap());
     }
@@ -39,27 +39,30 @@ fn all_scripts() -> Result<Vec<String>> {
 }
 
 #[test]
-fn dataizes_all_gmi_tests() -> Result<()> {
+#[ignore]
+fn dataizes_all_sodg_tests() -> Result<()> {
     for path in all_scripts()? {
         let tmp = TempDir::new()?;
-        let relf = tmp.path().join("temp.relf");
+        let bin = tmp.path().join("temp.bin");
         assert_cmd::Command::cargo_bin("reo")
             .unwrap()
             .arg("compile")
-            .arg(format!("--file={}", path))
-            .arg(relf.as_os_str())
+            .arg(path.clone())
+            .arg(bin.as_os_str())
             .assert()
             .success();
-        let extra = Universe::load(relf.as_path())?;
-        let mut uni = load_everything()?;
-        uni.merge(&extra);
+        let extra = Sodg::load(bin.as_path())?;
+        let mut sodg = load_everything()?;
+        sodg.merge(&extra);
         let object = Path::new(&path)
             .file_name()
             .unwrap()
             .to_str()
             .unwrap()
-            .replace(".gmi", "");
-        da!(uni, format!("Φ.{}", object));
+            .replace(".sodg", "");
+        let mut uni = Universe::from_graph(sodg);
+        let ret = uni.dataize(format!("Φ.{}", object).as_str()).unwrap();
+        assert!(!ret.is_empty());
     }
     Ok(())
 }

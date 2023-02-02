@@ -18,21 +18,51 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// #![deny(warnings)]
+//! This is an experimental [SODG](https://github.com/objectionary/sodg)-based
+//! virtual machine for
+//! [EO](https://www.eolang.org) programs:
+//!
+//! ```
+//! use sodg::Hex;
+//! use reo::Universe;
+//! let mut uni = Universe::empty();
+//! let root = uni.add();
+//! let v1 = uni.add();
+//! uni.bind(root, v1, "foo");
+//! uni.put(v1, Hex::from(42));
+//! assert_eq!(42, uni.dataize("Φ.foo").unwrap().to_i64().unwrap());
+//! ```
 
-pub mod data;
-pub mod gmi;
-pub mod macros;
+#![doc(html_root_url = "https://docs.rs/reo/0.0.0")]
+#![deny(warnings)]
+
 pub mod org;
-pub mod scripts;
-pub mod setup;
-pub mod universe;
+mod scripts;
+mod universe;
+
+use anyhow::Result;
+use std::collections::HashMap;
+
+/// A single atom to be attached to a vertex.
+///
+/// It is a function that is called by [`Universe`] when it's impossible
+/// to get data from a vertex. The first argument provided is
+/// the [`Universe`] itself, while the second one is the ID of the
+/// vertex where the dataization is standing at the moment.
+pub type Atom = fn(&mut Universe, v: u32) -> Result<u32>;
+
+/// A Universe.
+pub struct Universe {
+    g: Sodg,
+    atoms: HashMap<String, Atom>,
+}
 
 #[cfg(test)]
 use simple_logger::SimpleLogger;
 
 #[cfg(test)]
 use log::LevelFilter;
+use sodg::Sodg;
 
 #[cfg(test)]
 #[ctor::ctor]

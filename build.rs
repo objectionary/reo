@@ -25,7 +25,7 @@ fn main() {
         println!("cargo:rerun-if-changed=eo-tests");
         println!("cargo:rerun-if-changed=build.rs");
         println!("cargo:rerun-if-changed=test-pom.xml");
-        println!("cargo:rerun-if-changed=target/eo");
+        println!("cargo:rerun-if-changed=target/eo/sodg");
         assert!(Command::new("mvn")
             .arg("--batch-mode")
             .arg("--errors")

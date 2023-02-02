@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use crate::universe::Universe;
+use crate::Universe;
 use anyhow::{anyhow, Result};
 
 /// Register all known atoms in the Universe.

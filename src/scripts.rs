@@ -18,17 +18,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use crate::data::Data;
-use crate::universe::Universe;
-use crate::{add, bind};
+use crate::Universe;
 use anyhow::Result;
+use sodg::Hex;
 
 /// Makes a copy of `org.eolang.int` in the Universe. It is assumed
 /// that it already exists there.
 pub fn copy_of_int(uni: &mut Universe, data: i64) -> Result<u32> {
-    let v = add!(uni);
-    let int = uni.find(0, "org.eolang.int")?;
-    bind!(uni, v, int, "π");
-    uni.data(v, Data::from_int(data))?;
+    let v = uni.add();
+    let int = uni.find("org.eolang.int")?;
+    uni.bind(v, int, "π");
+    uni.put(v, Hex::from(data));
     Ok(v)
 }

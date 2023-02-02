@@ -21,7 +21,7 @@
 mod array;
 mod int;
 
-use crate::universe::Universe;
+use crate::Universe;
 
 /// Register all known atoms in the Universe.
 pub fn register(uni: &mut Universe) {
