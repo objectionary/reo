@@ -706,9 +706,7 @@ dependencies = [
 
 [[package]]
 name = "sodg"
-version = "0.0.23"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8618b498b384b5f787f95e4b109834d0999831419c474559436e956470ee8335"
+version = "0.0.0"
 dependencies = [
  "anyhow",
  "bincode",

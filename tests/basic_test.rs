@@ -28,7 +28,9 @@ use tempfile::TempDir;
 #[test]
 fn dataizes_simple_sodg() -> Result<()> {
     let tmp = TempDir::new()?;
-    File::create(tmp.path().join("foo.sodg"))?.write_all(
+    let src = tmp.path().join("foo.sodg");
+    let bin = tmp.path().join("foo.reo");
+    File::create(src.clone())?.write_all(
         "
         ADD(0);
         ADD($ν1);
@@ -42,14 +44,14 @@ fn dataizes_simple_sodg() -> Result<()> {
         .current_dir(tmp.path())
         .arg("--verbose")
         .arg("compile")
-        .arg(tmp.path().as_os_str())
-        .arg(tmp.path().as_os_str())
+        .arg(src.as_os_str())
+        .arg(bin.as_os_str())
         .assert()
         .success();
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .arg("dataize")
-        .arg(tmp.path().join("foo.reo").as_os_str())
+        .arg(bin.as_os_str())
         .arg("foo")
         .assert()
         .success()

@@ -20,7 +20,7 @@ simple_logger = "2.3.0"
 ctor = "0.1.23"
 itertools = "0.10.5"
 glob = "0.3.0"
-sodg = {version = "0.0.23", features = ["sober"]}
+sodg = {path = "/code/o/sodg", features = ["sober"]}
 filetime = "0.2.20"
 predicates = "2.1.5"
 fsutils = "0.1.7"

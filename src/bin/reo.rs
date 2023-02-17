@@ -25,39 +25,15 @@ use anyhow::{anyhow, Context};
 use clap::builder::TypedValueParser;
 use clap::ErrorKind::EmptyValue;
 use clap::{crate_version, AppSettings, Arg, ArgAction, Command};
-use filetime::FileTime;
-use glob::glob;
 use log::{debug, info, LevelFilter};
 use reo::org::eolang::register;
 use reo::Universe;
 use simple_logger::SimpleLogger;
 use sodg::Script;
 use sodg::Sodg;
-use std::collections::HashMap;
 use std::fs;
-use std::fs::metadata;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
-
-/// Returns TRUE if file `f1` is newer than file `f2`.
-fn newer(f1: &Path, f2: &Path) -> bool {
-    let m2 = if f2.exists() {
-        FileTime::from_last_modification_time(&metadata(f2).unwrap())
-    } else {
-        FileTime::from_unix_time(0, 0)
-    };
-    newer_ft(f1, m2)
-}
-
-/// Returns TRUE if file `f1` is newer than file `f2`.
-fn newer_ft(f1: &Path, m2: FileTime) -> bool {
-    let m1 = if f1.exists() {
-        FileTime::from_last_modification_time(&metadata(f1).unwrap())
-    } else {
-        FileTime::from_unix_time(0, 0)
-    };
-    m1 > m2
-}
 
 #[derive(Copy, Clone, Debug)]
 struct PathValueParser {}
@@ -109,29 +85,21 @@ pub fn main() -> Result<()> {
                 .setting(AppSettings::ColorNever)
                 .about("Compile .sodg files into binary .reo files")
                 .arg(
-                    Arg::new("sources")
+                    Arg::new("source")
                         .required(true)
                         .value_parser(PathValueParser {})
-                        .help("Directory with .sodg files to compile")
+                        .help("File with .sodg sources to compile")
                         .takes_value(true)
                         .action(ArgAction::Set),
                 )
                 .arg(
                     Arg::new("target")
                         .required(true)
-                        .help("Directory with .reo binary files to create")
+                        .help("File to save .reo binary")
                         .value_parser(PathValueParser {})
                         .takes_value(true)
                         .action(ArgAction::Set),
                 )
-                .arg(
-                    Arg::new("force")
-                        .long("force")
-                        .short('f')
-                        .required(false)
-                        .takes_value(false)
-                        .help("Compile anyway, even if a binary file is up to date"),
-                ),
         )
         .subcommand(
             Command::new("merge")
@@ -200,75 +168,35 @@ pub fn main() -> Result<()> {
     let start = Instant::now();
     match matches.subcommand() {
         Some(("compile", subs)) => {
-            let sources = subs
-                .get_one::<PathBuf>("sources")
-                .context("Path of directory with .sodg files is required")
+            let src = subs
+                .get_one::<PathBuf>("source")
+                .context("Path of .sodg file is required")
                 .unwrap();
-            debug!("sources: {}", sources.display());
-            if !sources.exists() {
-                return Err(anyhow!("The directory '{}' not found", sources.display()));
+            debug!("source: {}", src.display());
+            if !src.exists() {
+                return Err(anyhow!("The file '{}' not found", src.display()));
             }
-            let target = subs
+            let bin = subs
                 .get_one::<PathBuf>("target")
-                .context("Path of directory with .reo files is required")
+                .context("Path of .reo file is required")
                 .unwrap();
-            debug!("target: {}", target.display());
-            let mut job = HashMap::new();
-            if sources.is_dir() {
-                debug!("the sources is a directory: {}", sources.display());
-                if !target.exists()
-                    && fsutils::mkdir(target.clone().into_os_string().to_str().unwrap())
-                {
-                    info!("Directory created: '{}'", target.display());
-                }
-                for f in glob(format!("{}/**/*.sodg", sources.display()).as_str())? {
-                    let src = f?;
-                    if src.is_dir() {
-                        continue;
-                    }
-                    let rel = src
-                        .as_path()
-                        .strip_prefix(sources.as_path())?
-                        .with_extension("reo");
-                    let bin = target.join(rel);
-                    job.insert(src, bin);
-                }
-            } else {
-                debug!("the sources is a single file: {}", sources.display());
-                job.insert((*sources).clone(), (*target).clone());
-            }
+            debug!("target: {}", bin.display());
+            info!(
+                "Compiling SODG instructions from '{}' to '{}'",
+                src.display(),
+                bin.display()
+            );
             let mut total = 0;
-            for (src, bin) in &job {
-                let parent = bin
-                    .parent()
-                    .context(format!("Can't get parent of {}", bin.display()))?;
-                if fsutils::mkdir(parent.to_str().unwrap()) {
-                    info!("Directory created: '{}'", parent.display());
-                }
-                debug!("bin: {}", bin.display());
-                if newer(bin, src) && !subs.contains_id("force") {
-                    info!(
-                        "The binary file '{}' is up to date ({} bytes), no need to compile the source file '{}' (use --force to compile anyway)",
-                        bin.display(), fs::metadata(bin)?.len(), src.display()
-                    );
-                    continue;
-                }
-                let mut g = Sodg::empty();
-                info!(
-                    "Compiling SODG instructions from '{}' to '{}'",
-                    src.display(),
-                    bin.display()
-                );
-                let mut s = Script::from_str(fs::read_to_string(src)?.as_str());
-                let ints = s
-                    .deploy_to(&mut g)
-                    .context(format!("Failed with '{}'", src.display()))?;
-                info!("Deployed {ints} instructions from {}", src.display());
-                let size = g.save(bin)?;
-                info!("The SODG saved to '{}' ({size} bytes)", bin.display());
-                total += 1;
-            }
-            info!("{total} files compiled to {}", target.display());
+            let mut g = Sodg::empty();
+            let mut s = Script::from_str(fs::read_to_string(src)?.as_str());
+            let ints = s
+                .deploy_to(&mut g)
+                .context(format!("Failed with '{}'", src.display()))?;
+            info!("Deployed {ints} instructions from {}", src.display());
+            let size = g.save(bin)?;
+            info!("The SODG saved to '{}' ({size} bytes)", bin.display());
+            total += 1;
+            info!("{total} files compiled to {}", bin.display());
         }
         Some(("dataize", subs)) => {
             let bin = subs
@@ -290,11 +218,11 @@ pub fn main() -> Result<()> {
                 fs::metadata(bin)?.len(),
                 start.elapsed()
             );
-            info!("Dataizing the '{object}' object...");
+            info!("Databasing the '{object}' object...");
             let mut uni = Universe::from_graph(g);
             register(&mut uni);
             let ret = uni.dataize(format!("Φ.{}", object).as_str())?.print();
-            info!("Dataization result, in {:?} is: {ret}", start.elapsed());
+            info!("Datamation result, in {:?} is: {ret}", start.elapsed());
             println!("{ret}");
         }
         _ => unreachable!(),

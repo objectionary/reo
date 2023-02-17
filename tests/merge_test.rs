@@ -28,8 +28,7 @@ use std::io::Write;
 use tempfile::TempDir;
 
 #[test]
-#[ignore]
-fn link_two() -> Result<()> {
+fn merges_two_graphs() -> Result<()> {
     let tmp = TempDir::new()?;
     fsutils::mkdir(tmp.path().join("src").into_os_string().to_str().unwrap());
     fsutils::mkdir(tmp.path().join("reo").into_os_string().to_str().unwrap());

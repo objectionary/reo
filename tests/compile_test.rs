@@ -21,54 +21,45 @@
 mod common;
 
 use anyhow::Result;
-use filetime::FileTime;
 use predicates::prelude::predicate;
 use tempfile::TempDir;
 
 #[test]
-fn compiles_everything() -> Result<()> {
+fn compiles_int() -> Result<()> {
     let tmp = TempDir::new()?;
-    let target = tmp.path().join("target");
+    let bin = tmp.path().join("int.reo");
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .arg("--verbose")
         .arg("compile")
-        .arg("target/eo/sodg")
-        .arg(target.as_os_str())
+        .arg("target/eo/sodg/org/eolang/int.sodg")
+        .arg(bin.as_os_str())
         .assert()
         .success();
-    assert!(target.join("org/eolang/int.reo").exists());
+    assert!(bin.exists());
     Ok(())
 }
 
 #[test]
 fn skips_compilation_if_file_present() -> Result<()> {
     let tmp = TempDir::new()?;
-    let target = tmp.path().join("target");
-    let bin = target.join("org/eolang/int.reo");
-    let mut first = None;
+    let bin = tmp.path().join("float.reo");
     for _ in 0..2 {
         assert_cmd::Command::cargo_bin("reo")
             .unwrap()
             .arg("--verbose")
             .arg("compile")
-            .arg("target/eo/sodg")
-            .arg(target.as_os_str())
+            .arg("target/eo/sodg/org/eolang/float.sodg")
+            .arg(bin.as_os_str())
             .assert()
             .success();
-        let now = FileTime::from_last_modification_time(&std::fs::metadata(&bin)?);
-        if let Some(before) = first {
-            assert_eq!(before, now);
-        } else {
-            first = Some(now)
-        }
     }
     Ok(())
 }
 
 #[test]
-fn fails_when_directory_is_absent() -> Result<()> {
-    let path = "/usr/boom";
+fn fails_when_file_is_absent() -> Result<()> {
+    let path = "/usr/boom-is-absent";
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .arg("compile")
