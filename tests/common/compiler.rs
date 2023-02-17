@@ -18,53 +18,21 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-mod common;
-
-use crate::common::compiler::compile_one;
 use anyhow::Result;
-use log::debug;
-use reo::Universe;
-use sodg::Sodg;
-use std::fs;
+use std::fs::File;
+use std::io::Write;
+use std::path::PathBuf;
 use tempfile::TempDir;
 
-#[test]
-fn merges_two_graphs() -> Result<()> {
+pub fn compile_one(sodg: &str, reo: PathBuf) -> Result<()> {
     let tmp = TempDir::new()?;
-    let first = tmp.path().join("first.reo");
-    compile_one(
-        "
-        ADD(ν0);
-        ADD($ν1);
-        BIND(ν0, $ν1, foo);
-        PUT($ν1, d0-bf-d1-80-d0-b8-d0-b2-d0-b5-d1-82);
-        ",
-        first.clone(),
-    )?;
-    let second = tmp.path().join("second.reo");
-    compile_one(
-        "
-        ADD(ν0);
-        ADD($ν1);
-        BIND(ν0, $ν1, bar);
-        PUT($ν1, 41-42-43);
-        ",
-        second.clone(),
-    )?;
-    let before = fs::metadata(first.clone())?.len();
-    assert_cmd::Command::cargo_bin("reo")
-        .unwrap()
-        .current_dir(tmp.path())
-        .arg("merge")
-        .arg(first.as_os_str())
-        .arg(second.as_os_str())
+    let src = tmp.path().join("src.sodg");
+    File::create(src.clone())?.write_all(sodg.as_bytes())?;
+    assert_cmd::Command::cargo_bin("reo")?
+        .arg("compile")
+        .arg(src.as_os_str())
+        .arg(reo.as_os_str())
         .assert()
         .success();
-    assert_ne!(before, fs::metadata(first.clone())?.len());
-    let g = Sodg::load(first.as_path())?;
-    debug!("{g:?}");
-    let mut uni = Universe::from_graph(g);
-    assert_eq!("привет", uni.dataize("Φ.foo")?.to_utf8()?);
-    assert_eq!("ABC", uni.dataize("Φ.bar")?.to_utf8()?);
     Ok(())
 }

@@ -19,9 +19,8 @@
 // SOFTWARE.
 
 mod common;
-mod runtime;
 
-use crate::runtime::load_everything;
+use crate::common::runtime::load_everything;
 use anyhow::{Context, Result};
 use glob::glob;
 use reo::Universe;

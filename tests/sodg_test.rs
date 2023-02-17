@@ -19,9 +19,8 @@
 // SOFTWARE.
 
 mod common;
-mod runtime;
 
-use crate::runtime::load_everything;
+use crate::common::runtime::load_everything;
 use anyhow::Result;
 use glob::glob;
 use reo::Universe;
@@ -53,7 +52,7 @@ fn dataizes_all_sodg_tests() -> Result<()> {
             .success();
         let extra = Sodg::load(bin.as_path())?;
         let mut sodg = load_everything()?;
-        sodg.merge(&extra);
+        sodg.merge(&extra)?;
         let object = Path::new(&path)
             .file_name()
             .unwrap()

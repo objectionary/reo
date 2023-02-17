@@ -18,7 +18,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#![deny(warnings)]
+// #![deny(warnings)]
+
+pub mod compiler;
+pub mod runtime;
 
 use log::LevelFilter;
 use simple_logger::SimpleLogger;

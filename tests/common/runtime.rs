@@ -19,22 +19,33 @@
 // SOFTWARE.
 
 use anyhow::Result;
+use glob::glob;
 use sodg::Sodg;
 use std::path::Path;
 
 pub fn load_everything() -> Result<Sodg> {
-    let bin = Path::new("target/runtime.reo");
-    assert_cmd::Command::cargo_bin("reo")?
-        .arg("compile")
-        .arg("target/eo/sodg")
-        .arg("target/eo/reo")
-        .assert()
-        .success();
-    assert_cmd::Command::cargo_bin("reo")?
-        .arg("merge")
-        .arg(bin.as_os_str())
-        .arg("target/eo/reo")
-        .assert()
-        .success();
-    Ok(Sodg::load(bin)?)
+    let pack = Path::new("target/runtime.reo");
+    let sources = Path::new("../../target/eo/sodg");
+    let target = Path::new("target/reo");
+    for f in glob(format!("{}/**/*.sodg", sources.display()).as_str())? {
+        let src = f?;
+        if src.is_dir() {
+            continue;
+        }
+        let rel = src.as_path().strip_prefix(sources)?.with_extension("reo");
+        let bin = target.join(rel);
+        assert_cmd::Command::cargo_bin("reo")?
+            .arg("compile")
+            .arg(src.as_os_str())
+            .arg(bin.as_os_str())
+            .assert()
+            .success();
+        assert_cmd::Command::cargo_bin("reo")?
+            .arg("merge")
+            .arg(bin.as_os_str())
+            .arg(bin.as_os_str())
+            .assert()
+            .success();
+    }
+    Ok(Sodg::load(pack)?)
 }

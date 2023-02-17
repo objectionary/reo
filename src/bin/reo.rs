@@ -99,35 +99,27 @@ pub fn main() -> Result<()> {
                         .value_parser(PathValueParser {})
                         .takes_value(true)
                         .action(ArgAction::Set),
-                )
+                ),
         )
         .subcommand(
             Command::new("merge")
                 .setting(AppSettings::ColorNever)
-                .about("Merge binary .reo files into a single .reo file")
-                .arg(
-                    Arg::new("file")
-                        .required(true)
-                        .value_parser(PathValueParser {})
-                        .help("Name of a binary .reo file to create")
-                        .takes_value(true)
-                        .action(ArgAction::Set),
-                )
+                .about("Merge .reo file into an existing .reo file")
                 .arg(
                     Arg::new("target")
                         .required(true)
                         .value_parser(PathValueParser {})
-                        .help("Directory with .reo binary files")
+                        .help("Path of .reo file to merge into")
                         .takes_value(true)
                         .action(ArgAction::Set),
                 )
                 .arg(
-                    Arg::new("force")
-                        .long("force")
-                        .short('f')
-                        .required(false)
-                        .takes_value(false)
-                        .help("Merge anyway, even if a binary file is up to date"),
+                    Arg::new("source")
+                        .required(true)
+                        .value_parser(PathValueParser {})
+                        .help("Path of .reo file being merged")
+                        .takes_value(true)
+                        .action(ArgAction::Set),
                 ),
         )
         .subcommand(
@@ -186,7 +178,6 @@ pub fn main() -> Result<()> {
                 src.display(),
                 bin.display()
             );
-            let mut total = 0;
             let mut g = Sodg::empty();
             let mut s = Script::from_str(fs::read_to_string(src)?.as_str());
             let ints = s
@@ -195,8 +186,29 @@ pub fn main() -> Result<()> {
             info!("Deployed {ints} instructions from {}", src.display());
             let size = g.save(bin)?;
             info!("The SODG saved to '{}' ({size} bytes)", bin.display());
-            total += 1;
-            info!("{total} files compiled to {}", bin.display());
+        }
+        Some(("merge", subs)) => {
+            let target = subs
+                .get_one::<PathBuf>("target")
+                .context("Path of target .reo file is required")
+                .unwrap();
+            debug!("target: {}", target.display());
+            if !target.exists() {
+                return Err(anyhow!("The file '{}' not found", target.display()));
+            }
+            let source = subs
+                .get_one::<PathBuf>("source")
+                .context("Path of source .reo file is required")
+                .unwrap();
+            debug!("source: {}", source.display());
+            if !source.exists() {
+                return Err(anyhow!("The file '{}' not found", source.display()));
+            }
+            info!("Merging '{}' into '{}'", source.display(), target.display());
+            let mut g = Sodg::load(target)?;
+            g.merge(&Sodg::load(source)?)?;
+            let size = g.save(target)?;
+            info!("The SODG saved to '{}' ({size} bytes)", target.display());
         }
         Some(("dataize", subs)) => {
             let bin = subs
