@@ -22,19 +22,17 @@
 
 +package org.eolang.reo.simple
 
-#  times. > @
-#    div.
-#      plus.
-#        minus.
-#          2
-#          5
-#        minus.
-#          10
-#          3
-#      times.
-#        1
-#        2
-#    7
 [] > arithmetic
-  3 > expected
-  3 > @
+  times. > @
+   div.
+     plus.
+       minus.
+         2
+         5
+       minus.
+         10
+         3
+     times.
+       1
+       2
+   7

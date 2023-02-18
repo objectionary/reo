@@ -58,30 +58,31 @@ impl Universe {
     /// Registers a new atom.
     pub fn register(&mut self, name: &str, a: Atom) {
         self.atoms.insert(name.to_string(), a);
+        trace!("#register: atom {name} registered as {:p}", a as *const ());
     }
 
     /// Add new vertex and return its ID.
     pub fn add(&mut self) -> u32 {
         let v = self.g.next_id();
-        self.g.add(v).unwrap();
+        self.g.add(v).context(anyhow!("Failed to add ν{v}")).unwrap();
         v
     }
 
     /// Bind two new vertices.
     pub fn bind(&mut self, v1: u32, v2: u32, a: &str) {
-        self.g.bind(v1, v2, a).unwrap();
+        self.g.bind(v1, v2, a).context(anyhow!("Failed to bind ν{v1} to ν{v2} as '{a}'")).unwrap();
     }
 
     /// Save data into a vertex. If there is no vertex `v`, the function
     /// will panic.
     pub fn put(&mut self, v: u32, d: Hex) {
-        self.g.put(v, d).unwrap();
+        self.g.put(v, d).context(anyhow!("Failed to put the data to ν{v}")).unwrap();
     }
 
     /// Get the `Hex` from the vertex.
     /// If there is no vertex `v`, the function will panic.
     pub fn data(&mut self, v: u32) -> Hex {
-        self.g.data(v).unwrap()
+        self.g.data(v).context(anyhow!("Failed to get data from ν{v}")).unwrap()
     }
 
     /// Dataize by absolute locator. The search always starts from the
@@ -95,7 +96,7 @@ impl Universe {
         let data = self
             .g
             .data(v)
-            .context(format!("There is no data in ν{v}"))?;
+            .context(format!("There is no data in ν{v} returned by find()"))?;
         trace!(
             "#dataize: data found in ν{v} ({} bytes): {}",
             data.len(),
@@ -116,6 +117,16 @@ impl Universe {
             .find(0, loc, self)
             .context(format!("Failed to find {loc}"))?;
         Ok(v)
+    }
+
+    /// Get a slice of the graph by the locator.
+    pub fn slice(&mut self, loc: &str) -> Result<Sodg> {
+        self.g.slice_some(
+            loc,
+            |_v, _to, a| {
+                !a.starts_with('ρ') && !a.starts_with('σ')
+            }
+        )
     }
 }
 
@@ -154,7 +165,7 @@ impl Universe {
             format!("ν{at}")
         } else if a == "Φ" || a == "Q" {
             "ν0".to_string()
-        } else if a == "Δ" && uni.g.full(at).unwrap() {
+        } else if a == "Δ" && uni.g.is_full(at).unwrap() {
             format!("ν{at}")
         } else if let Some((to, loc)) = uni.g.kid(at, "ξ") {
             let t = Self::relink(uni, to, loc)?;
@@ -190,7 +201,7 @@ impl Universe {
         } else if let Some((to, loc)) = uni.g.kid(at, "φ") {
             let t = Self::relink(uni, to, loc)?;
             trace!("#re: ν{at}.φ -> ν{t} (ν{at}.{a} not found)");
-            format!("ν{t}")
+            format!("ν{t}.{at}")
         } else {
             return Err(anyhow!("There is no way to get .{a} from ν{at}"));
         };

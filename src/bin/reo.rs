@@ -206,7 +206,8 @@ pub fn main() -> Result<()> {
             }
             info!("Merging '{}' into '{}'", source.display(), target.display());
             let mut g = Sodg::load(target)?;
-            g.merge(&Sodg::load(source)?)?;
+            g.add(0)?;
+            g.merge(&Sodg::load(source)?, 0, 0)?;
             let size = g.save(target)?;
             info!("The SODG saved to '{}' ({size} bytes)", target.display());
         }

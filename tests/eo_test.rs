@@ -20,9 +20,11 @@
 
 mod common;
 
-use crate::common::runtime::load_everything;
+use crate::common::runtime::load_runtime;
 use anyhow::{Context, Result};
 use glob::glob;
+use log::debug;
+use reo::org::eolang::register;
 use reo::Universe;
 
 fn all_apps() -> Result<Vec<String>> {
@@ -51,11 +53,15 @@ fn all_apps() -> Result<Vec<String>> {
 #[test]
 #[ignore]
 fn deploys_and_runs_all_apps() -> Result<()> {
-    let mut uni = Universe::from_graph(load_everything()?);
+    let mut uni = Universe::from_graph(load_runtime()?);
+    register(&mut uni);
     for app in all_apps()? {
+        debug!("App: {app}");
+        debug!("{}", uni.slice(format!("ν0.{}", app).as_str()).unwrap().to_dot());
         let expected = uni.dataize(format!("Φ.{}.expected", app).as_str()).unwrap();
         let actual = uni.dataize(format!("Φ.{}", app).as_str()).unwrap();
         assert_eq!(expected, actual, "{} failed", app);
+        debug!("Evaluated {app} as {actual}!");
     }
     Ok(())
 }

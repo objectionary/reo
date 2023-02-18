@@ -18,34 +18,43 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use glob::glob;
 use sodg::Sodg;
 use std::path::Path;
+use log::{debug, info};
 
-pub fn load_everything() -> Result<Sodg> {
+pub fn load_runtime() -> Result<Sodg> {
     let pack = Path::new("target/runtime.reo");
-    let sources = Path::new("../../target/eo/sodg");
-    let target = Path::new("target/reo");
-    for f in glob(format!("{}/**/*.sodg", sources.display()).as_str())? {
-        let src = f?;
-        if src.is_dir() {
-            continue;
+    if !pack.exists() {
+        let sources = Path::new("target/eo/sodg");
+        let target = Path::new("target/reo");
+        Sodg::empty().save(pack)?;
+        for f in glob(format!("{}/**/*.sodg", sources.display()).as_str())? {
+            let src = f?;
+            if src.is_dir() {
+                continue;
+            }
+            let rel = src.as_path().strip_prefix(sources)?.with_extension("reo");
+            let bin = target.join(rel);
+            let parent = bin
+                .parent()
+                .context(format!("Can't get parent of {}", bin.display()))?;
+            fsutils::mkdir(parent.to_str().unwrap());
+            assert_cmd::Command::cargo_bin("reo")?
+                .arg("compile")
+                .arg(src.as_os_str())
+                .arg(bin.as_os_str())
+                .assert()
+                .success();
+            assert_cmd::Command::cargo_bin("reo")?
+                .arg("merge")
+                .arg(pack.as_os_str())
+                .arg(bin.as_os_str())
+                .assert()
+                .success();
+            debug!("merged {}", src.display());
         }
-        let rel = src.as_path().strip_prefix(sources)?.with_extension("reo");
-        let bin = target.join(rel);
-        assert_cmd::Command::cargo_bin("reo")?
-            .arg("compile")
-            .arg(src.as_os_str())
-            .arg(bin.as_os_str())
-            .assert()
-            .success();
-        assert_cmd::Command::cargo_bin("reo")?
-            .arg("merge")
-            .arg(bin.as_os_str())
-            .arg(bin.as_os_str())
-            .assert()
-            .success();
     }
     Ok(Sodg::load(pack)?)
 }
