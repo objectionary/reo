@@ -3,9 +3,9 @@ ADD(0);
 ADD($v1);
 BIND(0, $v1, bar);
 ADD($v2);
-BIND($v1, $v2, a);
+BIND($v1, $v2, Δ);
 PUT($v2, 00-00-00-00-00-00-00-2A);
 
 ADD($v3);
 BIND(0, $v3, foo);
-BIND($v3, $v1, π/.a);
+BIND($v3, $v1, π);

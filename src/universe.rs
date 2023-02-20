@@ -96,7 +96,7 @@ impl Universe {
         let data = self
             .g
             .data(v)
-            .context(format!("There is no data in ν{v} returned by find()"))?;
+            .context(format!("There is no data in {}", self.g.v_print(v)))?;
         trace!(
             "#dataize: data found in ν{v} ({} bytes): {}",
             data.len(),
@@ -149,10 +149,14 @@ impl Universe {
         } else {
             to
         };
+        if v != to {
+            trace!("#re: ν{to}/{loc} relinked to ν{v}");
+        }
         Ok(v)
     }
 
-    /// Resolve a locator on a vertex, if it's not found.
+    /// Resolve a locator on a vertex, if it's not found. The returned string
+    /// is treated as a new locator, where the search will continue.
     fn mut_re(uni: &mut Universe, at: u32, a: &str) -> Result<String> {
         trace!("#re(ν{at}.{a}): starting...");
         let found = if let Some((lv, _)) = uni.g.kid(at, "λ") {
@@ -160,48 +164,40 @@ impl Universe {
             trace!("#re: calling ν{at}.λ⇓{lambda}(ξ=ν?)...");
             let to = uni.atoms.get(lambda.as_str()).unwrap()(uni, at)?;
             trace!("#re: ν{at}.λ⇓{lambda}(ξ=ν?) returned ν{to}");
-            format!("ν{to}")
-        } else if a == "ξ" || a == "$" {
-            format!("ν{at}")
+            format!("ν{to}.{a}")
         } else if a == "Φ" || a == "Q" {
             "ν0".to_string()
-        } else if a == "Δ" && uni.g.is_full(at).unwrap() {
-            format!("ν{at}")
         } else if let Some((to, loc)) = uni.g.kid(at, "ξ") {
             let t = Self::relink(uni, to, loc)?;
             format!("ν{t}.{a}")
-        } else if let Some((to, loc)) = uni.g.kid(at, "π") {
-            let t = Self::relink(uni, to, loc)?;
-            if let Some((kid, _)) = uni.g.kid(t, "λ") {
-                if uni.g.kid(at, "λ").is_none() {
-                    let v = uni.add();
-                    uni.bind(at, kid, "λ");
-                    let lambda = uni.data(kid);
-                    uni.put(v, lambda.clone());
-                    trace!("#re: ν{at}.π.λ->ν{kid} copied to ν{v} ({lambda}))");
+        } else if let Some((to, _)) = uni.g.kid(at, "φ") {
+            trace!("#re(ν{at}.{a}): ν{at}.φ -> ν{to}");
+            format!("ν{to}.{a}")
+        } else if let Some((to, _)) = uni.g.kid(at, "π") {
+            trace!("#re(ν{at}.{a}): ν{at} is a static copy of ν{to}");
+            for (a, l, k) in uni.g.kids(to)?.into_iter() {
+                if a == "ρ" || a == "σ" {
+                    continue;
                 }
-                format!("ν{at}.{a}")
-            } else {
-                let v = if a == "Δ" {
-                    t
+                let tag = if l.is_empty() { a.clone() } else { format!("{a}/{l}") };
+                if a == "Δ" || a == "λ" {
+                    uni.g.bind(at, k, tag.as_str())?;
                 } else {
-                    let v = uni.add();
-                    uni.bind(v, at, "ρ");
-                    if let Some((kid, _)) = uni.g.kid(t, a) {
-                        uni.bind(v, kid, "π");
-                        trace!("#re: ν{at}.π.{a}->ν{kid} copied to ν{v}");
-                    } else {
-                        uni.bind(v, t, format!("π/.{a}").as_str());
-                    }
-                    trace!("#re: ν{at}.π.{a} -> ν{t}");
-                    v
-                };
-                format!("ν{v}")
+                    let kid = uni.add();
+                    uni.g.bind(kid, k, "π")?;
+                    uni.g.bind(kid, at, "ρ")?;
+                    uni.g.bind(at, kid, tag.as_str())?;
+                    trace!("#re(ν{at}.{a}): static copy of ν{to}.{tag} created as ν{kid}");
+                }
             }
-        } else if let Some((to, loc)) = uni.g.kid(at, "φ") {
-            let t = Self::relink(uni, to, loc)?;
-            trace!("#re: ν{at}.φ -> ν{t} (ν{at}.{a} not found)");
-            format!("ν{t}.{at}")
+            format!("ν{at}.{a}")
+        } else if let Some((to, loc)) = uni.g.kid(at, "ω") {
+            trace!("#re(ν{at}.{a}): ν{at} is a dynamic copy of ν{to}/{loc}");
+            let exemplar = uni.find(format!("ν{to}{}", loc).as_str())?;
+            let copy = uni.add();
+            uni.bind(copy, at, "ρ");
+            uni.bind(copy, exemplar, "π");
+            format!("ν{copy}.{a}")
         } else {
             return Err(anyhow!("There is no way to get .{a} from ν{at}"));
         };
@@ -251,18 +247,25 @@ fn generates_random_int() -> Result<()> {
 fn inc(uni: &mut Universe, v: u32) -> Result<u32> {
     let rho = uni.dataize(format!("ν{v}.ρ").as_str())?.to_i64()?;
     let v1 = uni.add();
-    uni.put(v1, Hex::from(rho + 1));
+    let v2 = uni.add();
+    uni.bind(v1, v2, "Δ");
+    uni.put(v2, Hex::from(rho + 1));
     Ok(v1)
 }
 
 #[test]
 fn quick_tests() -> Result<()> {
+    let mut paths = vec![];
     for f in glob("quick-tests/**/*.sodg")? {
         let p = f?;
         let path = p.into_os_string().into_string().unwrap();
         if path.contains('_') {
             continue;
         }
+        paths.push(path);
+    }
+    paths.sort();
+    for path in paths {
         trace!("#quick_tests: {path}");
         let mut s = Script::from_str(fs::read_to_string(path)?.as_str());
         let mut g = Sodg::empty();

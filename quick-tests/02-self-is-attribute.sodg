@@ -1,0 +1,13 @@
+ADD(0);
+
+ADD($v1);
+BIND(0, $v1, bar);
+ADD($v2);
+BIND($v1, $v2, a);
+ADD($v3);
+BIND($v2, $v3, Δ);
+PUT($v3, 00-00-00-00-00-00-00-2A);
+
+ADD($v4);
+BIND(0, $v4, foo);
+BIND($v4, $v1, ξ/.a);

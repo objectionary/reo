@@ -52,7 +52,7 @@ fn dataizes_all_sodg_tests() -> Result<()> {
             .success();
         let extra = Sodg::load(bin.as_path())?;
         let mut sodg = load_runtime()?;
-        sodg.merge(&extra)?;
+        sodg.merge(&extra, 0, 0)?;
         let object = Path::new(&path)
             .file_name()
             .unwrap()

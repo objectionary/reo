@@ -1,0 +1,16 @@
+ADD(0);
+ADD($v1);
+BIND(0, $v1, foo);
+
+ADD($v2);
+BIND($v1, $v2, φ);
+
+ADD($v3);
+BIND($v2, $v3, φ);
+
+ADD($v4);
+BIND($v3, $v4, φ);
+
+ADD($v5);
+BIND($v4, $v5, Δ);
+PUT($v5, 00-00-00-00-00-00-00-2A);

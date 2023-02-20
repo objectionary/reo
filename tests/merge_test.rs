@@ -37,7 +37,9 @@ fn merges_two_graphs() -> Result<()> {
         ADD(ν0);
         ADD($ν1);
         BIND(ν0, $ν1, foo);
-        PUT($ν1, d0-bf-d1-80-d0-b8-d0-b2-d0-b5-d1-82);
+        ADD($ν2);
+        BIND($ν1, $ν2, Δ);
+        PUT($ν2, d0-bf-d1-80-d0-b8-d0-b2-d0-b5-d1-82);
         ",
         first.clone(),
     )?;
@@ -47,7 +49,9 @@ fn merges_two_graphs() -> Result<()> {
         ADD(ν0);
         ADD($ν1);
         BIND(ν0, $ν1, bar);
-        PUT($ν1, 41-42-43);
+        ADD($ν2);
+        BIND($ν1, $ν2, Δ);
+        PUT($ν2, 41-42-43);
         ",
         second.clone(),
     )?;
