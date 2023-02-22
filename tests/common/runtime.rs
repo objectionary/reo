@@ -22,7 +22,7 @@ use anyhow::{Context, Result};
 use glob::glob;
 use sodg::Sodg;
 use std::path::Path;
-use log::{debug, info};
+use log::debug;
 
 pub fn load_runtime() -> Result<Sodg> {
     let pack = Path::new("target/runtime.reo");
@@ -57,4 +57,11 @@ pub fn load_runtime() -> Result<Sodg> {
         }
     }
     Ok(Sodg::load(pack)?)
+}
+
+#[test]
+fn loads_runtime() -> Result<()> {
+    let g = load_runtime()?;
+    assert!(g.len() > 0);
+    Ok(())
 }

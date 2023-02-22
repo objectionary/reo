@@ -181,17 +181,10 @@ impl Universe {
             trace!("#re(ν{at}.{a}): ν{at} is a dynamic copy of ν{to}/{loc}");
             let exemplar = uni.find(format!("ν{to}{}", loc).as_str())?;
             trace!("#re(ν{at}.{a}): exemplar of ν{to}{loc} is ν{exemplar}");
-            let copy = uni.add();
-            for (a, l, k) in uni.g.kids(at)?.into_iter() {
-                if a == "ω" || a == "π" || a == "ρ" {
-                    continue
-                }
-                let tag = if l.is_empty() { a.clone() } else { format!("{a}/{l}") };
-                uni.bind(copy, k, tag.as_str());
-            }
-            uni.bind(copy, at, "ρ");
-            uni.bind(copy, exemplar, "π");
-            format!("ν{copy}.{a}")
+            let c = uni.add();
+            Self::copy(uni, c, at)?;
+            Self::copy(uni, c, exemplar)?;
+            format!("ν{c}.{a}")
         } else {
             return Err(anyhow!("There is no way to get .{a} from ν{at}"));
         };
@@ -200,7 +193,7 @@ impl Universe {
     }
 
     /// Apply the `v` object to its `e` exemplar.
-    fn apply(uni: &mut Universe, at: u32, e: u32) -> Result<()> {
+    fn apply(uni: &mut Universe, v: u32, e: u32) -> Result<()> {
         if let Some((ge, _)) = uni.g.kid(e, "π") {
             Self::apply(uni, e, ge)?
         }
@@ -208,20 +201,33 @@ impl Universe {
             if a == "ω" || a == "π" || a == "ρ" || a == "σ" {
                 continue
             }
-            if uni.g.kid(at, a.as_str()).is_some() {
+            if uni.g.kid(v, a.as_str()).is_some() {
                 return Err(anyhow!("It's not allowed to overwrite attribute '{a}'"));
             }
             let tag = if l.is_empty() { a.clone() } else { format!("{a}/{l}") };
             if a == "Δ" || a == "λ" {
-                uni.g.bind(at, k, tag.as_str())?;
-                trace!("#apply(ν{at}, {e}): made ν{at}.{tag} point to ν{e}.{a} (ν{k})");
+                uni.g.bind(v, k, tag.as_str())?;
+                trace!("#apply(ν{v}, {e}): made ν{v}.{tag} point to ν{e}.{a} (ν{k})");
             } else {
                 let kid = uni.add();
                 uni.g.bind(kid, k, "π")?;
-                uni.g.bind(kid, at, "ρ")?;
-                uni.g.bind(at, kid, tag.as_str())?;
-                trace!("#apply(ν{at}, {e}): made ν{at}.{tag} point to ν{kid} and then to ν{e}.{a} (ν{k})");
+                uni.g.bind(kid, v, "ρ")?;
+                uni.g.bind(v, kid, tag.as_str())?;
+                trace!("#apply(ν{v}, {e}): made ν{v}.{tag} point to ν{kid} and then to ν{e}.{a} (ν{k})");
             }
+        }
+        Ok(())
+    }
+
+    /// Make the `v` object a hard-copy of `e` exemplar.
+    fn copy(uni: &mut Universe, v: u32, e: u32) -> Result<()> {
+        for (a, l, k) in uni.g.kids(e)?.into_iter() {
+            if uni.g.kid(v, a.as_str()).is_some() {
+                continue
+            }
+            let tag = if l.is_empty() { a.clone() } else { format!("{a}/{l}") };
+            uni.g.bind(v, k, tag.as_str())?;
+            trace!("#copy(ν{v}, {e}): made ν{v}.{tag} point to ν{e}.{a} (ν{k})");
         }
         Ok(())
     }
@@ -240,7 +246,9 @@ use glob::glob;
 fn rand(uni: &mut Universe, _: u32) -> Result<u32> {
     let v = uni.add();
     uni.bind(v, 0, "π/int");
-    uni.put(v, Hex::from(rand::random::<i64>()));
+    let v2 = uni.add();
+    uni.bind(v, v2, "Δ");
+    uni.put(v2, Hex::from(rand::random::<i64>()));
     Ok(v)
 }
 

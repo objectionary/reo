@@ -29,7 +29,9 @@
 //! let root = uni.add();
 //! let v1 = uni.add();
 //! uni.bind(root, v1, "foo");
-//! uni.put(v1, Hex::from(42));
+//! let v2 = uni.add();
+//! uni.bind(v1, v2, "Δ");
+//! uni.put(v2, Hex::from(42));
 //! assert_eq!(42, uni.dataize("Φ.foo").unwrap().to_i64().unwrap());
 //! ```
 
