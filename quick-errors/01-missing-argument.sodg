@@ -1,0 +1,16 @@
+# v1 -> int -> [ times -> [ ρ -> v1, λ ] ]
+# v4 -> foo -> v1.times()
+
+ADD(0);
+ADD($v1);
+BIND(0, $v1, int);
+ADD($v2);
+BIND($v1, $v2, times);
+BIND($v2, $v1, ρ);
+ADD($v3);
+BIND($v2, $v3, λ);
+PUT($v3, 74-69-6D-65-73);
+
+ADD($v4);
+BIND(0, $v4, foo);
+BIND($v4, $v1, ω/.times);

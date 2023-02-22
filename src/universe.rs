@@ -293,11 +293,11 @@ fn times(uni: &mut Universe, v: u32) -> Result<u32> {
     Ok(v1)
 }
 
-#[test]
-fn quick_tests() -> Result<()> {
+#[cfg(test)]
+fn sodg_scripts_in_dir(dir: &str) -> Vec<String> {
     let mut paths = vec![];
-    for f in glob("quick-tests/**/*.sodg")? {
-        let p = f?;
+    for f in glob(format!("{dir}/**/*.sodg").as_str()).unwrap() {
+        let p = f.unwrap();
         let path = p.into_os_string().into_string().unwrap();
         if path.contains('_') {
             continue;
@@ -305,7 +305,12 @@ fn quick_tests() -> Result<()> {
         paths.push(path);
     }
     paths.sort();
-    for path in paths {
+    paths
+}
+
+#[test]
+fn quick_tests() -> Result<()> {
+    for path in sodg_scripts_in_dir("quick-tests") {
         trace!("#quick_tests: {path}");
         let mut s = Script::from_str(fs::read_to_string(path.clone())?.as_str());
         let mut g = Sodg::empty();
@@ -315,6 +320,21 @@ fn quick_tests() -> Result<()> {
         uni.register("times", times);
         let hex = uni.dataize("Φ.foo").context(anyhow!("Failure in {path}"))?;
         assert_eq!(42, hex.to_i64()?, "Failure in {path}");
+    }
+    Ok(())
+}
+
+#[test]
+fn quick_errors() -> Result<()> {
+    for path in sodg_scripts_in_dir("quick-errors") {
+        trace!("#quick_errors: {path}");
+        let mut s = Script::from_str(fs::read_to_string(path.clone())?.as_str());
+        let mut g = Sodg::empty();
+        s.deploy_to(&mut g)?;
+        let mut uni = Universe::from_graph(g);
+        uni.register("inc", inc);
+        uni.register("times", times);
+        assert!(uni.dataize("Φ.foo").is_err());
     }
     Ok(())
 }
