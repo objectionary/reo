@@ -209,16 +209,18 @@ impl Universe {
                 continue
             }
             if uni.g.kid(at, a.as_str()).is_some() {
-                continue
+                return Err(anyhow!("It's not allowed to overwrite attribute '{a}'"));
             }
             let tag = if l.is_empty() { a.clone() } else { format!("{a}/{l}") };
             if a == "Δ" || a == "λ" {
                 uni.g.bind(at, k, tag.as_str())?;
+                trace!("#apply(ν{at}, {e}): made ν{at}.{tag} point to ν{e}.{a} (ν{k})");
             } else {
                 let kid = uni.add();
                 uni.g.bind(kid, k, "π")?;
                 uni.g.bind(kid, at, "ρ")?;
                 uni.g.bind(at, kid, tag.as_str())?;
+                trace!("#apply(ν{at}, {e}): made ν{at}.{tag} point to ν{kid} and then to ν{e}.{a} (ν{k})");
             }
         }
         Ok(())
