@@ -175,26 +175,39 @@ impl Universe {
             format!("ν{to}.{a}")
         } else if let Some((to, _)) = uni.g.kid(at, "π") {
             trace!("#re(ν{at}.{a}): ν{at} is a static copy of ν{to}");
-            for (a, l, k) in uni.g.kids(to)?.into_iter() {
-                if a == "ρ" || a == "σ" {
-                    continue;
-                }
-                let tag = if l.is_empty() { a.clone() } else { format!("{a}/{l}") };
-                if a == "Δ" || a == "λ" {
-                    uni.g.bind(at, k, tag.as_str())?;
-                } else {
-                    let kid = uni.add();
-                    uni.g.bind(kid, k, "π")?;
-                    uni.g.bind(kid, at, "ρ")?;
-                    uni.g.bind(at, kid, tag.as_str())?;
-                    trace!("#re(ν{at}.{a}): static copy of ν{to}.{tag} created as ν{kid}");
-                }
-            }
+            Self::apply(uni, at, to)?;
+            // for (a, l, k) in uni.g.kids(to)?.into_iter() {
+            //     if a == "ρ" || a == "σ" {
+            //         continue;
+            //     }
+            //     if a == "π" {
+            //         uni.g.bind(at, k, "π")?;
+            //         continue;
+            //     }
+            //     let tag = if l.is_empty() { a.clone() } else { format!("{a}/{l}") };
+            //     if a == "Δ" || a == "λ" {
+            //         uni.g.bind(at, k, tag.as_str())?;
+            //     } else {
+            //         let kid = uni.add();
+            //         uni.g.bind(kid, k, "π")?;
+            //         uni.g.bind(kid, at, "ρ")?;
+            //         uni.g.bind(at, kid, tag.as_str())?;
+            //         trace!("#re(ν{at}.{a}): static copy of ν{to}.{tag} created as ν{kid}");
+            //     }
+            // }
             format!("ν{at}.{a}")
         } else if let Some((to, loc)) = uni.g.kid(at, "ω") {
             trace!("#re(ν{at}.{a}): ν{at} is a dynamic copy of ν{to}/{loc}");
             let exemplar = uni.find(format!("ν{to}{}", loc).as_str())?;
+            trace!("#re(ν{at}.{a}): exemplar of ν{to}{loc} is ν{exemplar}");
             let copy = uni.add();
+            for (a, l, k) in uni.g.kids(at)?.into_iter() {
+                if a == "ω" || a == "π" || a == "ρ" {
+                    continue
+                }
+                let tag = if l.is_empty() { a.clone() } else { format!("{a}/{l}") };
+                uni.bind(copy, k, tag.as_str());
+            }
             uni.bind(copy, at, "ρ");
             uni.bind(copy, exemplar, "π");
             format!("ν{copy}.{a}")
@@ -203,6 +216,22 @@ impl Universe {
         };
         trace!("#re(ν{at}.{a}): found '{found}'");
         Ok(found)
+    }
+
+    /// Apply the `v` object to its `e` exemplar.
+    fn apply(uni: &mut Universe, at: u32, e: u32) -> Result<()> {
+        if let Some((ge, _)) = uni.g.kid(e, "π") {
+            Self::apply(uni, e, ge)?
+        }
+        for (a, l, k) in uni.g.kids(e)?.into_iter() {
+            if a == "ω" || a == "π" || a == "ρ" || a == "σ" {
+                continue
+            }
+            let tag = if l.is_empty() { a.clone() } else { format!("{a}/{l}") };
+            uni.bind(at, k, tag.as_str());
+            uni.bind(k, at, "ρ");
+        }
+        Ok(())
     }
 }
 
@@ -253,6 +282,17 @@ fn inc(uni: &mut Universe, v: u32) -> Result<u32> {
     Ok(v1)
 }
 
+#[cfg(test)]
+fn times(uni: &mut Universe, v: u32) -> Result<u32> {
+    let rho = uni.dataize(format!("ν{v}.ρ").as_str())?.to_i64()?;
+    let x = uni.dataize(format!("ν{v}.x").as_str())?.to_i64()?;
+    let v1 = uni.add();
+    let v2 = uni.add();
+    uni.bind(v1, v2, "Δ");
+    uni.put(v2, Hex::from(rho * x));
+    Ok(v1)
+}
+
 #[test]
 fn quick_tests() -> Result<()> {
     let mut paths = vec![];
@@ -267,12 +307,14 @@ fn quick_tests() -> Result<()> {
     paths.sort();
     for path in paths {
         trace!("#quick_tests: {path}");
-        let mut s = Script::from_str(fs::read_to_string(path)?.as_str());
+        let mut s = Script::from_str(fs::read_to_string(path.clone())?.as_str());
         let mut g = Sodg::empty();
         s.deploy_to(&mut g)?;
         let mut uni = Universe::from_graph(g);
         uni.register("inc", inc);
-        assert_eq!(42, uni.dataize("Φ.foo")?.to_i64()?);
+        uni.register("times", times);
+        let hex = uni.dataize("Φ.foo").context(anyhow!("Failure in {path}"))?;
+        assert_eq!(42, hex.to_i64()?, "Failure in {path}");
     }
     Ok(())
 }

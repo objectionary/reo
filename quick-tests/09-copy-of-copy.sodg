@@ -1,0 +1,25 @@
+ADD(0);
+
+ADD($v1);
+ADD($v2);
+BIND($v1, $v2, λ);
+PUT($v2, 69-6E-63);
+ADD($v3);
+BIND($v1, $v3, ρ);
+ADD($v4);
+BIND($v3, $v4, Δ);
+PUT($v4, 00-00-00-00-00-00-00-29);
+
+ADD($v5);
+BIND($v5, $v1, π);
+BIND($v5, $v3, ρ);
+
+ADD($v6);
+BIND($v6, $v5, π);
+BIND($v6, $v3, ρ);
+
+ADD($v7);
+BIND($v7, $v6, π);
+BIND($v7, $v3, ρ);
+
+BIND(0, $v7, foo);

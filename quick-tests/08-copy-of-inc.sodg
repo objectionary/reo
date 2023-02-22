@@ -1,3 +1,8 @@
+# v1 -> integer
+# integer -> [ inc -> [ ρ -> v1, λ ] ]
+# v4 -> integer(Δ-> 41)
+# foo -> v4.inc
+
 ADD(0);
 
 ADD($v1);
