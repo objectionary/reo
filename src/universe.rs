@@ -227,9 +227,18 @@ impl Universe {
             if a == "ω" || a == "π" || a == "ρ" || a == "σ" {
                 continue
             }
+            if uni.g.kid(at, "a").is_some() {
+                continue
+            }
             let tag = if l.is_empty() { a.clone() } else { format!("{a}/{l}") };
-            uni.bind(at, k, tag.as_str());
-            uni.bind(k, at, "ρ");
+            if a == "Δ" || a == "λ" {
+                uni.g.bind(at, k, tag.as_str())?;
+            } else {
+                let kid = uni.add();
+                uni.g.bind(kid, k, "π")?;
+                uni.g.bind(kid, at, "ρ")?;
+                uni.g.bind(at, kid, tag.as_str())?;
+            }
         }
         Ok(())
     }

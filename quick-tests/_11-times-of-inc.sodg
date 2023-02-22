@@ -1,3 +1,8 @@
+# v1 -> int -> [ inc -> [ ρ -> v1, λ ], times -> [ ρ -> v1, λ ] ]
+# v6 -> int(Δ -> 6)
+# v9 -> v6.inc
+# v8 -> foo -> v6.times(x -> v9)
+
 ADD(0);
 
 ADD($v1);
