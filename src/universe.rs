@@ -176,25 +176,6 @@ impl Universe {
         } else if let Some((to, _)) = uni.g.kid(at, "π") {
             trace!("#re(ν{at}.{a}): ν{at} is a static copy of ν{to}");
             Self::apply(uni, at, to)?;
-            // for (a, l, k) in uni.g.kids(to)?.into_iter() {
-            //     if a == "ρ" || a == "σ" {
-            //         continue;
-            //     }
-            //     if a == "π" {
-            //         uni.g.bind(at, k, "π")?;
-            //         continue;
-            //     }
-            //     let tag = if l.is_empty() { a.clone() } else { format!("{a}/{l}") };
-            //     if a == "Δ" || a == "λ" {
-            //         uni.g.bind(at, k, tag.as_str())?;
-            //     } else {
-            //         let kid = uni.add();
-            //         uni.g.bind(kid, k, "π")?;
-            //         uni.g.bind(kid, at, "ρ")?;
-            //         uni.g.bind(at, kid, tag.as_str())?;
-            //         trace!("#re(ν{at}.{a}): static copy of ν{to}.{tag} created as ν{kid}");
-            //     }
-            // }
             format!("ν{at}.{a}")
         } else if let Some((to, loc)) = uni.g.kid(at, "ω") {
             trace!("#re(ν{at}.{a}): ν{at} is a dynamic copy of ν{to}/{loc}");
@@ -227,7 +208,7 @@ impl Universe {
             if a == "ω" || a == "π" || a == "ρ" || a == "σ" {
                 continue
             }
-            if uni.g.kid(at, "a").is_some() {
+            if uni.g.kid(at, a.as_str()).is_some() {
                 continue
             }
             let tag = if l.is_empty() { a.clone() } else { format!("{a}/{l}") };
