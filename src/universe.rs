@@ -198,7 +198,7 @@ impl Universe {
             Self::apply(uni, e, ge)?
         }
         for (a, l, k) in uni.g.kids(e)?.into_iter() {
-            if a == "ω" || a == "π" || a == "ρ" || a == "σ" {
+            if a == "ω" || a == "π" || a == "ρ" || a == "σ" || a == "ξ" {
                 continue
             }
             if uni.g.kid(v, a.as_str()).is_some() {
