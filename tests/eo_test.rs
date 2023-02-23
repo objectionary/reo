@@ -57,7 +57,10 @@ fn deploys_and_runs_all_apps() -> Result<()> {
     register(&mut uni);
     for app in all_apps()? {
         debug!("App: {app}");
-        debug!("{}", uni.slice(format!("ν0.{}", app).as_str()).unwrap().to_dot());
+        debug!(
+            "{}",
+            uni.slice(format!("ν0.{}", app).as_str()).unwrap().to_dot()
+        );
         let expected = uni.dataize(format!("Φ.{}.expected", app).as_str()).unwrap();
         let actual = uni.dataize(format!("Φ.{}", app).as_str()).unwrap();
         assert_eq!(expected, actual, "{} failed", app);

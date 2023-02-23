@@ -20,9 +20,9 @@
 
 use anyhow::{Context, Result};
 use glob::glob;
+use log::debug;
 use sodg::Sodg;
 use std::path::Path;
-use log::debug;
 
 pub fn load_runtime() -> Result<Sodg> {
     let pack = Path::new("target/runtime.reo");

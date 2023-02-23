@@ -64,25 +64,37 @@ impl Universe {
     /// Add new vertex and return its ID.
     pub fn add(&mut self) -> u32 {
         let v = self.g.next_id();
-        self.g.add(v).context(anyhow!("Failed to add ν{v}")).unwrap();
+        self.g
+            .add(v)
+            .context(anyhow!("Failed to add ν{v}"))
+            .unwrap();
         v
     }
 
     /// Bind two new vertices.
     pub fn bind(&mut self, v1: u32, v2: u32, a: &str) {
-        self.g.bind(v1, v2, a).context(anyhow!("Failed to bind ν{v1} to ν{v2} as '{a}'")).unwrap();
+        self.g
+            .bind(v1, v2, a)
+            .context(anyhow!("Failed to bind ν{v1} to ν{v2} as '{a}'"))
+            .unwrap();
     }
 
     /// Save data into a vertex. If there is no vertex `v`, the function
     /// will panic.
     pub fn put(&mut self, v: u32, d: Hex) {
-        self.g.put(v, d).context(anyhow!("Failed to put the data to ν{v}")).unwrap();
+        self.g
+            .put(v, d)
+            .context(anyhow!("Failed to put the data to ν{v}"))
+            .unwrap();
     }
 
     /// Get the `Hex` from the vertex.
     /// If there is no vertex `v`, the function will panic.
     pub fn data(&mut self, v: u32) -> Hex {
-        self.g.data(v).context(anyhow!("Failed to get data from ν{v}")).unwrap()
+        self.g
+            .data(v)
+            .context(anyhow!("Failed to get data from ν{v}"))
+            .unwrap()
     }
 
     /// Dataize by absolute locator. The search always starts from the
@@ -121,12 +133,8 @@ impl Universe {
 
     /// Get a slice of the graph by the locator.
     pub fn slice(&mut self, loc: &str) -> Result<Sodg> {
-        self.g.slice_some(
-            loc,
-            |_v, _to, a| {
-                !a.starts_with('ρ') && !a.starts_with('σ')
-            }
-        )
+        self.g
+            .slice_some(loc, |_v, _to, a| !a.starts_with('ρ') && !a.starts_with('σ'))
     }
 }
 
@@ -199,12 +207,16 @@ impl Universe {
         }
         for (a, l, k) in uni.g.kids(e)?.into_iter() {
             if a == "ω" || a == "π" || a == "ρ" || a == "σ" || a == "ξ" {
-                continue
+                continue;
             }
             if uni.g.kid(v, a.as_str()).is_some() {
                 return Err(anyhow!("It's not allowed to overwrite attribute '{a}'"));
             }
-            let tag = if l.is_empty() { a.clone() } else { format!("{a}/{l}") };
+            let tag = if l.is_empty() {
+                a.clone()
+            } else {
+                format!("{a}/{l}")
+            };
             if a == "Δ" || a == "λ" {
                 uni.g.bind(v, k, tag.as_str())?;
                 trace!("#apply(ν{v}, {e}): made ν{v}.{tag} point to ν{e}.{a} (ν{k})");
@@ -223,9 +235,13 @@ impl Universe {
     fn copy(uni: &mut Universe, v: u32, e: u32) -> Result<()> {
         for (a, l, k) in uni.g.kids(e)?.into_iter() {
             if uni.g.kid(v, a.as_str()).is_some() {
-                continue
+                continue;
             }
-            let tag = if l.is_empty() { a.clone() } else { format!("{a}/{l}") };
+            let tag = if l.is_empty() {
+                a.clone()
+            } else {
+                format!("{a}/{l}")
+            };
             uni.g.bind(v, k, tag.as_str())?;
             trace!("#copy(ν{v}, {e}): made ν{v}.{tag} point to ν{e}.{a} (ν{k})");
         }

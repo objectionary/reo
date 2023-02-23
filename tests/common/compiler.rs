@@ -55,4 +55,3 @@ fn simple_compilation() -> Result<()> {
     assert!(first.exists());
     Ok(())
 }
-
