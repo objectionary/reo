@@ -27,5 +27,5 @@ fsutils = "0.1.7"
 
 [dev-dependencies]
 assert_cmd = "2.0.4"
-tempfile = "3.3.0"
+tempfile = "3.4.0"
 rand = "0.8.5"
