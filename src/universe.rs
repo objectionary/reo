@@ -249,7 +249,7 @@ impl Universe {
     fn pull(uni: &mut Universe, v1: u32, v2: u32) -> Result<()> {
         let mut edges = 0;
         for (a, k) in uni.g.kids(v2)?.into_iter() {
-            if a == "σ" {
+            if a == "σ" || a == "β" || a == "π" {
                 continue;
             }
             if let Some(t) = uni.g.kid(v1, a.as_str()) {
