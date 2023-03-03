@@ -226,48 +226,41 @@ impl Universe {
 
     /// Push from `v2` to `v1`.
     fn push(uni: &mut Universe, v1: u32, v2: u32) -> Result<()> {
-        let mut edges = 0;
         for (a, k) in uni.g.kids(v2)?.into_iter() {
             if a == "π" {
                 continue;
             }
-            if let Some(t) = uni.g.kid(v1, a.as_str()) {
-                if a != "ρ" {
-                    return Err(anyhow!(
-                        "Can't overwrite ν{v1}.{a}, it already points to ν{t}"
-                    ));
-                }
-            }
-            uni.g.bind(v1, k, a.as_str())?;
-            edges += 1;
+            Self::down(uni, v1, k, a)?;
         }
-        trace!("#push(ν{v1}, ν{v2}): pushed {edges} edges");
+        Ok(())
+    }
+
+    /// Link down.
+    fn down(uni: &mut Universe, v1: u32, v2: u32, a: String) -> Result<()> {
+        if let Some(t) = uni.g.kid(v1, a.as_str()) {
+            if a != "ρ" {
+                return Err(anyhow!(
+                    "Can't overwrite ν{v1}.{a}, it already points to ν{t}"
+                ));
+            }
+        }
+        uni.g.bind(v1, v2, a.as_str())?;
         Ok(())
     }
 
     /// Pull into `v1` from `v2`.
     fn pull(uni: &mut Universe, v1: u32, v2: u32) -> Result<()> {
-        let mut edges = 0;
         for (a, k) in uni.g.kids(v2)?.into_iter() {
             if a == "σ" || a == "β" || a == "π" {
                 continue;
             }
-            if let Some(t) = uni.g.kid(v1, a.as_str()) {
-                if a != "ρ" {
-                    return Err(anyhow!(
-                        "Can't overwrite ν{v1}.{a}, it already points to ν{t}"
-                    ));
-                }
-            }
-            Self::link(uni, v1, k, a)?;
-            edges += 1;
+            Self::up(uni, v1, k, a)?;
         }
-        trace!("#pull(ν{v1}, ν{v2}): pulled {edges} edges");
         Ok(())
     }
 
     /// Link.
-    fn link(uni: &mut Universe, v1: u32, v2: u32, a: String) -> Result<()> {
+    fn up(uni: &mut Universe, v1: u32, v2: u32, a: String) -> Result<()> {
         if a == "λ" || a == "Δ" || a == "ρ" {
             uni.g.bind(v1, v2, a.as_str())?;
         } else {
