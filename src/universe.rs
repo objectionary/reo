@@ -196,7 +196,14 @@ impl Universe {
         if let Some(to) = uni.g.kid(v, "ε") {
             Self::dd(uni, to)
         } else if let Some(to) = uni.g.kid(v, "β") {
-            let a = uni.g.kids(v)?.iter().find(|e| e.0 != "β").unwrap().clone().0;
+            let a = uni
+                .g
+                .kids(v)?
+                .iter()
+                .find(|e| e.0 != "β")
+                .unwrap()
+                .clone()
+                .0;
             let nv = Self::fnd(uni, to, a.as_str())?;
             Self::dd(uni, nv)
         } else if let Some(to) = uni.g.kid(v, "π") {
@@ -218,7 +225,9 @@ impl Universe {
             }
             if let Some(t) = uni.g.kid(nv, a.as_str()) {
                 if a != "ρ" {
-                    return Err(anyhow!("Can't overwrite ν{v1}.{a}, it already points to ν{t}"));
+                    return Err(anyhow!(
+                        "Can't overwrite ν{v1}.{a}, it already points to ν{t}"
+                    ));
                 }
             }
             uni.g.bind(nv, k, a.as_str())?;
@@ -236,7 +245,9 @@ impl Universe {
             }
             if let Some(t) = uni.g.kid(v1, a.as_str()) {
                 if a != "ρ" {
-                    return Err(anyhow!("Can't overwrite ν{v1}.{a}, it already points to ν{t}"));
+                    return Err(anyhow!(
+                        "Can't overwrite ν{v1}.{a}, it already points to ν{t}"
+                    ));
                 }
             }
             Self::link(uni, v1, k, a)?;
@@ -362,7 +373,10 @@ fn quick_errors() -> Result<()> {
         let mut uni = Universe::from_graph(g);
         uni.register("inc", inc);
         uni.register("times", times);
-        assert!(uni.dataize("Φ.foo").is_err(), "A failure is expected in {path}, but it didn't happen");
+        assert!(
+            uni.dataize("Φ.foo").is_err(),
+            "A failure is expected in {path}, but it didn't happen"
+        );
     }
     Ok(())
 }
