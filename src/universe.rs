@@ -23,7 +23,7 @@ use anyhow::{anyhow, Context, Result};
 use log::trace;
 use sodg::Sodg;
 use sodg::{Hex, Relay};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 impl Universe {
     /// Makes an empty Universe.
@@ -218,29 +218,38 @@ impl Universe {
     fn apply(uni: &mut Universe, v1: u32, v2: u32) -> Result<u32> {
         trace!("#apply(ν{v1}, ν{v2}): entering...");
         let nv = uni.add();
-        Self::pull(uni, nv, v1, vec!["σ"].into_iter().collect())?;
+        Self::pull(uni, nv, v1)?;
+        Self::push(uni, nv, v2)?;
+        trace!("#apply(ν{v1}, ν{v2}): copy ν{v1}+ν{v2} created as ν{nv}");
+        Ok(nv)
+    }
+
+    /// Push from `v2` to `v1`.
+    fn push(uni: &mut Universe, v1: u32, v2: u32) -> Result<()> {
+        let mut edges = 0;
         for (a, k) in uni.g.kids(v2)?.into_iter() {
             if a == "π" {
                 continue;
             }
-            if let Some(t) = uni.g.kid(nv, a.as_str()) {
+            if let Some(t) = uni.g.kid(v1, a.as_str()) {
                 if a != "ρ" {
                     return Err(anyhow!(
                         "Can't overwrite ν{v1}.{a}, it already points to ν{t}"
                     ));
                 }
             }
-            uni.g.bind(nv, k, a.as_str())?;
+            uni.g.bind(v1, k, a.as_str())?;
+            edges += 1;
         }
-        trace!("#apply(ν{v1}, ν{v2}): copy ν{v1}+ν{v2} created as ν{nv}");
-        Ok(nv)
+        trace!("#push(ν{v1}, ν{v2}): pushed {edges} edges");
+        Ok(())
     }
 
     /// Pull into `v1` from `v2`.
-    fn pull(uni: &mut Universe, v1: u32, v2: u32, skip: HashSet<&str>) -> Result<()> {
+    fn pull(uni: &mut Universe, v1: u32, v2: u32) -> Result<()> {
         let mut edges = 0;
         for (a, k) in uni.g.kids(v2)?.into_iter() {
-            if skip.contains(a.as_str()) {
+            if a == "σ" {
                 continue;
             }
             if let Some(t) = uni.g.kid(v1, a.as_str()) {
