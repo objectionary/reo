@@ -23,7 +23,7 @@ use anyhow::{anyhow, Context, Result};
 use log::trace;
 use sodg::Sodg;
 use sodg::{Hex, Relay};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 impl Universe {
     /// Makes an empty Universe.
@@ -36,7 +36,7 @@ impl Universe {
                     .kids(*v)
                     .unwrap()
                     .iter()
-                    .filter(|(a, _, _)| a == "π" || a == "φ")
+                    .filter(|(a, _)| a == "π" || a == "φ")
                     .count();
                 if attrs > 1 {
                     errors.push(format!("ν{v} can't have both π and φ"));
@@ -151,100 +151,111 @@ impl Relay for Universe {
 }
 
 impl Universe {
-    fn relink(uni: &mut Universe, to: u32, loc: String) -> Result<u32> {
-        let v = if loc.starts_with('.') {
-            uni.find(format!("ν{to}{}", loc).as_str())?
-        } else {
-            to
-        };
-        if v != to {
-            trace!("#re: ν{to}/{loc} relinked to ν{v}");
-        }
-        Ok(v)
-    }
-
     /// Resolve a locator on a vertex, if it's not found. The returned string
     /// is treated as a new locator, where the search will continue.
-    fn mut_re(uni: &mut Universe, at: u32, a: &str) -> Result<String> {
-        trace!("#re(ν{at}.{a}): starting...");
-        let found = if let Some((lv, _)) = uni.g.kid(at, "λ") {
-            let lambda = uni.g.data(lv)?.to_utf8()?;
-            trace!("#re: calling ν{at}.λ⇓{lambda}(ξ=ν?)...");
-            let to = uni.atoms.get(lambda.as_str()).unwrap()(uni, at)?;
-            trace!("#re: ν{at}.λ⇓{lambda}(ξ=ν?) returned ν{to}");
-            format!("ν{to}.{a}")
-        } else if a == "Φ" || a == "Q" {
-            "ν0".to_string()
-        } else if let Some((to, loc)) = uni.g.kid(at, "ξ") {
-            let t = Self::relink(uni, to, loc)?;
-            format!("ν{t}.{a}")
-        } else if let Some((to, _)) = uni.g.kid(at, "φ") {
-            trace!("#re(ν{at}.{a}): ν{at}.φ -> ν{to}");
-            format!("ν{to}.{a}")
-        } else if let Some((to, _)) = uni.g.kid(at, "π") {
-            trace!("#re(ν{at}.{a}): ν{at} is a static copy of ν{to}");
-            Self::apply(uni, at, to)?;
-            format!("ν{at}.{a}")
-        } else if let Some((to, loc)) = uni.g.kid(at, "ω") {
-            trace!("#re(ν{at}.{a}): ν{at} is a dynamic copy of ν{to}/{loc}");
-            let exemplar = uni.find(format!("ν{to}{}", loc).as_str())?;
-            trace!("#re(ν{at}.{a}): exemplar of ν{to}{loc} is ν{exemplar}");
-            let c = uni.add();
-            Self::copy(uni, c, at)?;
-            Self::copy(uni, c, exemplar)?;
-            format!("ν{c}.{a}")
-        } else {
-            return Err(anyhow!("There is no way to get .{a} from ν{at}"));
+    fn mut_re(uni: &mut Universe, v: u32, a: &str) -> Result<String> {
+        if a == "Φ" {
+            return Ok("ν0".to_string());
         };
-        trace!("#re(ν{at}.{a}): found '{found}'");
-        Ok(found)
+        let v1 = Self::fnd(uni, v, a)?;
+        Ok(format!("ν{v1}"))
     }
 
-    /// Apply the `v` object to its `e` exemplar.
-    fn apply(uni: &mut Universe, v: u32, e: u32) -> Result<()> {
-        if let Some((ge, _)) = uni.g.kid(e, "π") {
-            Self::apply(uni, e, ge)?
+    /// Find.
+    fn fnd(uni: &mut Universe, v: u32, a: &str) -> Result<u32> {
+        let v1 = Self::dd(uni, v)?;
+        trace!("#fnd(ν{v}, {a}): dd(ν{v}) returned ν{v1}");
+        let to = Self::pf(uni, v1, a)?;
+        trace!("#fnd(ν{v}, {a}): pf(ν{v}, {a}) returned ν{to}");
+        Ok(to)
+    }
+
+    /// Path find.
+    fn pf(uni: &mut Universe, v: u32, a: &str) -> Result<u32> {
+        trace!("#pf(ν{v}, {a}): entering...");
+        if let Some(to) = uni.g.kid(v, a) {
+            Ok(to)
+        } else if let Some(to) = uni.g.kid(v, "ε") {
+            Self::fnd(uni, to, a)
+        } else if let Some(lv) = uni.g.kid(v, "λ") {
+            let lambda = uni.g.data(lv)?.to_utf8()?;
+            trace!("#re: calling ν{v}.λ⇓{lambda}(ξ=ν?)...");
+            let to = uni.atoms.get(lambda.as_str()).unwrap()(uni, v)?;
+            trace!("#re: ν{v}.λ⇓{lambda}(ξ=ν?) returned ν{to}");
+            Self::fnd(uni, to, a)
+        } else if let Some(to) = uni.g.kid(v, "φ") {
+            Self::fnd(uni, to, a)
+        } else {
+            return Err(anyhow!("There is no way to get .{a} from ν{v}"));
         }
-        for (a, l, k) in uni.g.kids(e)?.into_iter() {
-            if a == "ω" || a == "π" || a == "ρ" || a == "σ" || a == "ξ" {
+    }
+
+    /// Dynamic dispatch.
+    fn dd(uni: &mut Universe, v: u32) -> Result<u32> {
+        trace!("#dd(ν{v}): entering...");
+        if let Some(to) = uni.g.kid(v, "ε") {
+            Self::dd(uni, to)
+        } else if let Some(to) = uni.g.kid(v, "β") {
+            let a = uni.g.kids(v)?.iter().find(|e| e.0 != "β").unwrap().clone().0;
+            let nv = Self::fnd(uni, to, a.as_str())?;
+            Self::dd(uni, nv)
+        } else if let Some(to) = uni.g.kid(v, "π") {
+            let nv = Self::dd(uni, to)?;
+            Self::apply(uni, nv, v)
+        } else {
+            Ok(v)
+        }
+    }
+
+    /// Apply `v1` to `v2` and return a new vertex.
+    fn apply(uni: &mut Universe, v1: u32, v2: u32) -> Result<u32> {
+        trace!("#apply(ν{v1}, ν{v2}): entering...");
+        let nv = uni.add();
+        Self::pull(uni, nv, v1, vec!["σ"].into_iter().collect())?;
+        for (a, k) in uni.g.kids(v2)?.into_iter() {
+            if a == "π" {
                 continue;
             }
-            if uni.g.kid(v, a.as_str()).is_some() {
-                return Err(anyhow!("It's not allowed to overwrite attribute '{a}'"));
+            if let Some(t) = uni.g.kid(nv, a.as_str()) {
+                if a != "ρ" {
+                    return Err(anyhow!("Can't overwrite ν{v1}.{a}, it already points to ν{t}"));
+                }
             }
-            let tag = if l.is_empty() {
-                a.clone()
-            } else {
-                format!("{a}/{l}")
-            };
-            if a == "Δ" || a == "λ" {
-                uni.g.bind(v, k, tag.as_str())?;
-                trace!("#apply(ν{v}, {e}): made ν{v}.{tag} point to ν{e}.{a} (ν{k})");
-            } else {
-                let kid = uni.add();
-                uni.g.bind(kid, k, "π")?;
-                uni.g.bind(kid, v, "ρ")?;
-                uni.g.bind(v, kid, tag.as_str())?;
-                trace!("#apply(ν{v}, {e}): made ν{v}.{tag} point to ν{kid} and then to ν{e}.{a} (ν{k})");
-            }
+            uni.g.bind(nv, k, a.as_str())?;
         }
+        trace!("#apply(ν{v1}, ν{v2}): copy ν{v1}+ν{v2} created as ν{nv}");
+        Ok(nv)
+    }
+
+    /// Pull into `v1` from `v2`.
+    fn pull(uni: &mut Universe, v1: u32, v2: u32, skip: HashSet<&str>) -> Result<()> {
+        let mut edges = 0;
+        for (a, k) in uni.g.kids(v2)?.into_iter() {
+            if skip.contains(a.as_str()) {
+                continue;
+            }
+            if let Some(t) = uni.g.kid(v1, a.as_str()) {
+                if a != "ρ" {
+                    return Err(anyhow!("Can't overwrite ν{v1}.{a}, it already points to ν{t}"));
+                }
+            }
+            Self::link(uni, v1, k, a)?;
+            edges += 1;
+        }
+        trace!("#pull(ν{v1}, ν{v2}): pulled {edges} edges");
         Ok(())
     }
 
-    /// Make the `v` object a hard-copy of `e` exemplar.
-    fn copy(uni: &mut Universe, v: u32, e: u32) -> Result<()> {
-        for (a, l, k) in uni.g.kids(e)?.into_iter() {
-            if uni.g.kid(v, a.as_str()).is_some() {
-                continue;
-            }
-            let tag = if l.is_empty() {
-                a.clone()
-            } else {
-                format!("{a}/{l}")
-            };
-            uni.g.bind(v, k, tag.as_str())?;
-            trace!("#copy(ν{v}, {e}): made ν{v}.{tag} point to ν{e}.{a} (ν{k})");
-        }
+    /// Link.
+    fn link(uni: &mut Universe, v1: u32, v2: u32, a: String) -> Result<()> {
+        if a == "λ" || a == "Δ" || a == "ρ" {
+            uni.g.bind(v1, v2, a.as_str())?;
+        } else {
+            let nv = uni.add();
+            uni.g.bind(v1, nv, a.as_str())?;
+            uni.g.bind(nv, v1, "ρ")?;
+            uni.g.bind(nv, v2, "π")?;
+        };
         Ok(())
     }
 }
@@ -331,6 +342,7 @@ fn quick_tests() -> Result<()> {
         let mut s = Script::from_str(fs::read_to_string(path.clone())?.as_str());
         let mut g = Sodg::empty();
         s.deploy_to(&mut g)?;
+        trace!("{}", g.clone().to_dot());
         let mut uni = Universe::from_graph(g);
         uni.register("inc", inc);
         uni.register("times", times);
@@ -350,7 +362,7 @@ fn quick_errors() -> Result<()> {
         let mut uni = Universe::from_graph(g);
         uni.register("inc", inc);
         uni.register("times", times);
-        assert!(uni.dataize("Φ.foo").is_err());
+        assert!(uni.dataize("Φ.foo").is_err(), "A failure is expected in {path}, but it didn't happen");
     }
     Ok(())
 }
