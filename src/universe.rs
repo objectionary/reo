@@ -190,7 +190,10 @@ impl Universe {
             uni.g.bind(v, t, a)?;
             Ok(t)
         } else {
-            return Err(anyhow!("There is no way to get .{a} from ν{v}"));
+            return Err(anyhow!(
+                "There is no way to get .{a} from {}",
+                uni.g.v_print(v)
+            ));
         }
     }
 

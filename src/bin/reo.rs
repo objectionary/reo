@@ -142,6 +142,28 @@ pub fn main() -> Result<()> {
                 )
                 .arg_required_else_help(true),
         )
+        .subcommand(
+            Command::new("dot")
+                .setting(AppSettings::ColorNever)
+                .about("Turn binary .reo file to .dot file")
+                .arg(
+                    Arg::new("bin")
+                        .required(true)
+                        .value_parser(PathValueParser {})
+                        .help("Name of a binary .reo file to use")
+                        .takes_value(true)
+                        .action(ArgAction::Set),
+                )
+                .arg(
+                    Arg::new("dot")
+                        .required(true)
+                        .value_parser(PathValueParser {})
+                        .help("Name of a .dot file to create")
+                        .takes_value(true)
+                        .action(ArgAction::Set),
+                )
+                .arg_required_else_help(true),
+        )
         .get_matches();
     let mut logger = SimpleLogger::new().without_timestamps();
     logger = logger.with_level(if matches.get_flag("verbose") {
@@ -235,8 +257,33 @@ pub fn main() -> Result<()> {
             let mut uni = Universe::from_graph(g);
             register(&mut uni);
             let ret = uni.dataize(format!("Φ.{}", object).as_str())?.print();
-            info!("Datamation result, in {:?} is: {ret}", start.elapsed());
+            info!("Dataization result, in {:?} is: {ret}", start.elapsed());
             println!("{ret}");
+        }
+        Some(("dot", subs)) => {
+            let bin = subs
+                .get_one::<PathBuf>("bin")
+                .context("Path of .reo file is required")
+                .unwrap();
+            debug!("bin: {}", bin.display());
+            if !bin.exists() {
+                return Err(anyhow!("The file '{}' doesn't exist", bin.display()));
+            }
+            let dot = subs
+                .get_one::<PathBuf>("dot")
+                .context("Path of .dot file is required")
+                .unwrap();
+            debug!("dot: {}", dot.display());
+            info!("Deserializing the binary file '{}'", bin.display());
+            let g = Sodg::load(bin.as_path())?;
+            info!(
+                "Deserialized {} bytes in {:?}",
+                fs::metadata(bin)?.len(),
+                start.elapsed()
+            );
+            info!("Printing to '{}' file...", dot.display());
+            fs::write(dot, g.to_dot())?;
+            info!("File saved, in {:?}", start.elapsed());
         }
         _ => unreachable!(),
     }
