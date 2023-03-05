@@ -185,6 +185,10 @@ impl Universe {
             Self::fnd(uni, to, a)
         } else if let Some(to) = uni.g.kid(v, "φ") {
             Self::fnd(uni, to, a)
+        } else if let Some(to) = uni.g.kid(v, "γ") {
+            let t = Self::fnd(uni, to, a)?;
+            uni.g.bind(v, t, a)?;
+            Ok(t)
         } else {
             return Err(anyhow!("There is no way to get .{a} from ν{v}"));
         }
