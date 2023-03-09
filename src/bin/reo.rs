@@ -103,6 +103,19 @@ pub fn main() -> Result<()> {
                 ),
         )
         .subcommand(
+            Command::new("empty")
+                .setting(AppSettings::ColorNever)
+                .about("Make an empty .reo file")
+                .arg(
+                    Arg::new("target")
+                        .required(true)
+                        .help("File to save .reo binary")
+                        .value_parser(PathValueParser {})
+                        .takes_value(true)
+                        .action(ArgAction::Set),
+                ),
+        )
+        .subcommand(
             Command::new("merge")
                 .setting(AppSettings::ColorNever)
                 .about("Merge .reo file into an existing .reo file")
@@ -220,6 +233,16 @@ pub fn main() -> Result<()> {
                 .deploy_to(&mut g)
                 .context(format!("Failed with '{}'", src.display()))?;
             info!("Deployed {ints} instructions from {}", src.display());
+            let size = g.save(bin)?;
+            info!("The SODG saved to '{}' ({size} bytes)", bin.display());
+        }
+        Some(("empty", subs)) => {
+            let bin = subs
+                .get_one::<PathBuf>("target")
+                .context("Path of .reo file is required")
+                .unwrap();
+            debug!("target: {}", bin.display());
+            let mut g = Sodg::empty();
             let size = g.save(bin)?;
             info!("The SODG saved to '{}' ({size} bytes)", bin.display());
         }
