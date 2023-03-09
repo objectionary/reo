@@ -357,15 +357,13 @@ pub fn main() -> Result<()> {
                     }
                     missed.push(v);
                 }
+                missed.sort();
                 println!(
                     "Missed: {}",
                     missed.iter().map(|v| format!("ν{}", v)).join(", ")
                 );
                 println!("Here they are:");
-                for v in g.ids() {
-                    if seen.contains(&v) {
-                        continue;
-                    }
+                for v in missed {
                     seen.insert(v);
                     println!("  ν{}", v);
                     inspect_v(&g, v, 2, &mut seen);
