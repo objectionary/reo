@@ -31,6 +31,7 @@ use reo::Universe;
 use simple_logger::SimpleLogger;
 use sodg::Script;
 use sodg::Sodg;
+use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
@@ -118,6 +119,19 @@ pub fn main() -> Result<()> {
                         .required(true)
                         .value_parser(PathValueParser {})
                         .help("Path of .reo file being merged")
+                        .takes_value(true)
+                        .action(ArgAction::Set),
+                ),
+        )
+        .subcommand(
+            Command::new("inspect")
+                .setting(AppSettings::ColorNever)
+                .about("Print all visible information from a binary .reo file")
+                .arg(
+                    Arg::new("bin")
+                        .required(true)
+                        .value_parser(PathValueParser {})
+                        .help("Path of .reo file to inspect")
                         .takes_value(true)
                         .action(ArgAction::Set),
                 ),
@@ -285,10 +299,39 @@ pub fn main() -> Result<()> {
             fs::write(dot, g.to_dot())?;
             info!("File saved, in {:?}", start.elapsed());
         }
+        Some(("inspect", subs)) => {
+            let bin = subs
+                .get_one::<PathBuf>("bin")
+                .context("Path of .reo file is required")
+                .unwrap();
+            if !bin.exists() {
+                return Err(anyhow!("The file '{}' doesn't exist", bin.display()));
+            }
+            println!("File: {}", bin.display());
+            println!("Size: {} bytes", fs::metadata(bin)?.len());
+            let g = Sodg::load(bin.as_path())?;
+            println!("Total vertices: {}", g.len());
+            println!("\nν0");
+            let mut seen = HashSet::new();
+            inspect_v(&g, 0, 1, &mut seen);
+            println!("Vertices just printed: {}", seen.len());
+        }
         Some((cmd, _)) => {
             return Err(anyhow!("Can't understand '{cmd}' command"));
         }
         None => unreachable!(),
     }
     Ok(())
+}
+
+fn inspect_v(g: &Sodg, v: u32, indent: usize, seen: &mut HashSet<u32>) {
+    for e in g.kids(v).unwrap() {
+        print!("{}", "  ".repeat(indent));
+        println!("{} -> ν{}", e.0, e.1);
+        if seen.contains(&e.1) {
+            continue;
+        }
+        seen.insert(e.1);
+        inspect_v(g, e.1, indent + 1, seen);
+    }
 }
