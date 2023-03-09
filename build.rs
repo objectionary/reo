@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+use std::fs;
+use std::path::Path;
 use std::process::Command;
 
 fn main() {
@@ -38,5 +40,9 @@ fn main() {
             .wait()
             .unwrap()
             .success());
+        let rt = "target/runtime.eo";
+        if Path::new(rt).exists() {
+            fs::remove_file(rt).unwrap();
+        }
     }
 }

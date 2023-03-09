@@ -28,8 +28,7 @@ pub fn load_runtime() -> Result<Sodg> {
     let pack = Path::new("target/runtime.reo");
     if !pack.exists() {
         let sources = Path::new("target/eo/sodg");
-        let target = Path::new("target/reo");
-        Sodg::empty().save(pack)?;
+        let target = Path::new("target/eo/reo");
         for f in glob(format!("{}/**/*.sodg", sources.display()).as_str())? {
             let src = f?;
             if src.is_dir() {
@@ -47,13 +46,21 @@ pub fn load_runtime() -> Result<Sodg> {
                 .arg(bin.as_os_str())
                 .assert()
                 .success();
+            debug!("compiled {}", bin.display());
+        }
+        Sodg::empty().save(pack)?;
+        for f in glob(format!("{}/**/*.reo", target.display()).as_str())? {
+            let bin = f?;
+            if bin.is_dir() {
+                continue;
+            }
             assert_cmd::Command::cargo_bin("reo")?
                 .arg("merge")
                 .arg(pack.as_os_str())
                 .arg(bin.as_os_str())
                 .assert()
                 .success();
-            debug!("merged {}", src.display());
+            debug!("merged {}", bin.display());
         }
     }
     Ok(Sodg::load(pack)?)

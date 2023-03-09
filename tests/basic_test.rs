@@ -44,7 +44,7 @@ fn dataizes_simple_sodg() -> Result<()> {
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .current_dir(tmp.path())
-        .arg("--verbose")
+        .arg("--trace")
         .arg("compile")
         .arg(src.as_os_str())
         .arg(bin.as_os_str())

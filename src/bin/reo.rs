@@ -76,7 +76,7 @@ pub fn main() -> Result<()> {
                 .long("trace")
                 .required(false)
                 .help("Print all debug AND trace messages (be careful!)")
-                .action(ArgAction::Set),
+                .action(ArgAction::SetTrue),
         )
         .subcommand_required(true)
         .allow_external_subcommands(true)
@@ -168,7 +168,7 @@ pub fn main() -> Result<()> {
     let mut logger = SimpleLogger::new().without_timestamps();
     logger = logger.with_level(if matches.get_flag("verbose") {
         LevelFilter::Info
-    } else if matches.contains_id("trace") {
+    } else if matches.get_flag("trace") {
         LevelFilter::Trace
     } else {
         LevelFilter::Warn
@@ -285,7 +285,10 @@ pub fn main() -> Result<()> {
             fs::write(dot, g.to_dot())?;
             info!("File saved, in {:?}", start.elapsed());
         }
-        _ => unreachable!(),
+        Some((cmd, _)) => {
+            return Err(anyhow!("Can't understand '{cmd}' command"));
+        },
+        None => unreachable!(),
     }
     Ok(())
 }
