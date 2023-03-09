@@ -287,7 +287,7 @@ pub fn main() -> Result<()> {
         }
         Some((cmd, _)) => {
             return Err(anyhow!("Can't understand '{cmd}' command"));
-        },
+        }
         None => unreachable!(),
     }
     Ok(())

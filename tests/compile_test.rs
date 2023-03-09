@@ -49,7 +49,7 @@ fn skips_compilation_if_file_present() -> Result<()> {
             .unwrap()
             .arg("--verbose")
             .arg("compile")
-            .arg("target/eo/sodg/org/eolang/float.sodg")
+            .arg("target/eo/sodg/org/eolang/tuple.sodg")
             .arg(bin.as_os_str())
             .assert()
             .success();
