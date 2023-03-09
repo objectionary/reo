@@ -21,7 +21,6 @@
 mod common;
 
 use anyhow::Result;
-use predicates::prelude::predicate;
 use tempfile::TempDir;
 
 #[test]

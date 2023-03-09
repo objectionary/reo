@@ -25,6 +25,7 @@ use anyhow::{anyhow, Context};
 use clap::builder::TypedValueParser;
 use clap::ErrorKind::EmptyValue;
 use clap::{crate_version, AppSettings, Arg, ArgAction, Command};
+use itertools::Itertools;
 use log::{debug, info, LevelFilter};
 use reo::org::eolang::register;
 use reo::Universe;
@@ -338,6 +339,28 @@ pub fn main() -> Result<()> {
             let mut seen = HashSet::new();
             inspect_v(&g, 0, 1, &mut seen);
             println!("Vertices just printed: {}", seen.len());
+            if seen.len() != g.ids().len() {
+                let mut missed = vec![];
+                for v in g.ids() {
+                    if seen.contains(&v) {
+                        continue;
+                    }
+                    missed.push(v);
+                }
+                println!(
+                    "Missed: {}",
+                    missed.iter().map(|v| format!("ν{}", v)).join(", ")
+                );
+                println!("Here they are:");
+                for v in g.ids() {
+                    if seen.contains(&v) {
+                        continue;
+                    }
+                    seen.insert(v);
+                    println!("  ν{}", v);
+                    inspect_v(&g, v, 2, &mut seen);
+                }
+            }
         }
         Some((cmd, _)) => {
             return Err(anyhow!("Can't understand '{cmd}' command"));

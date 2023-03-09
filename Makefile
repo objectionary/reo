@@ -1,9 +1,9 @@
 .ONESHELL:
-.SHELLFLAGS: -e -o pipefail -c
+.SHELLFLAGS: -e -x -o pipefail -c
 .PHONY: clean
 
 SHELL = bash
-REO = target/debug/reo
+REO = target/debug/reo --verbose
 
 SODGS = $(shell find target/eo/sodg -type f -name '*.sodg')
 BINARIES = $(subst .sodg,.reo,$(subst sodg/,reo/,$(SODGS)))
