@@ -148,6 +148,14 @@ pub fn main() -> Result<()> {
                         .help("Path of .reo file to inspect")
                         .takes_value(true)
                         .action(ArgAction::Set),
+                )
+                .arg(
+                    Arg::new("root")
+                        .long("root")
+                        .required(false)
+                        .default_value("0")
+                        .help("The ID of the root vertex")
+                        .action(ArgAction::Set),
                 ),
         )
         .subcommand(
@@ -335,9 +343,11 @@ pub fn main() -> Result<()> {
             println!("Size: {} bytes", fs::metadata(bin)?.len());
             let g = Sodg::load(bin.as_path())?;
             println!("Total vertices: {}", g.len());
-            println!("\nν0");
+            let root = subs.get_one::<String>("root").unwrap().parse().unwrap();
+            println!("\nν{root}");
             let mut seen = HashSet::new();
-            inspect_v(&g, 0, 1, &mut seen);
+            seen.insert(root);
+            inspect_v(&g, root, 1, &mut seen);
             println!("Vertices just printed: {}", seen.len());
             if seen.len() != g.ids().len() {
                 let mut missed = vec![];

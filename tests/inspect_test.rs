@@ -43,6 +43,7 @@ fn inspects_one_binary() -> Result<()> {
         .unwrap()
         .current_dir(tmp.path())
         .arg("inspect")
+        .arg("--root=2")
         .arg(first.as_os_str())
         .assert()
         .success();
