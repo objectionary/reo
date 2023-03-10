@@ -71,6 +71,7 @@ pub fn main() -> Result<()> {
         .arg(
             Arg::new("verbose")
                 .long("verbose")
+                .short('v')
                 .required(false)
                 .help("Print all debug messages")
                 .action(ArgAction::SetTrue),
@@ -78,6 +79,7 @@ pub fn main() -> Result<()> {
         .arg(
             Arg::new("trace")
                 .long("trace")
+                .short('t')
                 .required(false)
                 .help("Print all debug AND trace messages (be careful!)")
                 .action(ArgAction::SetTrue),
@@ -154,6 +156,7 @@ pub fn main() -> Result<()> {
                 .arg(
                     Arg::new("root")
                         .long("root")
+                        .short('r')
                         .required(false)
                         .default_value("0")
                         .help("The ID of the root vertex")
@@ -162,17 +165,27 @@ pub fn main() -> Result<()> {
                 .arg(
                     Arg::new("ignore")
                         .long("ignore")
+                        .short('i')
                         .required(false)
                         .help("The IDs to ignore")
                         .value_parser(value_parser!(u32))
                         .multiple(true)
-                        .action(ArgAction::Set),
+                        .action(ArgAction::Append),
                 ),
         )
         .subcommand(
             Command::new("dataize")
                 .setting(AppSettings::ColorNever)
                 .about("Dataize an object in .reo file")
+                .arg(
+                    Arg::new("dump")
+                        .long("dump")
+                        .short('d')
+                        .required(false)
+                        .value_parser(PathValueParser {})
+                        .help("Dump the entire graph to a file, when dataization is finished")
+                        .action(ArgAction::Set),
+                )
                 .arg(
                     Arg::new("file")
                         .required(true)
@@ -262,7 +275,7 @@ pub fn main() -> Result<()> {
                 .context("Path of .reo file is required")
                 .unwrap();
             debug!("target: {}", bin.display());
-            let mut g = Sodg::empty();
+            let g = Sodg::empty();
             let size = g.save(bin)?;
             info!("The SODG saved to '{}' ({size} bytes)", bin.display());
         }
@@ -313,7 +326,14 @@ pub fn main() -> Result<()> {
             info!("Dataizing the '{object}' object...");
             let mut uni = Universe::from_graph(g);
             register(&mut uni);
-            let ret = uni.dataize(format!("Φ.{}", object).as_str())?.print();
+            let r = uni.dataize(format!("Φ.{}", object).as_str());
+            if subs.is_present("dump") {
+                let dump = subs.get_one::<PathBuf>("dump").unwrap();
+                debug!("dump: {}", dump.display());
+                let size = uni.dump(dump)?;
+                info!("Dump saved to '{}' ({size} bytes)", dump.display());
+            }
+            let ret = r?.print();
             info!("Dataization result, in {:?} is: {ret}", start.elapsed());
             println!("{ret}");
         }
@@ -355,16 +375,20 @@ pub fn main() -> Result<()> {
             let mut g = Sodg::load(bin.as_path())?;
             println!("Total vertices: {}", g.len());
             let root = subs.get_one::<String>("root").unwrap().parse().unwrap();
-            println!("\nν{root}");
             let mut seen = HashSet::new();
             let ignore: Vec<u32> = subs
                 .get_many("ignore")
                 .unwrap_or(ValuesRef::default())
                 .copied()
                 .collect();
+            println!(
+                "Ignoring: {}",
+                ignore.iter().map(|v| format!("ν{}", v)).join(", ")
+            );
             for v in ignore {
                 seen.insert(v);
             }
+            println!("\nν{root}");
             seen.insert(root);
             inspect_v(&mut g, root, 1, &mut seen);
             println!("Vertices just printed: {}", seen.len());
@@ -378,15 +402,18 @@ pub fn main() -> Result<()> {
                 }
                 missed.sort();
                 println!(
-                    "Missed {}: {}",
+                    "Missed {}: {}{}",
                     missed.len(),
-                    missed.iter().take(10).map(|v| format!("ν{}", v)).join(", ")
+                    missed.iter().take(10).map(|v| format!("ν{}", v)).join(", "),
+                    if missed.len() > 10 { ", ..." } else { "" }
                 );
-                println!("Here they are:");
-                for v in missed.into_iter().take(10) {
-                    seen.insert(v);
-                    println!("  ν{}", v);
-                    inspect_v(&mut g, v, 2, &mut seen);
+                if missed.len() < 10 {
+                    println!("Here they are:");
+                    for v in missed.into_iter().take(10) {
+                        seen.insert(v);
+                        println!("  ν{}", v);
+                        inspect_v(&mut g, v, 2, &mut seen);
+                    }
                 }
             }
         }

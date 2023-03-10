@@ -136,6 +136,11 @@ impl Universe {
         self.g
             .slice_some(loc, |_v, _to, a| !a.starts_with('ρ') && !a.starts_with('σ'))
     }
+
+    /// Dump the graph to a file.
+    pub fn dump(&self, p: &Path) -> Result<usize> {
+        self.g.save(p)
+    }
 }
 
 impl Relay for Universe {
@@ -292,6 +297,7 @@ use sodg::Script;
 
 #[cfg(test)]
 use std::fs;
+use std::path::Path;
 
 #[cfg(test)]
 use glob::glob;
@@ -360,6 +366,24 @@ fn sodg_scripts_in_dir(dir: &str) -> Vec<String> {
     }
     paths.sort();
     paths
+}
+
+#[test]
+fn find_absent_vertex() -> Result<()> {
+    let g = Sodg::empty();
+    let mut uni = Universe::from_graph(g);
+    uni.add();
+    assert!(uni.dataize("Φ.foo").is_err());
+    Ok(())
+}
+
+#[test]
+fn fnd_absent_vertex() -> Result<()> {
+    let g = Sodg::empty();
+    let mut uni = Universe::from_graph(g);
+    uni.add();
+    assert!(uni.dataize("ν42.foo").is_err());
+    Ok(())
 }
 
 #[test]
