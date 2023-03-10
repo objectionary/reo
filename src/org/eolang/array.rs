@@ -23,8 +23,8 @@ use anyhow::{anyhow, Result};
 
 /// Register all known atoms in the Universe.
 pub fn register(uni: &mut Universe) {
-    uni.register("org.eolang.array.length", array_length);
-    uni.register("org.eolang.array.at", array_at);
+    uni.register("org.eolang.array$length", array_length);
+    uni.register("org.eolang.array$at", array_at);
 }
 
 /// EO atom `array.length`.

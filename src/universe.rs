@@ -183,7 +183,10 @@ impl Universe {
             let to = uni
                 .atoms
                 .get(lambda.as_str())
-                .context(anyhow!("Can't find function {lambda}"))
+                .context(anyhow!(
+                    "Can't find function {lambda} among {} others",
+                    uni.atoms.len()
+                ))
                 .unwrap()(uni, v)?;
             trace!("#re: ν{v}.λ⇓{lambda}(ξ=ν?) returned ν{to}");
             Self::fnd(uni, to, a)

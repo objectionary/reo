@@ -310,7 +310,7 @@ pub fn main() -> Result<()> {
                 fs::metadata(bin)?.len(),
                 start.elapsed()
             );
-            info!("Databasing the '{object}' object...");
+            info!("Dataizing the '{object}' object...");
             let mut uni = Universe::from_graph(g);
             register(&mut uni);
             let ret = uni.dataize(format!("Φ.{}", object).as_str())?.print();

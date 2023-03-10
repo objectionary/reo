@@ -28,6 +28,8 @@ pub fn copy_of_int(uni: &mut Universe, data: i64) -> Result<u32> {
     let v = uni.add();
     let int = uni.find("org.eolang.int")?;
     uni.bind(v, int, "π");
-    uni.put(v, Hex::from(data));
+    let d = uni.add();
+    uni.put(d, Hex::from(data));
+    uni.bind(v, d, "Δ");
     Ok(v)
 }
