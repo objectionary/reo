@@ -180,7 +180,11 @@ impl Universe {
         } else if let Some(lv) = uni.g.kid(v, "λ") {
             let lambda = uni.g.data(lv)?.to_utf8()?;
             trace!("#re: calling ν{v}.λ⇓{lambda}(ξ=ν?)...");
-            let to = uni.atoms.get(lambda.as_str()).unwrap()(uni, v)?;
+            let to = uni
+                .atoms
+                .get(lambda.as_str())
+                .context(anyhow!("Can't find function {lambda}"))
+                .unwrap()(uni, v)?;
             trace!("#re: ν{v}.λ⇓{lambda}(ξ=ν?) returned ν{to}");
             Self::fnd(uni, to, a)
         } else if let Some(to) = uni.g.kid(v, "φ") {

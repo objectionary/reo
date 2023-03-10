@@ -26,6 +26,7 @@ use clap::builder::TypedValueParser;
 use clap::parser::ValuesRef;
 use clap::ErrorKind::EmptyValue;
 use clap::{crate_version, value_parser, AppSettings, Arg, ArgAction, Command};
+use colored::Colorize;
 use itertools::Itertools;
 use log::{debug, info, LevelFilter};
 use reo::org::eolang::register;
@@ -351,7 +352,7 @@ pub fn main() -> Result<()> {
             }
             println!("File: {}", bin.display());
             println!("Size: {} bytes", fs::metadata(bin)?.len());
-            let g = Sodg::load(bin.as_path())?;
+            let mut g = Sodg::load(bin.as_path())?;
             println!("Total vertices: {}", g.len());
             let root = subs.get_one::<String>("root").unwrap().parse().unwrap();
             println!("\nν{root}");
@@ -365,7 +366,7 @@ pub fn main() -> Result<()> {
                 seen.insert(v);
             }
             seen.insert(root);
-            inspect_v(&g, root, 1, &mut seen);
+            inspect_v(&mut g, root, 1, &mut seen);
             println!("Vertices just printed: {}", seen.len());
             if seen.len() != g.ids().len() {
                 let mut missed = vec![];
@@ -385,7 +386,7 @@ pub fn main() -> Result<()> {
                 for v in missed.into_iter().take(10) {
                     seen.insert(v);
                     println!("  ν{}", v);
-                    inspect_v(&g, v, 2, &mut seen);
+                    inspect_v(&mut g, v, 2, &mut seen);
                 }
             }
         }
@@ -397,12 +398,19 @@ pub fn main() -> Result<()> {
     Ok(())
 }
 
-fn inspect_v(g: &Sodg, v: u32, indent: usize, seen: &mut HashSet<u32>) {
+fn inspect_v(g: &mut Sodg, v: u32, indent: usize, seen: &mut HashSet<u32>) {
     let mut kids = g.kids(v).unwrap();
     kids.sort_by(|a, b| a.0.cmp(&b.0.clone()));
     for e in kids {
         print!("{}", "  ".repeat(indent));
-        println!("{} -> ν{}", e.0, e.1);
+        print!("{} -> ν{}", e.0, e.1);
+        if e.0 == "Δ" {
+            print!(" {}", g.data(e.1).unwrap().to_string().blue());
+        }
+        if e.0 == "λ" {
+            print!(" {}", g.data(e.1).unwrap().to_utf8().unwrap().yellow());
+        }
+        println!();
         if seen.contains(&e.1) {
             continue;
         }

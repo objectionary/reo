@@ -12,6 +12,7 @@ categories = ["command-line-utilities", "development-tools", "virtualization"]
 
 [dependencies]
 anyhow = "1.0.69"
+colored = "2.0.0"
 regex = "1.7.1"
 lazy_static = "1.4.0"
 log = "0.4.17"
