@@ -44,6 +44,8 @@ fn inspects_one_binary() -> Result<()> {
         .current_dir(tmp.path())
         .arg("inspect")
         .arg("--root=2")
+        .arg("--ignore=1")
+        .arg("--ignore=42")
         .arg(first.as_os_str())
         .assert()
         .success();

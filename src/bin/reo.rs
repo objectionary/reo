@@ -156,6 +156,14 @@ pub fn main() -> Result<()> {
                         .default_value("0")
                         .help("The ID of the root vertex")
                         .action(ArgAction::Set),
+                )
+                .arg(
+                    Arg::new("ignore")
+                        .long("ignore")
+                        .required(false)
+                        .help("The IDs to ignore")
+                        .multiple(true)
+                        .action(ArgAction::Set),
                 ),
         )
         .subcommand(
@@ -346,6 +354,10 @@ pub fn main() -> Result<()> {
             let root = subs.get_one::<String>("root").unwrap().parse().unwrap();
             println!("\nν{root}");
             let mut seen = HashSet::new();
+            let ignore: Vec<&str> = subs.values_of("ignore").unwrap().collect();
+            for v in ignore {
+                seen.insert(v.parse::<u32>().unwrap());
+            }
             seen.insert(root);
             inspect_v(&g, root, 1, &mut seen);
             println!("Vertices just printed: {}", seen.len());
@@ -359,11 +371,12 @@ pub fn main() -> Result<()> {
                 }
                 missed.sort();
                 println!(
-                    "Missed: {}",
-                    missed.iter().map(|v| format!("ν{}", v)).join(", ")
+                    "Missed {}: {}",
+                    missed.len(),
+                    missed.iter().take(10).map(|v| format!("ν{}", v)).join(", ")
                 );
                 println!("Here they are:");
-                for v in missed {
+                for v in missed.into_iter().take(10) {
                     seen.insert(v);
                     println!("  ν{}", v);
                     inspect_v(&g, v, 2, &mut seen);
@@ -379,7 +392,9 @@ pub fn main() -> Result<()> {
 }
 
 fn inspect_v(g: &Sodg, v: u32, indent: usize, seen: &mut HashSet<u32>) {
-    for e in g.kids(v).unwrap() {
+    let mut kids = g.kids(v).unwrap();
+    kids.sort_by(|a, b| a.0.cmp(&b.0.clone()));
+    for e in kids {
         print!("{}", "  ".repeat(indent));
         println!("{} -> ν{}", e.0, e.1);
         if seen.contains(&e.1) {
