@@ -14,12 +14,12 @@ target/runtime.reo: target/eo/1-parse ${BINARIES} $(REO)
 	for b in $(BINARIES); do $(REO) merge $@ $${b}; done
 
 $(REO):
-	cargo build
+	cargo build -vv
 
 target/eo/1-parse:
 	mvn --file test-pom.xml --batch-mode --errors process-resources
 
-$(BINARIES): target/eo/1-parse
+$(BINARIES): target/eo/1-parse $(SODGS)
 	mkdir -p $$(dirname $@)
 	$(REO) compile $(subst .reo,.sodg,$(subst eo/reo/,eo/sodg/,$@)) $@
 
