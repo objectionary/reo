@@ -23,8 +23,9 @@ extern crate reo;
 use anyhow::Result;
 use anyhow::{anyhow, Context};
 use clap::builder::TypedValueParser;
+use clap::parser::ValuesRef;
 use clap::ErrorKind::EmptyValue;
-use clap::{crate_version, AppSettings, Arg, ArgAction, Command};
+use clap::{crate_version, value_parser, AppSettings, Arg, ArgAction, Command};
 use itertools::Itertools;
 use log::{debug, info, LevelFilter};
 use reo::org::eolang::register;
@@ -162,6 +163,7 @@ pub fn main() -> Result<()> {
                         .long("ignore")
                         .required(false)
                         .help("The IDs to ignore")
+                        .value_parser(value_parser!(u32))
                         .multiple(true)
                         .action(ArgAction::Set),
                 ),
@@ -354,9 +356,13 @@ pub fn main() -> Result<()> {
             let root = subs.get_one::<String>("root").unwrap().parse().unwrap();
             println!("\nν{root}");
             let mut seen = HashSet::new();
-            let ignore: Vec<&str> = subs.values_of("ignore").unwrap().collect();
+            let ignore: Vec<u32> = subs
+                .get_many("ignore")
+                .unwrap_or(ValuesRef::default())
+                .copied()
+                .collect();
             for v in ignore {
-                seen.insert(v.parse::<u32>().unwrap());
+                seen.insert(v);
             }
             seen.insert(root);
             inspect_v(&g, root, 1, &mut seen);
