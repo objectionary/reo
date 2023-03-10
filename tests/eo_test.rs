@@ -51,7 +51,6 @@ fn all_apps() -> Result<Vec<String>> {
 }
 
 #[test]
-#[ignore]
 fn deploys_and_runs_all_apps() -> Result<()> {
     let mut uni = Universe::from_graph(load_runtime()?);
     register(&mut uni);
