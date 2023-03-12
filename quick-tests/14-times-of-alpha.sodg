@@ -27,8 +27,8 @@ ADD($v7);
 BIND($v7, $v6, π);
 
 ADD($v8);
-#BIND($v7, $v8, α0);
-BIND($v7, $v8, x);
+BIND($v7, $v8, α0);
+#BIND($v7, $v8, x);
 ADD($v9);
 BIND($v8, $v9, Δ);
 PUT($v9, 00-00-00-00-00-00-00-07);
