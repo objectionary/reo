@@ -24,6 +24,8 @@ use log::trace;
 use sodg::Sodg;
 use sodg::{Hex, Relay};
 use std::collections::HashMap;
+use std::path::Path;
+use std::str::FromStr;
 
 impl Universe {
     /// Makes an empty Universe.
@@ -243,30 +245,6 @@ impl Universe {
         Ok(nv)
     }
 
-    /// Push from `v2` to `v1`.
-    fn push(uni: &mut Universe, v1: u32, v2: u32) -> Result<()> {
-        for (a, k) in uni.g.kids(v2)?.into_iter() {
-            if a == "π" {
-                continue;
-            }
-            Self::down(uni, v1, k, a)?;
-        }
-        Ok(())
-    }
-
-    /// Link down.
-    fn down(uni: &mut Universe, v1: u32, v2: u32, a: String) -> Result<()> {
-        if let Some(t) = uni.g.kid(v1, a.as_str()) {
-            if a != "ρ" {
-                return Err(anyhow!(
-                    "Can't overwrite ν{v1}.{a}, it already points to ν{t}"
-                ));
-            }
-        }
-        uni.g.bind(v1, v2, a.as_str())?;
-        Ok(())
-    }
-
     /// Pull into `v1` from `v2`.
     fn pull(uni: &mut Universe, v1: u32, v2: u32) -> Result<()> {
         for (a, k) in uni.g.kids(v2)?.into_iter() {
@@ -280,7 +258,7 @@ impl Universe {
 
     /// Link.
     fn up(uni: &mut Universe, v1: u32, v2: u32, a: String) -> Result<()> {
-        if a == "λ" || a == "Δ" || a == "ρ" {
+        if a == "λ" || a == "Δ" || a == "ρ" || Self::nil(uni, v2)? {
             uni.g.bind(v1, v2, a.as_str())?;
         } else {
             let nv = uni.add();
@@ -290,6 +268,63 @@ impl Universe {
         };
         Ok(())
     }
+
+    /// Push from `v2` to `v1`.
+    fn push(uni: &mut Universe, v1: u32, v2: u32) -> Result<()> {
+        for (a, k) in uni.g.kids(v2)?.into_iter() {
+            if a == "π" {
+                continue;
+            }
+            Self::down(uni, v1, k, a)?;
+        }
+        Ok(())
+    }
+
+    /// Link down.
+    fn down(uni: &mut Universe, v1: u32, v2: u32, a: String) -> Result<()> {
+        let a1 = Self::tie(uni, v1, a)?;
+        uni.g.bind(v1, v2, a1.as_str())?;
+        Ok(())
+    }
+
+    /// Tie an existing name with a new name.
+    fn tie(uni: &mut Universe, v: u32, a: String) -> Result<String> {
+        if a == "ρ" {
+            trace!("#tie(ν{v}, {a}): it's a direct tie");
+            return Ok(a);
+        }
+        if a == "Δ" && uni.g.kid(v, a.as_str()).is_none() {
+            trace!("#tie(ν{v}, {a}): it's a new data");
+            return Ok(a);
+        }
+        if let Some(v1) = uni.g.kid(v, a.as_str()) {
+            if Self::nil(uni, v1)? {
+                trace!("#tie(ν{v}, {a}): it's a nil");
+                return Ok(a);
+            }
+        }
+        if a.starts_with('α') {
+            let tail: String = a.chars().skip(1).collect::<Vec<_>>().into_iter().collect();
+            let i = usize::from_str(tail.as_str())?;
+            let a1 = uni
+                .g
+                .kids(v)?
+                .into_iter()
+                .filter(|(aa, _)| aa.is_ascii())
+                .skip(i)
+                .next()
+                .unwrap();
+            trace!("#tie(ν{v}, {a}): the {i}th attribute is {}", a1.0);
+            return Self::tie(uni, v, a1.0);
+        }
+        return Err(anyhow!("Can't tie to ν{v}.{a}"));
+    }
+
+    /// The vertex is a dead-end, a nil.
+    fn nil(uni: &mut Universe, v: u32) -> Result<bool> {
+        let kids = uni.g.kids(v)?;
+        return Ok(kids.len() == 1 && kids.iter().all(|(a, _)| a == "ρ"));
+    }
 }
 
 #[cfg(test)]
@@ -297,7 +332,6 @@ use sodg::Script;
 
 #[cfg(test)]
 use std::fs;
-use std::path::Path;
 
 #[cfg(test)]
 use glob::glob;

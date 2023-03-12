@@ -1,4 +1,4 @@
-# v1/int -> [ inc -> [ ρ -> v1, λ ], times -> [ ρ -> v1, λ ] ]
+# v1/int -> [ inc -> [ ρ -> v1, λ, x -> ? ], times -> [ ρ -> v1, λ, x -> ? ] ]
 # v6 -> int(v7/Δ -> 6)
 # v8 -> v6.inc
 # v9/foo -> v6.times(x -> v8)
@@ -10,12 +10,18 @@ BIND(0, $v1, int);
 ADD($v2);
 BIND($v1, $v2, inc);
 BIND($v2, $v1, ρ);
+ADD($v11);
+BIND($v2, $v11, x);
+BIND($v11, $v2, ρ);
 ADD($v3);
 BIND($v2, $v3, λ);
 PUT($v3, 69-6E-63);
 ADD($v4);
 BIND($v1, $v4, times);
 BIND($v4, $v1, ρ);
+ADD($v12);
+BIND($v4, $v12, x);
+BIND($v12, $v4, ρ);
 ADD($v5);
 BIND($v4, $v5, λ);
 PUT($v5, 74-69-6D-65-73);
@@ -35,6 +41,6 @@ BIND($v9, $v6, β);
 BIND($v9, $v6, times);
 ADD($v10);
 BIND($v10, $v9, π);
-BIND($v10, $v8, x);
+BIND($v10, $v8, α0);
 
 BIND(0, $v10, foo);
