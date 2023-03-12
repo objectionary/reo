@@ -311,8 +311,7 @@ impl Universe {
                 .kids(v)?
                 .into_iter()
                 .filter(|(aa, _)| aa.is_ascii())
-                .skip(i)
-                .next()
+                .nth(i)
                 .unwrap();
             trace!("#tie(ν{v}, {a}): the {i}th attribute is {}", a1.0);
             return Self::tie(uni, v, a1.0);
