@@ -228,7 +228,7 @@ impl Universe {
         uni.depth += 1;
         let r = if let Some(to) = uni.g.kid(v, "ε") {
             Self::dd(uni, to, psi)
-        } else if let Some(_) = uni.g.kid(v, "ξ") {
+        } else if uni.g.kid(v, "ξ").is_some() {
             Self::dd(uni, psi, psi)
         } else if let Some(to) = uni.g.kid(v, "β") {
             let a = uni
