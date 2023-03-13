@@ -164,26 +164,28 @@ impl Universe {
         if a == "Φ" {
             return Ok("ν0".to_string());
         };
-        let v1 = Self::fnd(uni, v, a)?;
+        let v1 = Self::fnd(uni, v, a, v)?;
         Ok(format!("ν{v1}"))
     }
 
     /// Find.
-    fn fnd(uni: &mut Universe, v: u32, a: &str) -> Result<u32> {
-        let v1 = Self::dd(uni, v)?;
-        trace!("#fnd(ν{v}, {a}): dd(ν{v}) returned ν{v1}");
-        let to = Self::pf(uni, v1, a)?;
-        trace!("#fnd(ν{v}, {a}): pf(ν{v}, {a}) returned ν{to}");
+    fn fnd(uni: &mut Universe, v: u32, a: &str, psi: u32) -> Result<u32> {
+        let v1 = Self::dd(uni, v, psi)?;
+        trace!("#fnd(ν{v}, {a}, {psi}): dd(ν{v}) returned ν{v1}");
+        let to = Self::pf(uni, v1, a, psi)?;
+        trace!("#fnd(ν{v}, {a}, {psi}): pf(ν{v}, {a}) returned ν{to}");
         Ok(to)
     }
 
     /// Path find.
-    fn pf(uni: &mut Universe, v: u32, a: &str) -> Result<u32> {
-        trace!("#pf(ν{v}, {a}): entering...");
+    fn pf(uni: &mut Universe, v: u32, a: &str, psi: u32) -> Result<u32> {
+        trace!("#pf(ν{v}, {a}, {psi}): entering...");
         if let Some(to) = uni.g.kid(v, a) {
             Ok(to)
         } else if let Some(to) = uni.g.kid(v, "ε") {
-            Self::fnd(uni, to, a)
+            Self::fnd(uni, to, a, psi)
+        } else if let Some(to) = uni.g.kid(v, "ξ") {
+            Self::fnd(uni, to, a, psi)
         } else if let Some(lv) = uni.g.kid(v, "λ") {
             let lambda = uni.g.data(lv)?.to_utf8()?;
             trace!("#re: calling ν{v}.λ⇓{lambda}(ξ=ν?)...");
@@ -196,11 +198,11 @@ impl Universe {
                 ))
                 .unwrap()(uni, v)?;
             trace!("#re: ν{v}.λ⇓{lambda}(ξ=ν?) returned ν{to}");
-            Self::fnd(uni, to, a)
+            Self::fnd(uni, to, a, psi)
         } else if let Some(to) = uni.g.kid(v, "φ") {
-            Self::fnd(uni, to, a)
+            Self::fnd(uni, to, a, psi)
         } else if let Some(to) = uni.g.kid(v, "γ") {
-            let t = Self::fnd(uni, to, a)?;
+            let t = Self::fnd(uni, to, a, psi)?;
             uni.g.bind(v, t, a)?;
             Ok(t)
         } else {
@@ -212,10 +214,12 @@ impl Universe {
     }
 
     /// Dynamic dispatch.
-    fn dd(uni: &mut Universe, v: u32) -> Result<u32> {
-        trace!("#dd(ν{v}): entering...");
+    fn dd(uni: &mut Universe, v: u32, psi: u32) -> Result<u32> {
+        trace!("#dd(ν{v}, {psi}): entering...");
         if let Some(to) = uni.g.kid(v, "ε") {
-            Self::dd(uni, to)
+            Self::dd(uni, to, psi)
+        } else if let Some(_) = uni.g.kid(v, "ξ") {
+            Self::dd(uni, psi, psi)
         } else if let Some(to) = uni.g.kid(v, "β") {
             let a = uni
                 .g
@@ -225,10 +229,15 @@ impl Universe {
                 .unwrap()
                 .clone()
                 .0;
-            let nv = Self::fnd(uni, to, a.as_str())?;
-            Self::dd(uni, nv)
+            let nv = Self::fnd(uni, to, a.as_str(), psi)?;
+            Self::dd(uni, nv, psi)
         } else if let Some(to) = uni.g.kid(v, "π") {
-            let nv = Self::dd(uni, to)?;
+            let psi2 = if let Some(p) = uni.g.kid(v, "ψ") {
+                p
+            } else {
+                v
+            };
+            let nv = Self::dd(uni, to, psi2)?;
             Self::apply(uni, nv, v)
         } else {
             Ok(v)
@@ -264,6 +273,7 @@ impl Universe {
             let nv = uni.add();
             uni.g.bind(v1, nv, a.as_str())?;
             uni.g.bind(nv, v1, "ρ")?;
+            uni.g.bind(nv, v1, "ψ")?;
             uni.g.bind(nv, v2, "π")?;
         };
         Ok(())
@@ -289,7 +299,7 @@ impl Universe {
 
     /// Tie an existing name with a new name.
     fn tie(uni: &mut Universe, v: u32, a: String) -> Result<String> {
-        if a == "ρ" {
+        if a == "ρ" || a == "ψ" {
             trace!("#tie(ν{v}, {a}): it's a direct tie");
             return Ok(a);
         }
@@ -426,11 +436,13 @@ fn quick_tests() -> Result<()> {
         let mut s = Script::from_str(fs::read_to_string(path.clone())?.as_str());
         let mut g = Sodg::empty();
         s.deploy_to(&mut g)?;
-        trace!("{}", g.clone().to_dot());
+        trace!("Before:\n {}", g.clone().to_dot());
         let mut uni = Universe::from_graph(g);
         uni.register("inc", inc);
         uni.register("times", times);
-        let hex = uni.dataize("Φ.foo").context(anyhow!("Failure in {path}"))?;
+        let r = uni.dataize("Φ.foo");
+        trace!("After:\n {}", uni.g.to_dot());
+        let hex = r.context(anyhow!("Failure in {path}"))?;
         assert_eq!(42, hex.to_i64()?, "Failure in {path}");
     }
     Ok(())

@@ -1,0 +1,32 @@
+# v1 -> [ v2/x -> $.y, y -> ? ]
+# v5 -> [Δ -> 42]
+# v7 -> v1(y -> v4)
+# v8 -> v7.x
+
+ADD(0);
+
+ADD($v1);
+ADD($v2);
+BIND($v1, $v2, x);
+ADD($v3);
+BIND($v3, $v1, ξ);
+BIND($v2, $v3, β);
+BIND($v2, $v3, y);
+
+ADD($v4);
+BIND($v1, $v4, y);
+BIND($v4, $v1, ρ);
+
+ADD($v5);
+ADD($v6);
+BIND($v5, $v6, Δ);
+PUT($v6, 00-00-00-00-00-00-00-2A);
+
+ADD($v7);
+BIND($v7, $v1, π);
+BIND($v7, $v5, y);
+
+ADD($v8);
+BIND($v8, $v7, β);
+BIND($v8, $v7, x);
+BIND(0, $v8, foo);
