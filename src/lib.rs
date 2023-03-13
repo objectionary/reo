@@ -57,6 +57,7 @@ pub type Atom = fn(&mut Universe, v: u32) -> Result<u32>;
 pub struct Universe {
     g: Sodg,
     atoms: HashMap<String, Atom>,
+    depth: usize,
 }
 
 #[cfg(test)]

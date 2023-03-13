@@ -25,5 +25,6 @@ $(BINARIES): target/eo/1-parse $(SODGS)
 
 clean:
 	rm -rf target/eo/sodg
+	rm -rf target/eo/reo
 	rm -rf target/runtime.reo
 	rm -rf target/debug/reo

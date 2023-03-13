@@ -54,6 +54,7 @@ impl Universe {
         Universe {
             g,
             atoms: HashMap::new(),
+            depth: 0,
         }
     }
 
@@ -170,17 +171,20 @@ impl Universe {
 
     /// Find.
     fn fnd(uni: &mut Universe, v: u32, a: &str, psi: u32) -> Result<u32> {
+        uni.depth += 1;
         let v1 = Self::dd(uni, v, psi)?;
         trace!("#fnd(ν{v}, {a}, {psi}): dd(ν{v}) returned ν{v1}");
         let to = Self::pf(uni, v1, a, psi)?;
         trace!("#fnd(ν{v}, {a}, {psi}): pf(ν{v}, {a}) returned ν{to}");
+        uni.depth -= 1;
         Ok(to)
     }
 
     /// Path find.
     fn pf(uni: &mut Universe, v: u32, a: &str, psi: u32) -> Result<u32> {
+        uni.depth += 1;
         trace!("#pf(ν{v}, {a}, {psi}): entering...");
-        if let Some(to) = uni.g.kid(v, a) {
+        let r = if let Some(to) = uni.g.kid(v, a) {
             Ok(to)
         } else if let Some(to) = uni.g.kid(v, "ε") {
             Self::fnd(uni, to, a, psi)
@@ -206,17 +210,23 @@ impl Universe {
             uni.g.bind(v, t, a)?;
             Ok(t)
         } else {
-            return Err(anyhow!(
+            Err(anyhow!(
                 "There is no way to get .{a} from {}",
                 uni.g.v_print(v)
-            ));
-        }
+            ))
+        };
+        uni.depth -= 1;
+        r
     }
 
     /// Dynamic dispatch.
     fn dd(uni: &mut Universe, v: u32, psi: u32) -> Result<u32> {
+        if uni.depth > 20 {
+            panic!("The recursion is too deep (over {})", uni.depth);
+        }
         trace!("#dd(ν{v}, {psi}): entering...");
-        if let Some(to) = uni.g.kid(v, "ε") {
+        uni.depth += 1;
+        let r = if let Some(to) = uni.g.kid(v, "ε") {
             Self::dd(uni, to, psi)
         } else if let Some(_) = uni.g.kid(v, "ξ") {
             Self::dd(uni, psi, psi)
@@ -241,16 +251,20 @@ impl Universe {
             Self::apply(uni, nv, v)
         } else {
             Ok(v)
-        }
+        };
+        uni.depth -= 1;
+        r
     }
 
     /// Apply `v1` to `v2` and return a new vertex.
     fn apply(uni: &mut Universe, v1: u32, v2: u32) -> Result<u32> {
         trace!("#apply(ν{v1}, ν{v2}): entering...");
+        uni.depth += 1;
         let nv = uni.add();
         Self::pull(uni, nv, v1)?;
         Self::push(uni, nv, v2)?;
         trace!("#apply(ν{v1}, ν{v2}): copy ν{v1}+ν{v2} created as ν{nv}");
+        uni.depth -= 1;
         Ok(nv)
     }
 
@@ -299,7 +313,7 @@ impl Universe {
 
     /// Tie an existing name with a new name.
     fn tie(uni: &mut Universe, v: u32, a: String) -> Result<String> {
-        if a == "ρ" || a == "ψ" {
+        if a == "ρ" || a == "ψ" || a == "σ" {
             trace!("#tie(ν{v}, {a}): it's a direct tie");
             return Ok(a);
         }
