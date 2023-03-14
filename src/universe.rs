@@ -165,31 +165,31 @@ impl Universe {
         if a == "Φ" {
             return Ok("ν0".to_string());
         };
-        let v1 = Self::fnd(uni, v, a, v)?;
+        let v1 = Self::fnd(uni, v, a)?;
         Ok(format!("ν{v1}"))
     }
 
     /// Find.
-    fn fnd(uni: &mut Universe, v: u32, a: &str, psi: u32) -> Result<u32> {
-        uni.depth += 1;
-        let v1 = Self::dd(uni, v, psi)?;
-        trace!("#fnd(ν{v}, {a}, {psi}): dd(ν{v}) returned ν{v1}");
-        let to = Self::pf(uni, v1, a, psi)?;
-        trace!("#fnd(ν{v}, {a}, {psi}): pf(ν{v}, {a}) returned ν{to}");
+    fn fnd(uni: &mut Universe, v: u32, a: &str) -> Result<u32> {
+        Self::check_recursion(uni)?;
+        let v1 = Self::dd(uni, v)?;
+        trace!("#fnd(ν{v}, {a}): dd(ν{v}) returned ν{v1}");
+        let to = Self::pf(uni, v1, a)?;
+        trace!("#fnd(ν{v}, {a}): pf(ν{v}, {a}) returned ν{to}");
         uni.depth -= 1;
         Ok(to)
     }
 
     /// Path find.
-    fn pf(uni: &mut Universe, v: u32, a: &str, psi: u32) -> Result<u32> {
-        uni.depth += 1;
-        trace!("#pf(ν{v}, {a}, {psi}): entering...");
+    fn pf(uni: &mut Universe, v: u32, a: &str) -> Result<u32> {
+        Self::check_recursion(uni)?;
+        trace!("#pf(ν{v}, {a}): entering...");
         let r = if let Some(to) = uni.g.kid(v, a) {
             Ok(to)
         } else if let Some(to) = uni.g.kid(v, "ε") {
-            Self::fnd(uni, to, a, psi)
+            Self::fnd(uni, to, a)
         } else if let Some(to) = uni.g.kid(v, "ξ") {
-            Self::fnd(uni, to, a, psi)
+            Self::fnd(uni, to, a)
         } else if let Some(lv) = uni.g.kid(v, "λ") {
             let lambda = uni.g.data(lv)?.to_utf8()?;
             trace!("#re: calling ν{v}.λ⇓{lambda}(ξ=ν?)...");
@@ -202,11 +202,11 @@ impl Universe {
                 ))
                 .unwrap()(uni, v)?;
             trace!("#re: ν{v}.λ⇓{lambda}(ξ=ν?) returned ν{to}");
-            Self::fnd(uni, to, a, psi)
+            Self::fnd(uni, to, a)
         } else if let Some(to) = uni.g.kid(v, "φ") {
-            Self::fnd(uni, to, a, psi)
+            Self::fnd(uni, to, a)
         } else if let Some(to) = uni.g.kid(v, "γ") {
-            let t = Self::fnd(uni, to, a, psi)?;
+            let t = Self::fnd(uni, to, a)?;
             uni.g.bind(v, t, a)?;
             Ok(t)
         } else {
@@ -220,16 +220,11 @@ impl Universe {
     }
 
     /// Dynamic dispatch.
-    fn dd(uni: &mut Universe, v: u32, psi: u32) -> Result<u32> {
-        if uni.depth > 20 {
-            panic!("The recursion is too deep (over {})", uni.depth);
-        }
-        trace!("#dd(ν{v}, {psi}): entering...");
-        uni.depth += 1;
+    fn dd(uni: &mut Universe, v: u32) -> Result<u32> {
+        Self::check_recursion(uni)?;
+        trace!("#dd(ν{v}): entering...");
         let r = if let Some(to) = uni.g.kid(v, "ε") {
-            Self::dd(uni, to, psi)
-        } else if uni.g.kid(v, "ξ").is_some() {
-            Self::dd(uni, psi, psi)
+            Self::dd(uni, to)
         } else if let Some(to) = uni.g.kid(v, "β") {
             let a = uni
                 .g
@@ -239,15 +234,10 @@ impl Universe {
                 .unwrap()
                 .clone()
                 .0;
-            let nv = Self::fnd(uni, to, a.as_str(), psi)?;
-            Self::dd(uni, nv, psi)
+            let nv = Self::fnd(uni, to, a.as_str())?;
+            Self::dd(uni, nv)
         } else if let Some(to) = uni.g.kid(v, "π") {
-            let psi2 = if let Some(p) = uni.g.kid(v, "ψ") {
-                p
-            } else {
-                v
-            };
-            let nv = Self::dd(uni, to, psi2)?;
+            let nv = Self::dd(uni, to)?;
             Self::apply(uni, nv, v)
         } else {
             Ok(v)
@@ -347,6 +337,14 @@ impl Universe {
     fn nil(uni: &mut Universe, v: u32) -> Result<bool> {
         let kids = uni.g.kids(v)?;
         return Ok(kids.len() == 1 && kids.iter().all(|(a, _)| a == "ρ"));
+    }
+
+    fn check_recursion(uni: &mut Universe) -> Result<()> {
+        uni.depth += 1;
+        if uni.depth > 10 {
+            return Err(anyhow!("The recursion is too deep ({} levels)", uni.depth));
+        }
+        Ok(())
     }
 }
 
