@@ -221,8 +221,12 @@ impl Universe {
         trace!("#dd(ν{v}, {psi}): entering...");
         let r = if let Some(to) = self.g.kid(v, "ε") {
             self.dd(to, psi)
-        } else if self.g.kid(v, "ξ").is_some() {
-            self.dd(psi, psi)
+        } else if let Some(to) = self.g.kid(v, "ξ") {
+            if psi == 0 {
+                self.dd(to, psi)
+            } else {
+                self.dd(psi, psi)
+            }
         } else if let Some(to) = self.g.kid(v, "β") {
             let a = self
                 .g
