@@ -165,7 +165,7 @@ impl Universe {
         if a == "Φ" {
             return Ok("ν0".to_string());
         };
-        let v1 = Self::fnd(uni, v, a, v)?;
+        let v1 = Self::fnd(uni, v, a, 0)?;
         Ok(format!("ν{v1}"))
     }
 
