@@ -186,10 +186,6 @@ impl Universe {
         trace!("#pf(ν{v}, {a}, {psi}): entering...");
         let r = if let Some(to) = self.g.kid(v, a) {
             Ok(to)
-        } else if let Some(to) = self.g.kid(v, "ε") {
-            self.fnd(to, a, psi)
-        } else if let Some(to) = self.g.kid(v, "ξ") {
-            self.fnd(to, a, psi)
         } else if let Some(lv) = self.g.kid(v, "λ") {
             let lambda = self.g.data(lv)?.to_utf8()?;
             trace!("#re: calling ν{v}.λ⇓{lambda}(ξ=ν?)...");
