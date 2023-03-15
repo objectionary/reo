@@ -295,7 +295,7 @@ impl Universe {
     /// Push from `v2` to `v1`.
     fn push(&mut self, v1: u32, v2: u32) -> Result<()> {
         for (a, k) in self.g.kids(v2)?.into_iter() {
-            if a == "π" {
+            if a == "π" || a == "ψ" {
                 continue;
             }
             self.down(v1, k, a)?;
@@ -312,7 +312,7 @@ impl Universe {
 
     /// Tie an existing name with a new name.
     fn tie(&mut self, v: u32, a: String) -> Result<String> {
-        if a == "ρ" || a == "ψ" || a == "σ" {
+        if a == "ρ" || a == "σ" {
             trace!("#tie(ν{v}, {a}): it's a direct tie");
             return Ok(a);
         }
