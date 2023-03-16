@@ -385,7 +385,7 @@ pub fn main() -> Result<()> {
                     .cloned(),
             );
             let content = g
-                .slice_some(format!("ν{root}").as_str(), |_, v, _| ignore.contains(&v))?
+                .slice_some(format!("ν{root}").as_str(), |_, v, _| !ignore.contains(&v))?
                 .to_dot();
             let mut out = match subs.get_one::<PathBuf>("dot") {
                 Some(f) => {
