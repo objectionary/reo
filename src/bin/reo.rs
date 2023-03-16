@@ -210,6 +210,25 @@ pub fn main() -> Result<()> {
                 .setting(AppSettings::ColorNever)
                 .about("Turn binary .reo file to .dot file")
                 .arg(
+                    Arg::new("root")
+                        .long("root")
+                        .short('r')
+                        .required(false)
+                        .default_value("0")
+                        .help("The ID of the root vertex to print")
+                        .action(ArgAction::Set),
+                )
+                .arg(
+                    Arg::new("ignore")
+                        .long("ignore")
+                        .short('i')
+                        .required(false)
+                        .help("The IDs to ignore")
+                        .value_parser(value_parser!(u32))
+                        .multiple(true)
+                        .action(ArgAction::Append),
+                )
+                .arg(
                     Arg::new("bin")
                         .required(true)
                         .value_parser(PathValueParser {})
@@ -362,7 +381,17 @@ pub fn main() -> Result<()> {
                 start.elapsed()
             );
             info!("Printing to '{}' file...", dot.display());
-            fs::write(dot, g.to_dot())?;
+            let root: u32 = subs.get_one::<String>("root").unwrap().parse().unwrap();
+            let ignore: HashSet<u32> = HashSet::from_iter(
+                subs.get_many("ignore")
+                    .unwrap_or(ValuesRef::default())
+                    .cloned(),
+            );
+            fs::write(
+                dot,
+                g.slice_some(format!("ν{root}").as_str(), |_, v, _| ignore.contains(&v))?
+                    .to_dot(),
+            )?;
             info!("File saved, in {:?}", start.elapsed());
         }
         Some(("inspect", subs)) => {
