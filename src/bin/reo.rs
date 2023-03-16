@@ -391,7 +391,7 @@ pub fn main() -> Result<()> {
                 Some(f) => {
                     let path = Path::new(f);
                     info!("Printing to '{}' file...", path.display());
-                    Box::new(File::create(&path).unwrap()) as Box<dyn Write>
+                    Box::new(File::create(path).unwrap()) as Box<dyn Write>
                 }
                 None => Box::new(io::stdout()) as Box<dyn Write>,
             };
