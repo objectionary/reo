@@ -35,9 +35,11 @@ use simple_logger::SimpleLogger;
 use sodg::Script;
 use sodg::Sodg;
 use std::collections::HashSet;
-use std::fs;
+use std::fs::File;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
+use std::{fs, io};
 
 #[derive(Copy, Clone, Debug)]
 struct PathValueParser {}
@@ -242,6 +244,7 @@ pub fn main() -> Result<()> {
                         .value_parser(PathValueParser {})
                         .help("Name of a .dot file to create")
                         .takes_value(true)
+                        .required(false)
                         .action(ArgAction::Set),
                 )
                 .arg_required_else_help(true),
@@ -368,11 +371,6 @@ pub fn main() -> Result<()> {
             if !bin.exists() {
                 return Err(anyhow!("The file '{}' doesn't exist", bin.display()));
             }
-            let dot = subs
-                .get_one::<PathBuf>("dot")
-                .context("Path of .dot file is required")
-                .unwrap();
-            debug!("dot: {}", dot.display());
             info!("Deserializing the binary file '{}'", bin.display());
             let g = Sodg::load(bin.as_path())?;
             info!(
@@ -380,19 +378,25 @@ pub fn main() -> Result<()> {
                 fs::metadata(bin)?.len(),
                 start.elapsed()
             );
-            info!("Printing to '{}' file...", dot.display());
             let root: u32 = subs.get_one::<String>("root").unwrap().parse().unwrap();
             let ignore: HashSet<u32> = HashSet::from_iter(
                 subs.get_many("ignore")
                     .unwrap_or(ValuesRef::default())
                     .cloned(),
             );
-            fs::write(
-                dot,
-                g.slice_some(format!("ν{root}").as_str(), |_, v, _| ignore.contains(&v))?
-                    .to_dot(),
-            )?;
-            info!("File saved, in {:?}", start.elapsed());
+            let content = g
+                .slice_some(format!("ν{root}").as_str(), |_, v, _| ignore.contains(&v))?
+                .to_dot();
+            let mut out = match subs.get_one::<PathBuf>("dot") {
+                Some(f) => {
+                    let path = Path::new(f);
+                    info!("Printing to '{}' file...", path.display());
+                    Box::new(File::create(&path).unwrap()) as Box<dyn Write>
+                }
+                None => Box::new(io::stdout()) as Box<dyn Write>,
+            };
+            let bytes = out.write(content.as_bytes())?;
+            info!("DOT graph saved, {bytes} bytes in {:?}", start.elapsed());
         }
         Some(("inspect", subs)) => {
             let bin = subs
