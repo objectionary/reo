@@ -105,7 +105,8 @@ pub fn main() -> Result<()> {
                         .value_parser(PathValueParser {})
                         .takes_value(true)
                         .action(ArgAction::Set),
-                ),
+                )
+                .arg_required_else_help(true),
         )
         .subcommand(
             Command::new("empty")
@@ -139,7 +140,8 @@ pub fn main() -> Result<()> {
                         .help("Path of .reo file being merged")
                         .takes_value(true)
                         .action(ArgAction::Set),
-                ),
+                )
+                .arg_required_else_help(true),
         )
         .subcommand(
             Command::new("inspect")
@@ -171,7 +173,8 @@ pub fn main() -> Result<()> {
                         .value_parser(value_parser!(u32))
                         .multiple(true)
                         .action(ArgAction::Append),
-                ),
+                )
+                .arg_required_else_help(true),
         )
         .subcommand(
             Command::new("dataize")
