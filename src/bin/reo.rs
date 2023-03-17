@@ -298,8 +298,8 @@ pub fn main() -> Result<()> {
             }
             info!("Merging '{}' into '{}'", source.display(), target.display());
             let mut g1 = Sodg::load(target)?;
-            let g2 = Sodg::load(source)?.slice_some("ν0", |_, _, a| !a.starts_with('+'))?;
-            g1.merge(&g2, 0, 0)?;
+            let g2 = Sodg::load(source)?;
+            g1.merge(&g2.slice_some("ν0", |_, _, a| !a.starts_with('+'))?, 0, 0)?;
             let size = g1.save(target)?;
             info!("The SODG saved to '{}' ({size} bytes)", target.display());
         }
