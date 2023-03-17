@@ -28,7 +28,7 @@ use clap::ErrorKind::EmptyValue;
 use clap::{crate_version, value_parser, AppSettings, Arg, ArgAction, Command};
 use colored::Colorize;
 use itertools::Itertools;
-use log::{debug, info, LevelFilter};
+use log::{debug, info, warn, LevelFilter};
 use reo::org::eolang::register;
 use reo::Universe;
 use simple_logger::SimpleLogger;
@@ -293,6 +293,7 @@ pub fn main() -> Result<()> {
             info!("Deployed {ints} instructions from {}", src.display());
             let size = g.save(bin)?;
             info!("The SODG saved to '{}' ({size} bytes)", bin.display());
+            print_metas(&mut g)?;
         }
         Some(("empty", subs)) => {
             let bin = subs
@@ -300,7 +301,8 @@ pub fn main() -> Result<()> {
                 .context("Path of .reo file is required")
                 .unwrap();
             debug!("target: {}", bin.display());
-            let g = Sodg::empty();
+            let mut g = Sodg::empty();
+            g.add(0)?;
             let size = g.save(bin)?;
             info!("The SODG saved to '{}' ({size} bytes)", bin.display());
         }
@@ -321,11 +323,14 @@ pub fn main() -> Result<()> {
             if !source.exists() {
                 return Err(anyhow!("The file '{}' not found", source.display()));
             }
-            info!("Merging '{}' into '{}'", source.display(), target.display());
-            let mut g = Sodg::load(target)?;
-            g.add(0)?;
-            g.merge(&Sodg::load(source)?, 0, 0)?;
-            let size = g.save(target)?;
+            info!("Merging into '{}':", target.display());
+            let mut g1 = Sodg::load(target)?;
+            print_metas(&mut g1)?;
+            info!("Merging from '{}':", source.display());
+            let mut g2 = Sodg::load(source)?;
+            print_metas(&mut g2)?;
+            g1.merge(&g2.slice_some("ν0", |_, _, a| !a.starts_with('+'))?, 0, 0)?;
+            let size = g1.save(target)?;
             info!("The SODG saved to '{}' ({size} bytes)", target.display());
         }
         Some(("dataize", subs)) => {
@@ -410,6 +415,8 @@ pub fn main() -> Result<()> {
             println!("Size: {} bytes", fs::metadata(bin)?.len());
             let mut g = Sodg::load(bin.as_path())?;
             println!("Total vertices: {}", g.len());
+            println!("Metas:");
+            print_metas(&mut g)?;
             let root = subs.get_one::<String>("root").unwrap().parse().unwrap();
             let mut seen = HashSet::new();
             let ignore: Vec<u32> = subs
@@ -457,6 +464,22 @@ pub fn main() -> Result<()> {
             return Err(anyhow!("Can't understand '{cmd}' command"));
         }
         None => unreachable!(),
+    }
+    Ok(())
+}
+
+fn print_metas(g: &mut Sodg) -> Result<()> {
+    match g.kids(0) {
+        Ok(vec) => {
+            for (a, v) in vec {
+                if a.starts_with('+') {
+                    info!("  {a}: {}", g.data(v)?.to_utf8()?)
+                }
+            }
+        }
+        Err(e) => {
+            warn!("  {}", e)
+        }
     }
     Ok(())
 }

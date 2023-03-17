@@ -36,7 +36,7 @@
 //! ```
 
 #![doc(html_root_url = "https://docs.rs/reo/0.0.0")]
-// #![deny(warnings)]
+#![deny(warnings)]
 
 pub mod org;
 mod scripts;
