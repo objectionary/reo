@@ -268,6 +268,7 @@ pub fn main() -> Result<()> {
             info!("Deployed {ints} instructions from {}", src.display());
             let size = g.save(bin)?;
             info!("The SODG saved to '{}' ({size} bytes)", bin.display());
+            print_metas(&mut g);
         }
         Some(("empty", subs)) => {
             let bin = subs
@@ -296,9 +297,12 @@ pub fn main() -> Result<()> {
             if !source.exists() {
                 return Err(anyhow!("The file '{}' not found", source.display()));
             }
-            info!("Merging '{}' into '{}'", source.display(), target.display());
+            info!("Merging into '{}'", target.display());
             let mut g1 = Sodg::load(target)?;
-            let g2 = Sodg::load(source)?;
+            print_metas(&mut g1);
+            info!("Merging from '{}'", source.display());
+            let mut g2 = Sodg::load(source)?;
+            print_metas(&mut g2);
             g1.merge(&g2.slice_some("ν0", |_, _, a| !a.starts_with('+'))?, 0, 0)?;
             let size = g1.save(target)?;
             info!("The SODG saved to '{}' ({size} bytes)", target.display());
@@ -423,6 +427,14 @@ pub fn main() -> Result<()> {
         None => unreachable!(),
     }
     Ok(())
+}
+
+fn print_metas(g: &mut Sodg) {
+    for (a, v) in g.kids(0).unwrap() {
+        if a.starts_with('+') {
+            info!("  {a}: {}", g.data(v).unwrap().to_utf8().unwrap())
+        }
+    }
 }
 
 fn inspect_v(g: &mut Sodg, v: u32, indent: usize, seen: &mut HashSet<u32>) {
