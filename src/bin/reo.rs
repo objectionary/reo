@@ -297,10 +297,10 @@ pub fn main() -> Result<()> {
                 return Err(anyhow!("The file '{}' not found", source.display()));
             }
             info!("Merging '{}' into '{}'", source.display(), target.display());
-            let mut g = Sodg::load(target)?;
-            g.add(0)?;
-            g.merge(&Sodg::load(source)?, 0, 0)?;
-            let size = g.save(target)?;
+            let mut g1 = Sodg::load(target)?;
+            let g2 = Sodg::load(source)?.slice_some("ν0", |_, _, a| !a.starts_with('+'))?;
+            g1.merge(&g2, 0, 0)?;
+            let size = g1.save(target)?;
             info!("The SODG saved to '{}' ({size} bytes)", target.display());
         }
         Some(("dataize", subs)) => {
