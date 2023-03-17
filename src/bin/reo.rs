@@ -28,7 +28,7 @@ use clap::ErrorKind::EmptyValue;
 use clap::{crate_version, value_parser, AppSettings, Arg, ArgAction, Command};
 use colored::Colorize;
 use itertools::Itertools;
-use log::{debug, info, LevelFilter, warn};
+use log::{debug, info, warn, LevelFilter};
 use reo::org::eolang::register;
 use reo::Universe;
 use simple_logger::SimpleLogger;
@@ -434,12 +434,14 @@ pub fn main() -> Result<()> {
 
 fn print_metas(g: &mut Sodg) -> Result<()> {
     match g.kids(0) {
-        Ok(vec) => for (a, v) in vec {
-            if a.starts_with('+') {
-                info!("  {a}: {}", g.data(v)?.to_utf8()?)
+        Ok(vec) => {
+            for (a, v) in vec {
+                if a.starts_with('+') {
+                    info!("  {a}: {}", g.data(v)?.to_utf8()?)
+                }
             }
         }
-        Err(e)=> {
+        Err(e) => {
             warn!("  {}", e)
         }
     }
