@@ -15,10 +15,8 @@
 Most probably it doesn't work. Don't try to contribute, unless you know
 what you are doing.
 
-It's an experimental virtual machine of
-[EO](https://www.eolang.org) programs, 
-represented as  
-[SODG](https://github.com/objectionary/sodg) graphs.
+It's an experimental virtual machine of [EO](https://www.eolang.org) programs, 
+represented as [SODG](https://github.com/objectionary/sodg) graphs.
 
 First, install
 [Rust](https://www.rust-lang.org/tools/install),
