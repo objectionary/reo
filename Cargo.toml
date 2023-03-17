@@ -28,6 +28,6 @@ sodg = {version = "0.0.30", features = ["sober"]}
 #sodg = {path = "/code/o/sodg", features = ["sober"]}
 
 [dev-dependencies]
-assert_cmd = "2.0.4"
+assert_cmd = "2.0.10"
 rand = "0.8.5"
 tempfile = "3.4.0"
