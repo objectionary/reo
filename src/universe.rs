@@ -18,16 +18,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use std::cmp;
 use crate::{Atom, Universe};
 use anyhow::{anyhow, Context, Result};
 use log::trace;
 use sodg::Sodg;
 use sodg::{Hex, Relay};
+use std::cmp;
 use std::collections::HashMap;
+use std::io::prelude::*;
 use std::path::Path;
 use std::str::FromStr;
-use std::io::prelude::*;
 
 macro_rules! enter {
     ($self:expr, $($arg:tt)+) => {
@@ -269,7 +269,10 @@ impl Universe {
         self.g.add(nv)?;
         self.pull(nv, v1)?;
         self.push(nv, v2)?;
-        exit!(self, "#apply(ν{v1}, ν{v2}): copy ν{v1}+ν{v2} created as ν{nv}");
+        exit!(
+            self,
+            "#apply(ν{v1}, ν{v2}): copy ν{v1}+ν{v2} created as ν{nv}"
+        );
         Ok(nv)
     }
 
@@ -371,7 +374,17 @@ impl Universe {
         let name = fs::read_to_string("target/surge-recent.txt")?;
         let home = format!("target/surge/{name}");
         fs::create_dir_all(home.clone())?;
-        let total = fs::read_dir(home.as_str())?.filter(|f| f.as_ref().unwrap().path().as_os_str().to_str().unwrap().ends_with(".dot")).count();
+        let total = fs::read_dir(home.as_str())?
+            .filter(|f| {
+                f.as_ref()
+                    .unwrap()
+                    .path()
+                    .as_os_str()
+                    .to_str()
+                    .unwrap()
+                    .ends_with(".dot")
+            })
+            .count();
         if total == 0 {
             fs::copy("surge-make/Makefile", format!("{home}/Makefile"))?;
             fs::copy("surge-make/doc.tex", format!("{home}/doc.tex"))?;
@@ -384,7 +397,10 @@ impl Universe {
             .write(true)
             .append(true)
             .open(format!("{home}/list.tex"))?;
-        if pos == 1 || fs::read_to_string(format!("{home}/{pos}.dot"))? != fs::read_to_string(format!("{home}/{}.dot", pos - 1))? {
+        if pos == 1
+            || fs::read_to_string(format!("{home}/{pos}.dot"))?
+                != fs::read_to_string(format!("{home}/{}.dot", pos - 1))?
+        {
             writeln!(list, "\\graph{{{pos}}}")?;
         }
         let mut log = OpenOptions::new()
@@ -393,16 +409,22 @@ impl Universe {
             .create(true)
             .open(format!("{home}/log.txt"))?;
         writeln!(
-            log, "{}{}",
+            log,
+            "{}{}",
             "  ".repeat(self.depth),
             msg.replace("ν", "v").replace("Δ", "D")
         )?;
         let full = fs::read_to_string(format!("{home}/log.txt"))?;
         let lines = full.split("\n").collect::<Vec<&str>>();
-        let max  = 32;
+        let max = 32;
         fs::write(
             format!("{home}/log-{pos}.txt"),
-            lines.clone().into_iter().skip(cmp::max(0 as i16, lines.len() as i16 - max) as usize).collect::<Vec<&str>>().join("\n"),
+            lines
+                .clone()
+                .into_iter()
+                .skip(cmp::max(0 as i16, lines.len() as i16 - max) as usize)
+                .collect::<Vec<&str>>()
+                .join("\n"),
         )?;
         Ok(())
     }
@@ -505,7 +527,11 @@ fn fnd_absent_vertex() -> Result<()> {
 #[test]
 fn quick_tests() -> Result<()> {
     for path in sodg_scripts_in_dir("quick-tests") {
-        let name = *path.split('/').collect::<Vec<&str>>().get(1).ok_or(anyhow!("Can't understand path"))?;
+        let name = *path
+            .split('/')
+            .collect::<Vec<&str>>()
+            .get(1)
+            .ok_or(anyhow!("Can't understand path"))?;
         trace!("#quick_tests: {name}");
         fs::write("target/surge-recent.txt", name.as_bytes())?;
         let mut s = Script::from_str(fs::read_to_string(path.clone())?.as_str());
