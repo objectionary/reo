@@ -24,7 +24,6 @@ $(BINARIES): target/eo/1-parse $(SODGS)
 	$(REO) compile $(subst .reo,.sodg,$(subst eo/reo/,eo/sodg/,$@)) $@
 
 clean:
-	rm -rf target/eo/sodg
-	rm -rf target/eo/reo
+	rm -rf target/eo
 	rm -rf target/runtime.reo
 	rm -rf target/debug/reo

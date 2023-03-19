@@ -86,7 +86,7 @@ impl Universe {
     /// will panic.
     pub fn put(&mut self, v: u32, d: Hex) {
         self.g
-            .put(v, d)
+            .put(v, &d)
             .context(anyhow!("Failed to put the data to ν{v}"))
             .unwrap();
     }
@@ -111,7 +111,7 @@ impl Universe {
         let data = self
             .g
             .data(v)
-            .context(format!("There is no data in {}", self.g.v_print(v)))?;
+            .context(format!("There is no data in {}", self.g.v_print(v)?))?;
         trace!(
             "#dataize: data found in ν{v} ({} bytes): {}",
             data.len(),
@@ -208,7 +208,7 @@ impl Universe {
         } else {
             Err(anyhow!(
                 "There is no way to get .{a} from {}",
-                self.g.v_print(v)
+                self.g.v_print(v)?
             ))
         };
         self.depth -= 1;
@@ -219,27 +219,24 @@ impl Universe {
     fn dd(&mut self, v: u32, psi: u32) -> Result<u32> {
         self.check_recursion()?;
         trace!("#dd(ν{v}, {psi}): entering...");
+        let psi2 = match self.g.kid(v, "ψ") {
+            Some(p) => p,
+            None => psi,
+        };
         let r = if let Some(to) = self.g.kid(v, "ε") {
-            self.dd(to, psi)
+            self.dd(to, psi2)
         } else if self.g.kid(v, "ξ").is_some() {
-            self.dd(psi, psi)
-        } else if let Some(to) = self.g.kid(v, "β") {
-            let a = self
+            self.dd(psi2, psi2)
+        } else if let Some(beta) = self.g.kid(v, "β") {
+            let (a, to) = self
                 .g
-                .kids(v)?
-                .iter()
-                .find(|e| e.0 != "β")
-                .unwrap()
-                .clone()
-                .0;
-            let nv = self.fnd(to, a.as_str(), psi)?;
-            self.dd(nv, psi)
+                .kids(beta)?
+                .first()
+                .ok_or(anyhow!("Can't find ν{beta}"))?
+                .clone();
+            let nv = self.fnd(to, a.as_str(), psi2)?;
+            self.dd(nv, psi2)
         } else if let Some(to) = self.g.kid(v, "π") {
-            let psi2 = if let Some(p) = self.g.kid(v, "ψ") {
-                p
-            } else {
-                psi
-            };
             let nv = self.dd(to, psi2)?;
             self.apply(nv, v)
         } else {

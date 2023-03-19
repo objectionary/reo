@@ -1,6 +1,6 @@
 # v1/integer -> [ v2/inc -> [ ρ -> v1, λ ] ]
 # v4 -> integer(Δ-> 41)
-# v6/foo -> v4.inc
+# v7/foo -> v4.inc
 
 ADD(0);
 
@@ -20,6 +20,8 @@ BIND($v4, $v5, Δ);
 PUT($v5, 00-00-00-00-00-00-00-29);
 
 ADD($v6);
-BIND(0, $v6, foo);
-BIND($v6, $v4, β);
 BIND($v6, $v4, inc);
+ADD($v7);
+BIND($v7, $v6, β);
+
+BIND(0, $v7, foo);
