@@ -18,6 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+use std::cmp;
 use crate::{Atom, Universe};
 use anyhow::{anyhow, Context, Result};
 use log::trace;
@@ -30,15 +31,13 @@ use std::io::prelude::*;
 
 macro_rules! enter {
     ($self:expr, $($arg:tt)+) => {
-        trace!($($arg)+);
-        $self.enter_it()?;
+        $self.enter_it(format!($($arg)+))?;
     }
 }
 
 macro_rules! exit {
     ($self:expr, $($arg:tt)+) => {
-        trace!($($arg)+);
-        $self.exit_it()?;
+        $self.exit_it(format!($($arg)+))?;
     }
 }
 
@@ -356,11 +355,23 @@ impl Universe {
         return Ok(kids.len() == 1 && kids.iter().all(|(a, _)| a == "ρ"));
     }
 
-    fn enter_it(&mut self) -> Result<()> {
+    fn enter_it(&mut self, msg: String) -> Result<()> {
         self.depth += 1;
-        let home = self.g.data(256)?.to_utf8()?;
+        self.snapshot(msg)?;
+        Ok(())
+    }
+
+    fn exit_it(&mut self, msg: String) -> Result<()> {
+        self.depth -= 1;
+        self.snapshot(msg)?;
+        Ok(())
+    }
+
+    fn snapshot(&mut self, msg: String) -> Result<()> {
+        let name = fs::read_to_string("target/surge-recent.txt")?;
+        let home = format!("target/surge/{name}");
         fs::create_dir_all(home.clone())?;
-        let total = fs::read_dir(home.as_str()).unwrap().filter(|f| f.as_ref().unwrap().path().as_os_str().to_str().unwrap().ends_with(".dot")).count();
+        let total = fs::read_dir(home.as_str())?.filter(|f| f.as_ref().unwrap().path().as_os_str().to_str().unwrap().ends_with(".dot")).count();
         if total == 0 {
             fs::copy("surge-make/Makefile", format!("{home}/Makefile"))?;
             fs::copy("surge-make/doc.tex", format!("{home}/doc.tex"))?;
@@ -372,14 +383,27 @@ impl Universe {
         let mut list = OpenOptions::new()
             .write(true)
             .append(true)
-            .open(format!("{home}/list.tex"))
-            .unwrap();
-        writeln!(list, "\\graph{{{pos}}}")?;
-        Ok(())
-    }
-
-    fn exit_it(&mut self) -> Result<()> {
-        self.depth -= 1;
+            .open(format!("{home}/list.tex"))?;
+        if pos == 1 || fs::read_to_string(format!("{home}/{pos}.dot"))? != fs::read_to_string(format!("{home}/{}.dot", pos - 1))? {
+            writeln!(list, "\\graph{{{pos}}}")?;
+        }
+        let mut log = OpenOptions::new()
+            .write(true)
+            .append(true)
+            .create(true)
+            .open(format!("{home}/log.txt"))?;
+        writeln!(
+            log, "{}{}",
+            "  ".repeat(self.depth),
+            msg.replace("ν", "v").replace("Δ", "D")
+        )?;
+        let full = fs::read_to_string(format!("{home}/log.txt"))?;
+        let lines = full.split("\n").collect::<Vec<&str>>();
+        let max  = 32;
+        fs::write(
+            format!("{home}/log-{pos}.txt"),
+            lines.clone().into_iter().skip(cmp::max(0 as i16, lines.len() as i16 - max) as usize).collect::<Vec<&str>>().join("\n"),
+        )?;
         Ok(())
     }
 }
@@ -481,17 +505,16 @@ fn fnd_absent_vertex() -> Result<()> {
 #[test]
 fn quick_tests() -> Result<()> {
     for path in sodg_scripts_in_dir("quick-tests") {
-        let name = *path.split('/').collect::<Vec<&str>>().get(1).unwrap();
+        let name = *path.split('/').collect::<Vec<&str>>().get(1).ok_or(anyhow!("Can't understand path"))?;
         trace!("#quick_tests: {name}");
+        fs::write("target/surge-recent.txt", name.as_bytes())?;
         let mut s = Script::from_str(fs::read_to_string(path.clone())?.as_str());
         let mut g = Sodg::empty();
         s.deploy_to(&mut g)?;
         trace!("Before:\n {}", g.clone().to_dot());
         let home = format!("target/surge/{}", name);
-        g.add(256)?;
-        g.put(256, &Hex::from_str_bytes(home.as_str()))?;
         if Path::new(home.as_str()).exists() {
-            fs::remove_dir_all(home).unwrap();
+            fs::remove_dir_all(home)?;
         }
         let mut uni = Universe::from_graph(g);
         uni.register("inc", inc);
