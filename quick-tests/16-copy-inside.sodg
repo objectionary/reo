@@ -1,0 +1,67 @@
+# v1 -> [
+#         v2/times -> [x -> ?, ρ -> v1, λ],
+#         v5/Δ -> 6,
+#         v6/f -> [Δ -> 7],
+#         v8/t -> $.times(v12/α0 -> $.p)
+#       ]
+# foo -> v1().t
+
+ADD(0);
+ADD($v1);
+
+# v2/times -> [x -> ?, ρ -> v1, λ],
+ADD($v2);
+BIND($v1, $v2, times);
+BIND($v2, $v1, ρ);
+ADD($v3);
+BIND($v2, $v3, x);
+BIND($v3, $v2, ρ);
+ADD($v4);
+BIND($v2, $v4, λ);
+PUT($v4, 74-69-6D-65-73);
+
+# Δ -> 6,
+ADD($v5);
+BIND($v1, $v5, Δ);
+PUT($v5, 00-00-00-00-00-00-00-06);
+
+# f -> [Δ -> 7],
+ADD($v6);
+BIND($v1, $v6, f);
+BIND($v6, $v1, ρ);
+ADD($v7);
+BIND($v6, $v7, Δ);
+PUT($v7, 00-00-00-00-00-00-00-07);
+
+# v8/t -> $.times(v12/α0 -> $.f)
+ADD($v8);
+BIND($v1, $v8, t);
+ADD($v9);
+BIND($v8, $v9, π);
+ADD($v10);
+BIND($v9, $v10, β);
+ADD($v11);
+BIND($v9, $v11, ρ);
+BIND($v10, $v11, times);
+BIND($v11, $v1, ξ);
+
+ADD($v12);
+BIND($v8, $v12, α0);
+ADD($v13);
+BIND($v12, $v13, ε);
+ADD($v14);
+BIND($v13, $v14, β);
+ADD($v15);
+BIND($v13, $v15, ρ);
+BIND($v14, $v15, f);
+BIND($v15, $v1, ξ);
+
+# foo -> v1().t
+ADD($v16);
+BIND($v16, $v1, π);
+ADD($v17);
+BIND($v17, $v16, t);
+ADD($v18);
+BIND($v18, $v16, ρ);
+BIND($v18, $v17, β);
+BIND(0, $v18, foo);

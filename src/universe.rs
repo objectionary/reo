@@ -26,6 +26,26 @@ use sodg::{Hex, Relay};
 use std::collections::HashMap;
 use std::path::Path;
 use std::str::FromStr;
+use std::io::prelude::*;
+
+macro_rules! enter {
+    ($self:expr, $($arg:tt)+) => {
+        trace!($($arg)+);
+        $self.enter_it()?;
+    }
+}
+
+macro_rules! exit {
+    ($self:expr, $($arg:tt)+) => {
+        trace!($($arg)+);
+        $self.exit_it()?;
+    }
+}
+
+// self.depth += 1;
+// if self.depth > 20 {
+// return Err(anyhow!("The recursion is too deep ({} levels)", self.depth));
+// }
 
 impl Universe {
     /// Makes an empty Universe.
@@ -171,21 +191,18 @@ impl Universe {
 
     /// Find.
     fn fnd(&mut self, v: u32, a: &str, psi: u32) -> Result<u32> {
-        self.check_recursion()?;
+        enter!(self, "#fnd(ν{v}, {a}, {psi}): entered...");
         let v1 = self.dd(v, psi)?;
-        trace!("#fnd(ν{v}, {a}, {psi}): dd(ν{v}) returned ν{v1}");
         let to = self.pf(v1, a, psi)?;
-        trace!("#fnd(ν{v}, {a}, {psi}): pf(ν{v}, {a}) returned ν{to}");
-        self.depth -= 1;
+        exit!(self, "#fnd(ν{v}, {a}, {psi}): pf(ν{v}, {a}) returned ν{to}");
         Ok(to)
     }
 
     /// Path find.
     fn pf(&mut self, v: u32, a: &str, psi: u32) -> Result<u32> {
-        self.check_recursion()?;
-        trace!("#pf(ν{v}, {a}, {psi}): entering...");
+        enter!(self, "#pf(ν{v}, {a}, {psi}): entering...");
         let r = if let Some(to) = self.g.kid(v, a) {
-            Ok(to)
+            to
         } else if let Some(lv) = self.g.kid(v, "λ") {
             let lambda = self.g.data(lv)?.to_utf8()?;
             trace!("#re: calling ν{v}.λ⇓{lambda}(ξ=ν?)...");
@@ -198,35 +215,34 @@ impl Universe {
                 ))
                 .unwrap()(self, v)?;
             trace!("#re: ν{v}.λ⇓{lambda}(ξ=ν?) returned ν{to}");
-            self.fnd(to, a, psi)
+            self.fnd(to, a, psi)?
         } else if let Some(to) = self.g.kid(v, "φ") {
-            self.fnd(to, a, psi)
+            self.fnd(to, a, psi)?
         } else if let Some(to) = self.g.kid(v, "γ") {
             let t = Self::fnd(self, to, a, psi)?;
             self.g.bind(v, t, a)?;
-            Ok(t)
+            t
         } else {
-            Err(anyhow!(
+            return Err(anyhow!(
                 "There is no way to get .{a} from {}",
                 self.g.v_print(v)?
-            ))
+            ));
         };
-        self.depth -= 1;
-        r
+        exit!(self, "#pf(ν{v}, {a}, {psi}): returning ν{}", r);
+        Ok(r)
     }
 
     /// Dynamic dispatch.
     fn dd(&mut self, v: u32, psi: u32) -> Result<u32> {
-        self.check_recursion()?;
-        trace!("#dd(ν{v}, {psi}): entering...");
+        enter!(self, "#dd(ν{v}, {psi}): entering...");
         let psi2 = match self.g.kid(v, "ψ") {
             Some(p) => p,
             None => psi,
         };
         let r = if let Some(to) = self.g.kid(v, "ε") {
-            self.dd(to, psi2)
+            self.dd(to, psi2)?
         } else if self.g.kid(v, "ξ").is_some() {
-            self.dd(psi2, psi2)
+            self.dd(psi2, psi2)?
         } else if let Some(beta) = self.g.kid(v, "β") {
             let (a, to) = self
                 .g
@@ -235,27 +251,26 @@ impl Universe {
                 .ok_or(anyhow!("Can't find ν{beta}"))?
                 .clone();
             let nv = self.fnd(to, a.as_str(), psi2)?;
-            self.dd(nv, psi2)
+            self.dd(nv, psi2)?
         } else if let Some(to) = self.g.kid(v, "π") {
             let nv = self.dd(to, psi2)?;
-            self.apply(nv, v)
+            self.apply(nv, v)?
         } else {
-            Ok(v)
+            v
         };
-        self.depth -= 1;
-        r
+        exit!(self, "#dd(ν{v}, {psi}): returning ν{}", r);
+        Ok(r)
     }
 
     /// Apply `v1` to `v2` and return a new vertex.
     fn apply(&mut self, v1: u32, v2: u32) -> Result<u32> {
-        trace!("#apply(ν{v1}, ν{v2}): entering...");
+        enter!(self, "#apply(ν{v1}, ν{v2}): entering...");
         self.depth += 1;
         let nv = self.g.next_id();
         self.g.add(nv)?;
         self.pull(nv, v1)?;
         self.push(nv, v2)?;
-        trace!("#apply(ν{v1}, ν{v2}): copy ν{v1}+ν{v2} created as ν{nv}");
-        self.depth -= 1;
+        exit!(self, "#apply(ν{v1}, ν{v2}): copy ν{v1}+ν{v2} created as ν{nv}");
         Ok(nv)
     }
 
@@ -341,11 +356,30 @@ impl Universe {
         return Ok(kids.len() == 1 && kids.iter().all(|(a, _)| a == "ρ"));
     }
 
-    fn check_recursion(&mut self) -> Result<()> {
+    fn enter_it(&mut self) -> Result<()> {
         self.depth += 1;
-        if self.depth > 20 {
-            return Err(anyhow!("The recursion is too deep ({} levels)", self.depth));
+        let home = self.g.data(256)?.to_utf8()?;
+        fs::create_dir_all(home.clone())?;
+        let total = fs::read_dir(home.as_str()).unwrap().filter(|f| f.as_ref().unwrap().path().as_os_str().to_str().unwrap().ends_with(".dot")).count();
+        if total == 0 {
+            fs::copy("surge-make/Makefile", format!("{home}/Makefile"))?;
+            fs::copy("surge-make/doc.tex", format!("{home}/doc.tex"))?;
+            fs::write(format!("{home}/list.tex"), b"")?;
         }
+        let pos = total + 1;
+        let mut file = fs::File::create(format!("{home}/{pos}.dot"))?;
+        file.write_all(self.g.to_dot().as_bytes())?;
+        let mut list = OpenOptions::new()
+            .write(true)
+            .append(true)
+            .open(format!("{home}/list.tex"))
+            .unwrap();
+        writeln!(list, "\\graph{{{pos}}}")?;
+        Ok(())
+    }
+
+    fn exit_it(&mut self) -> Result<()> {
+        self.depth -= 1;
         Ok(())
     }
 }
@@ -355,6 +389,7 @@ use sodg::Script;
 
 #[cfg(test)]
 use std::fs;
+use std::fs::OpenOptions;
 
 #[cfg(test)]
 use glob::glob;
@@ -446,11 +481,18 @@ fn fnd_absent_vertex() -> Result<()> {
 #[test]
 fn quick_tests() -> Result<()> {
     for path in sodg_scripts_in_dir("quick-tests") {
-        trace!("#quick_tests: {path}");
+        let name = *path.split('/').collect::<Vec<&str>>().get(1).unwrap();
+        trace!("#quick_tests: {name}");
         let mut s = Script::from_str(fs::read_to_string(path.clone())?.as_str());
         let mut g = Sodg::empty();
         s.deploy_to(&mut g)?;
         trace!("Before:\n {}", g.clone().to_dot());
+        let home = format!("target/surge/{}", name);
+        g.add(256)?;
+        g.put(256, &Hex::from_str_bytes(home.as_str()))?;
+        if Path::new(home.as_str()).exists() {
+            fs::remove_dir_all(home).unwrap();
+        }
         let mut uni = Universe::from_graph(g);
         uni.register("inc", inc);
         uni.register("times", times);
