@@ -365,7 +365,9 @@ impl Universe {
     }
 
     fn exit_it(&mut self, msg: String) -> Result<()> {
-        self.depth -= 1;
+        if self.depth > 0 {
+            self.depth -= 1;
+        }
         self.snapshot(msg)?;
         Ok(())
     }
@@ -442,6 +444,7 @@ use sodg::Script;
 #[cfg(test)]
 use std::fs;
 use std::fs::OpenOptions;
+use std::process::Command;
 
 #[cfg(test)]
 use glob::glob;
@@ -546,12 +549,22 @@ fn quick_tests() -> Result<()> {
         trace!("Before:\n {}", &g.to_dot());
         let home = format!("target/surge/{}", name);
         if Path::new(home.as_str()).exists() {
-            fs::remove_dir_all(home)?;
+            fs::remove_dir_all(&home)?;
         }
         let mut uni = Universe::from_graph(g);
         uni.register("inc", inc);
         uni.register("times", times);
         let r = uni.dataize("Φ.foo");
+        uni.exit_it("The end".to_string())?;
+        if r.is_err() {
+            assert!(Command::new("make")
+                .current_dir(home)
+                .spawn()
+                .unwrap()
+                .wait()
+                .unwrap()
+                .success());
+        }
         trace!("After:\n {}", uni.g.to_dot());
         let hex = r.context(anyhow!("Failure in {path}"))?;
         assert_eq!(42, hex.to_i64()?, "Failure in {path}");
