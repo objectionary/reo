@@ -391,16 +391,22 @@ impl Universe {
             fs::write(format!("{home}/list.tex"), b"")?;
         }
         let pos = total + 1;
-        let mut file = fs::File::create(format!("{home}/{pos}.dot"))?;
-        file.write_all(self.g.to_dot().as_bytes())?;
+        let dot = self.g.to_dot();
+        let dot_file = format!("{home}/{pos}.dot");
+        fs::write(&dot_file, &dot)?;
         let mut list = OpenOptions::new()
             .write(true)
             .append(true)
             .open(format!("{home}/list.tex"))?;
-        if pos == 1
-            || fs::read_to_string(format!("{home}/{pos}.dot"))?
-                != fs::read_to_string(format!("{home}/{}.dot", pos - 1))?
-        {
+        let mut before = String::new();
+        if pos > 1 {
+            before = fs::read_to_string(format!("{home}/{}.dot", pos - 1))?;
+        }
+        if dot == before {
+            if pos > 0 {
+                fs::remove_file(dot_file.as_str())?;
+            }
+        } else {
             writeln!(list, "\\graph{{{pos}}}")?;
         }
         let mut log = OpenOptions::new()
@@ -534,10 +540,10 @@ fn quick_tests() -> Result<()> {
             .ok_or(anyhow!("Can't understand path"))?;
         trace!("#quick_tests: {name}");
         fs::write("target/surge-recent.txt", name.as_bytes())?;
-        let mut s = Script::from_str(fs::read_to_string(path.clone())?.as_str());
+        let mut s = Script::from_str(fs::read_to_string(&path)?.as_str());
         let mut g = Sodg::empty();
         s.deploy_to(&mut g)?;
-        trace!("Before:\n {}", g.clone().to_dot());
+        trace!("Before:\n {}", &g.to_dot());
         let home = format!("target/surge/{}", name);
         if Path::new(home.as_str()).exists() {
             fs::remove_dir_all(home)?;
@@ -557,7 +563,7 @@ fn quick_tests() -> Result<()> {
 fn quick_errors() -> Result<()> {
     for path in sodg_scripts_in_dir("quick-errors") {
         trace!("#quick_errors: {path}");
-        let mut s = Script::from_str(fs::read_to_string(path.clone())?.as_str());
+        let mut s = Script::from_str(fs::read_to_string(&path)?.as_str());
         let mut g = Sodg::empty();
         s.deploy_to(&mut g)?;
         let mut uni = Universe::from_graph(g);
