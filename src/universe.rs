@@ -20,11 +20,15 @@
 
 use crate::{Atom, Universe};
 use anyhow::{anyhow, Context, Result};
+use lazy_static::lazy_static;
 use log::trace;
+use regex::Regex;
 use sodg::Sodg;
 use sodg::{Hex, Relay};
 use std::cmp;
 use std::collections::HashMap;
+use std::fs;
+use std::fs::OpenOptions;
 use std::io::prelude::*;
 use std::path::Path;
 use std::str::FromStr;
@@ -372,7 +376,12 @@ impl Universe {
         Ok(())
     }
 
+    const COLORS: &'static str = "fillcolor=aquamarine3,style=filled,";
+
     fn snapshot(&mut self, msg: String) -> Result<()> {
+        lazy_static! {
+            static ref DOT_LINE: Regex = Regex::new("^ +v([0-9]+)\\[.*$").unwrap();
+        }
         let name = fs::read_to_string("target/surge-recent.txt")?;
         let home = format!("target/surge/{name}");
         fs::create_dir_all(home.clone())?;
@@ -393,22 +402,48 @@ impl Universe {
             fs::write(format!("{home}/list.tex"), b"")?;
         }
         let pos = total + 1;
-        let dot = self.g.to_dot();
-        let dot_file = format!("{home}/{pos}.dot");
-        fs::write(&dot_file, &dot)?;
-        let mut list = OpenOptions::new()
-            .write(true)
-            .append(true)
-            .open(format!("{home}/list.tex"))?;
         let mut before = String::new();
         if pos > 1 {
-            before = fs::read_to_string(format!("{home}/{}.dot", pos - 1))?;
+            before =
+                fs::read_to_string(format!("{home}/{}.dot", pos - 1))?.replace(Self::COLORS, "");
         }
+        let seen: Vec<u32> = before
+            .split("\n")
+            .into_iter()
+            .map(|t| match &DOT_LINE.captures(t) {
+                Some(m) => m.get(1).unwrap().as_str().parse().unwrap(),
+                None => 0,
+            })
+            .collect();
+        let dot = self.g.to_dot();
+        let dot_file = format!("{home}/{pos}.dot");
+        fs::write(
+            &dot_file,
+            &dot.split("\n")
+                .into_iter()
+                .map(|t| match &DOT_LINE.captures(t) {
+                    Some(m) => {
+                        let v = m.get(1).unwrap().as_str().parse::<u32>().unwrap();
+                        if seen.contains(&v) {
+                            t.to_string()
+                        } else {
+                            t.replace("[", format!("[{}", Self::COLORS).as_str())
+                        }
+                    }
+                    None => t.to_string(),
+                })
+                .collect::<Vec<String>>()
+                .join("\n"),
+        )?;
         if dot == before {
             if pos > 0 {
                 fs::remove_file(dot_file.as_str())?;
             }
         } else {
+            let mut list = OpenOptions::new()
+                .write(true)
+                .append(true)
+                .open(format!("{home}/list.tex"))?;
             writeln!(list, "\\graph{{{pos}}}")?;
         }
         let mut log = OpenOptions::new()
@@ -442,8 +477,6 @@ impl Universe {
 use sodg::Script;
 
 #[cfg(test)]
-use std::fs;
-use std::fs::OpenOptions;
 use std::process::Command;
 
 #[cfg(test)]
