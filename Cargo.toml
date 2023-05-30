@@ -14,7 +14,7 @@ categories = ["command-line-utilities", "development-tools", "virtualization"]
 anyhow = "1.0.70"
 clap = { version = "3.2.23", features = ["cargo"] }
 colored = "2.0.0"
-ctor = "0.2.0"
+ctor = "0.2.1"
 filetime = "0.2.21"
 fsutils = "0.1.7"
 glob = "0.3.0"
