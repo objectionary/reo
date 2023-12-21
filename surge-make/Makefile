@@ -8,7 +8,7 @@ PDF = doc.pdf
 SHELL = bash
 
 $(PDF): $(BINS)
-	pdflatex doc.tex
+	pdflatex -interaction=batchmode -halt-on-error -shell-escape doc.tex
 
 %.pdf: %.dot
 	dot -Tpdf -o $@ $<

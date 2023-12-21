@@ -378,14 +378,22 @@ impl Universe {
 
     const COLORS: &'static str = "fillcolor=aquamarine3,style=filled,";
 
+    const FLAG: &'static str = "target/surge-recent.txt";
+
     fn snapshot(&mut self, msg: String) -> Result<()> {
         lazy_static! {
             static ref DOT_LINE: Regex = Regex::new("^ +v([0-9]+)\\[.*$").unwrap();
         }
-        let name = fs::read_to_string("target/surge-recent.txt")?;
+        if !Path::new(Self::FLAG).exists() {
+            return Ok(());
+        }
+        let name = fs::read_to_string(Self::FLAG)
+            .context(anyhow!("Can't read the flag file"))?;
         let home = format!("target/surge/{name}");
-        fs::create_dir_all(home.clone())?;
-        let total = fs::read_dir(home.as_str())?
+        fs::create_dir_all(home.clone())
+            .context(anyhow!("Can't create directory '{home}'"))?;
+        let total = fs::read_dir(home.as_str())
+            .context(anyhow!("Can't list files in {home}"))?
             .filter(|f| {
                 f.as_ref()
                     .unwrap()
@@ -397,15 +405,20 @@ impl Universe {
             })
             .count();
         if total == 0 {
-            fs::copy("surge-make/Makefile", format!("{home}/Makefile"))?;
-            fs::copy("surge-make/doc.tex", format!("{home}/doc.tex"))?;
-            fs::write(format!("{home}/list.tex"), b"")?;
+            fs::copy("surge-make/Makefile", format!("{home}/Makefile"))
+                .context(anyhow!("Can't copy Makefile to '{home}'"))?;
+            fs::copy("surge-make/doc.tex", format!("{home}/doc.tex"))
+                .context(anyhow!("Can't copy doc.tex to '{home}'"))?;
+            fs::write(format!("{home}/list.tex"), b"")
+                .context(anyhow!("Can't write empty list.tex"))?;
         }
         let pos = total + 1;
         let mut before = String::new();
         if pos > 1 {
             before =
-                fs::read_to_string(format!("{home}/{}.dot", pos - 1))?.replace(Self::COLORS, "");
+                fs::read_to_string(format!("{home}/{}.dot", pos - 1))
+                    .context(anyhow!("Can't read previous .dot file from '{home}'"))?
+                    .replace(Self::COLORS, "");
         }
         let seen: Vec<u32> = before
             .split("\n")
@@ -437,20 +450,22 @@ impl Universe {
         )?;
         if dot == before {
             if pos > 0 {
-                fs::remove_file(dot_file.as_str())?;
+                fs::remove_file(dot_file.as_str()).context(anyhow!("Can't remove previous .dot file"))?;
             }
         } else {
             let mut list = OpenOptions::new()
                 .write(true)
                 .append(true)
-                .open(format!("{home}/list.tex"))?;
+                .open(format!("{home}/list.tex"))
+                .context(anyhow!("Can't open list.tex for appending"))?;
             writeln!(list, "\\graph{{{pos}}}")?;
         }
         let mut log = OpenOptions::new()
             .write(true)
             .append(true)
             .create(true)
-            .open(format!("{home}/log.txt"))?;
+            .open(format!("{home}/log.txt"))
+            .context(anyhow!("Can't open log.txt for writing"))?;
         writeln!(
             log,
             "{}{}",
@@ -575,20 +590,20 @@ fn quick_tests() -> Result<()> {
             .get(1)
             .ok_or(anyhow!("Can't understand path"))?;
         trace!("#quick_tests: {name}");
-        fs::write("target/surge-recent.txt", name.as_bytes())?;
+        fs::write(Universe::FLAG, name.as_bytes()).context(anyhow!("Can't write to {}", Universe::FLAG))?;
         let mut s = Script::from_str(fs::read_to_string(&path)?.as_str());
         let mut g = Sodg::empty();
         s.deploy_to(&mut g)?;
-        trace!("Before:\n {}", &g.to_dot());
         let home = format!("target/surge/{}", name);
         if Path::new(home.as_str()).exists() {
-            fs::remove_dir_all(&home)?;
+            fs::remove_dir_all(&home).context(anyhow!("Can't delete directory '{home}'"))?;
         }
         let mut uni = Universe::from_graph(g);
         uni.register("inc", inc);
         uni.register("times", times);
         let r = uni.dataize("Φ.foo");
         uni.exit_it("The end".to_string())?;
+        fs::remove_file(Universe::FLAG).context(anyhow!("Can't delete {}", Universe::FLAG))?;
         if r.is_err() {
             assert!(Command::new("make")
                 .current_dir(home)
@@ -598,7 +613,6 @@ fn quick_tests() -> Result<()> {
                 .unwrap()
                 .success());
         }
-        trace!("After:\n {}", uni.g.to_dot());
         let hex = r.context(anyhow!("Failure in {path}"))?;
         assert_eq!(42, hex.to_i64()?, "Failure in {path}");
     }
