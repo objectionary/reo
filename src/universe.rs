@@ -358,7 +358,7 @@ impl Universe {
             trace!("#tie(ν{v}, {a}): the {i}th attribute is {}", a1.0);
             return self.tie(v, a1.0);
         }
-        return Err(anyhow!("Can't tie to ν{v}.{a}"));
+        Err(anyhow!("Can't tie to ν{v}.{a}"))
     }
 
     /// The vertex is a dead-end, a nil.
@@ -430,8 +430,7 @@ impl Universe {
                 .replace(Self::COLORS, "");
         }
         let seen: Vec<u32> = before
-            .split("\n")
-            .into_iter()
+            .split('\n')
             .map(|t| match &DOT_LINE.captures(t) {
                 Some(m) => m.get(1).unwrap().as_str().parse().unwrap(),
                 None => 0,
@@ -441,15 +440,14 @@ impl Universe {
         let dot_file = format!("{home}/{pos}.dot");
         fs::write(
             &dot_file,
-            &dot.split("\n")
-                .into_iter()
+            dot.split('\n')
                 .map(|t| match &DOT_LINE.captures(t) {
                     Some(m) => {
                         let v = m.get(1).unwrap().as_str().parse::<u32>().unwrap();
                         if seen.contains(&v) {
                             t.to_string()
                         } else {
-                            t.replace("[", format!("[{}", Self::COLORS).as_str())
+                            t.replace('[', format!("[{}", Self::COLORS).as_str())
                         }
                     }
                     None => t.to_string(),
@@ -480,17 +478,17 @@ impl Universe {
             log,
             "{}{}",
             "  ".repeat(self.depth),
-            msg.replace("ν", "v").replace("Δ", "D")
+            msg.replace('ν', "v").replace('Δ', "D")
         )?;
         let full = fs::read_to_string(format!("{home}/log.txt"))?;
-        let lines = full.split("\n").collect::<Vec<&str>>();
+        let lines = full.split('\n').collect::<Vec<&str>>();
         let max = 32;
         fs::write(
             format!("{home}/log-{pos}.txt"),
             lines
                 .clone()
                 .into_iter()
-                .skip(cmp::max(0 as i16, lines.len() as i16 - max) as usize)
+                .skip(cmp::max(0i16, lines.len() as i16 - max) as usize)
                 .collect::<Vec<&str>>()
                 .join("\n"),
         )?;
@@ -597,7 +595,6 @@ use serial_test::serial;
 #[test]
 #[serial]
 fn quick_tests() -> Result<()> {
-    fs::remove_dir_all("target/surge").context(anyhow!("Can't delete target/surge"))?;
     for path in sodg_scripts_in_dir("quick-tests") {
         let name = *path
             .split('/')
