@@ -11,18 +11,18 @@ keywords = ["eolang", "compiler", "oop"]
 categories = ["command-line-utilities", "development-tools", "virtualization"]
 
 [dependencies]
-anyhow = "1.0.70"
+anyhow = "1.0.80"
 clap = { version = "3.2.23", features = ["cargo"] }
-colored = "2.0.0"
+colored = "2.1.0"
 ctor = "0.2.2"
 filetime = "0.2.21"
 fsutils = "0.1.7"
-glob = "0.3.0"
+glob = "0.3.1"
 itertools = "0.10.5"
 lazy_static = "1.4.0"
-log = "0.4.18"
-predicates = "3.0.1"
-regex = "1.7.2"
+log = "0.4.21"
+predicates = "3.1.0"
+regex = "1.10.3"
 serial_test = "0.4.0"
 sodg = {version = "0.0.32", features = ["sober"]}
 #sodg = {path = "/code/o/sodg", features = ["sober"]}
