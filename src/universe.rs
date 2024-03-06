@@ -393,14 +393,12 @@ impl Universe {
         if !Path::new(Self::FLAG).exists() {
             return Ok(());
         }
-        let name = fs::read_to_string(Self::FLAG)
-            .context(anyhow!("Can't read the flag file"))?;
+        let name = fs::read_to_string(Self::FLAG).context(anyhow!("Can't read the flag file"))?;
         if name.is_empty() {
             return Ok(());
         }
         let home = format!("target/surge/{name}");
-        fs::create_dir_all(home.clone())
-            .context(anyhow!("Can't create directory '{home}'"))?;
+        fs::create_dir_all(home.clone()).context(anyhow!("Can't create directory '{home}'"))?;
         let total = fs::read_dir(home.as_str())
             .context(anyhow!("Can't list files in {home}"))?
             .filter(|f| {
@@ -603,7 +601,8 @@ fn quick_tests() -> Result<()> {
             .get(1)
             .ok_or(anyhow!("Can't understand path"))?;
         trace!("\n\n#quick_tests: {name}");
-        fs::write(Universe::FLAG, name.as_bytes()).context(anyhow!("Can't write to {}", Universe::FLAG))?;
+        fs::write(Universe::FLAG, name.as_bytes())
+            .context(anyhow!("Can't write to {}", Universe::FLAG))?;
         let mut s = Script::from_str(fs::read_to_string(&path)?.as_str());
         let mut g = Sodg::empty();
         s.deploy_to(&mut g)?;
