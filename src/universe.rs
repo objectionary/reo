@@ -169,15 +169,20 @@ impl Universe {
     }
 }
 
+/// I have no idea why we need to have this intermediate
+/// function, but without it Relay::re doesn't compile.
+fn relay_it(u: *const Universe, at: u32, a: &str) -> Result<String> {
+    unsafe {
+        let u1 = u as *mut Universe;
+        let u2 = &mut *u1;
+        Universe::mut_re(u2, at, a)
+    }
+}
+
 impl Relay for Universe {
     /// Resolve a locator on a vertex, if it is not found.
     fn re(&self, at: u32, a: &str) -> Result<String> {
-        unsafe {
-            let cp = self as *const Self;
-            let mp = cp as *mut Self;
-            let uni = &mut *mp;
-            Self::mut_re(uni, at, a)
-        }
+        relay_it(self, at, a)
     }
 }
 
@@ -380,6 +385,7 @@ impl Universe {
 
     const FLAG: &'static str = "target/surge-recent.txt";
 
+    /// Create a new snapshot (PDF file)
     fn snapshot(&mut self, msg: String) -> Result<()> {
         lazy_static! {
             static ref DOT_LINE: Regex = Regex::new("^ +v([0-9]+)\\[.*$").unwrap();
@@ -389,6 +395,9 @@ impl Universe {
         }
         let name = fs::read_to_string(Self::FLAG)
             .context(anyhow!("Can't read the flag file"))?;
+        if name.is_empty() {
+            return Ok(());
+        }
         let home = format!("target/surge/{name}");
         fs::create_dir_all(home.clone())
             .context(anyhow!("Can't create directory '{home}'"))?;
@@ -415,10 +424,10 @@ impl Universe {
         let pos = total + 1;
         let mut before = String::new();
         if pos > 1 {
-            before =
-                fs::read_to_string(format!("{home}/{}.dot", pos - 1))
-                    .context(anyhow!("Can't read previous .dot file from '{home}'"))?
-                    .replace(Self::COLORS, "");
+            let fname = format!("{}.dot", pos - 1);
+            before = fs::read_to_string(format!("{home}/{fname}"))
+                .context(anyhow!("Can't read previous {fname} file from '{home}'"))?
+                .replace(Self::COLORS, "");
         }
         let seen: Vec<u32> = before
             .split("\n")
@@ -450,14 +459,15 @@ impl Universe {
         )?;
         if dot == before {
             if pos > 0 {
-                fs::remove_file(dot_file.as_str()).context(anyhow!("Can't remove previous .dot file"))?;
+                fs::remove_file(dot_file.as_str())
+                    .context(anyhow!("Can't remove previous .dot file {dot_file}"))?;
             }
         } else {
             let mut list = OpenOptions::new()
                 .write(true)
                 .append(true)
                 .open(format!("{home}/list.tex"))
-                .context(anyhow!("Can't open list.tex for appending"))?;
+                .context(anyhow!("Can't open {home}/list.tex for appending"))?;
             writeln!(list, "\\graph{{{pos}}}")?;
         }
         let mut log = OpenOptions::new()
@@ -465,7 +475,7 @@ impl Universe {
             .append(true)
             .create(true)
             .open(format!("{home}/log.txt"))
-            .context(anyhow!("Can't open log.txt for writing"))?;
+            .context(anyhow!("Can't open {home}/log.txt for writing"))?;
         writeln!(
             log,
             "{}{}",
@@ -581,22 +591,27 @@ fn fnd_absent_vertex() -> Result<()> {
     Ok(())
 }
 
+#[cfg(test)]
+use serial_test::serial;
+
 #[test]
+#[serial]
 fn quick_tests() -> Result<()> {
+    fs::remove_dir_all("target/surge").context(anyhow!("Can't delete target/surge"))?;
     for path in sodg_scripts_in_dir("quick-tests") {
         let name = *path
             .split('/')
             .collect::<Vec<&str>>()
             .get(1)
             .ok_or(anyhow!("Can't understand path"))?;
-        trace!("#quick_tests: {name}");
+        trace!("\n\n#quick_tests: {name}");
         fs::write(Universe::FLAG, name.as_bytes()).context(anyhow!("Can't write to {}", Universe::FLAG))?;
         let mut s = Script::from_str(fs::read_to_string(&path)?.as_str());
         let mut g = Sodg::empty();
         s.deploy_to(&mut g)?;
         let home = format!("target/surge/{}", name);
         if Path::new(home.as_str()).exists() {
-            fs::remove_dir_all(&home).context(anyhow!("Can't delete directory '{home}'"))?;
+            panic!("Directory already {home} exists");
         }
         let mut uni = Universe::from_graph(g);
         uni.register("inc", inc);
@@ -620,6 +635,7 @@ fn quick_tests() -> Result<()> {
 }
 
 #[test]
+#[serial]
 fn quick_errors() -> Result<()> {
     for path in sodg_scripts_in_dir("quick-errors") {
         trace!("#quick_errors: {path}");

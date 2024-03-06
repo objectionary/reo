@@ -22,10 +22,12 @@
 
 +package org.eolang.reo.simple
 
+# This is a simple object for testing of REO engine, used by eo_tests.rs.
 [] > rho
   13 > expected
   5 > x
   kid 8 > @
 
+# This is a simple object for testing of REO engine, used by eo_tests.rs.
 [y] > kid
   ^.x.plus y > @
