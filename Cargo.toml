@@ -23,7 +23,7 @@ lazy_static = "1.4.0"
 log = "0.4.21"
 predicates = "3.1.0"
 regex = "1.10.3"
-serial_test = "0.4.0"
+serial_test = "3.0.0"
 sodg = {version = "0.0.32", features = ["sober"]}
 #sodg = {path = "/code/o/sodg", features = ["sober"]}
 simple_logger = "4.3.3"
