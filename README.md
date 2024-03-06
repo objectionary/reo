@@ -8,7 +8,6 @@
 [![PDD status](http://www.0pdd.com/svg?name=objectionary/reo)](http://www.0pdd.com/p?name=objectionary/reo)
 [![codecov](https://codecov.io/gh/objectionary/reo/branch/master/graph/badge.svg)](https://codecov.io/gh/objectionary/reo)
 [![Hits-of-Code](https://hitsofcode.com/github/objectionary/reo)](https://hitsofcode.com/view/github/objectionary/reo)
-![Lines of code](https://img.shields.io/tokei/lines/github/objectionary/reo)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/objectionary/reo/blob/master/LICENSE.txt)
 
 **ATTENTION**: It's a very early draft currently in active development!

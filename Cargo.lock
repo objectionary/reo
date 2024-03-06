@@ -154,6 +154,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "ctor"
+version = "0.2.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ad291aa74992b9b7a7e88c38acbbf6ad7e107f1d90ee8775b7bc1fc3394f485c"
+dependencies = [
+ "quote",
+ "syn 2.0.52",
+]
+
+[[package]]
 name = "deranged"
 version = "0.3.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -678,7 +688,7 @@ dependencies = [
  "assert_cmd",
  "clap",
  "colored",
- "ctor",
+ "ctor 0.2.7",
  "filetime",
  "fsutils",
  "glob",
@@ -689,7 +699,7 @@ dependencies = [
  "rand",
  "regex",
  "serial_test",
- "simple_logger 2.3.0",
+ "simple_logger",
  "sodg",
  "tempfile",
 ]
@@ -798,19 +808,6 @@ dependencies = [
 
 [[package]]
 name = "simple_logger"
-version = "2.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "48047e77b528151aaf841a10a9025f9459da80ba820e425ff7eb005708a76dc7"
-dependencies = [
- "atty",
- "colored",
- "log",
- "time",
- "winapi",
-]
-
-[[package]]
-name = "simple_logger"
 version = "4.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8e7e46c8c90251d47d08b28b8a419ffb4aede0f87c2eea95e17d1d5bacbf3ef1"
@@ -844,7 +841,7 @@ checksum = "a93247d55e07882155c63f5267d8f75ce1c52fd11a0f4db91ca88bd91803dfcc"
 dependencies = [
  "anyhow",
  "bincode",
- "ctor",
+ "ctor 0.1.26",
  "hex",
  "itertools",
  "lazy_static",
@@ -852,7 +849,7 @@ dependencies = [
  "regex",
  "rstest",
  "serde",
- "simple_logger 4.3.3",
+ "simple_logger",
  "sxd-document",
  "sxd-xpath",
  "xml-builder",
