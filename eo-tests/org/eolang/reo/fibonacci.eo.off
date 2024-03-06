@@ -22,12 +22,14 @@
 
 +package org.eolang.reo
 
+# This is a simple object for testing of REO engine, used by eo_tests.rs.
 [] > fibonacci
 
   8 > expected
 
   f 6 > @
 
+  # This is a simple fibonacci function as an object, used by the fibonacci object.
   [x] > f
     if. > @
       x.lt 2

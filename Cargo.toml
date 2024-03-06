@@ -23,9 +23,10 @@ lazy_static = "1.4.0"
 log = "0.4.18"
 predicates = "3.0.1"
 regex = "1.7.2"
-simple_logger = "4.3.0"
-sodg = {version = "0.0.30", features = ["sober"]}
+serial_test = "0.4.0"
+sodg = {version = "0.0.32", features = ["sober"]}
 #sodg = {path = "/code/o/sodg", features = ["sober"]}
+simple_logger = "4.3.0"
 
 [dev-dependencies]
 assert_cmd = "2.0.12"

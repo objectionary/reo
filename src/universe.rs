@@ -20,12 +20,35 @@
 
 use crate::{Atom, Universe};
 use anyhow::{anyhow, Context, Result};
+use lazy_static::lazy_static;
 use log::trace;
+use regex::Regex;
 use sodg::Sodg;
 use sodg::{Hex, Relay};
+use std::cmp;
 use std::collections::HashMap;
+use std::fs;
+use std::fs::OpenOptions;
+use std::io::prelude::*;
 use std::path::Path;
 use std::str::FromStr;
+
+macro_rules! enter {
+    ($self:expr, $($arg:tt)+) => {
+        $self.enter_it(format!($($arg)+))?;
+    }
+}
+
+macro_rules! exit {
+    ($self:expr, $($arg:tt)+) => {
+        $self.exit_it(format!($($arg)+))?;
+    }
+}
+
+// self.depth += 1;
+// if self.depth > 20 {
+// return Err(anyhow!("The recursion is too deep ({} levels)", self.depth));
+// }
 
 impl Universe {
     /// Makes an empty Universe.
@@ -86,7 +109,7 @@ impl Universe {
     /// will panic.
     pub fn put(&mut self, v: u32, d: Hex) {
         self.g
-            .put(v, d)
+            .put(v, &d)
             .context(anyhow!("Failed to put the data to ν{v}"))
             .unwrap();
     }
@@ -111,7 +134,7 @@ impl Universe {
         let data = self
             .g
             .data(v)
-            .context(format!("There is no data in {}", self.g.v_print(v)))?;
+            .context(format!("There is no data in {}", self.g.v_print(v)?))?;
         trace!(
             "#dataize: data found in ν{v} ({} bytes): {}",
             data.len(),
@@ -146,15 +169,20 @@ impl Universe {
     }
 }
 
+/// I have no idea why we need to have this intermediate
+/// function, but without it Relay::re doesn't compile.
+fn relay_it(u: *const Universe, at: u32, a: &str) -> Result<String> {
+    unsafe {
+        let u1 = u as *mut Universe;
+        let u2 = &mut *u1;
+        Universe::mut_re(u2, at, a)
+    }
+}
+
 impl Relay for Universe {
     /// Resolve a locator on a vertex, if it is not found.
     fn re(&self, at: u32, a: &str) -> Result<String> {
-        unsafe {
-            let cp = self as *const Self;
-            let mp = cp as *mut Self;
-            let uni = &mut *mp;
-            Self::mut_re(uni, at, a)
-        }
+        relay_it(self, at, a)
     }
 }
 
@@ -171,21 +199,18 @@ impl Universe {
 
     /// Find.
     fn fnd(&mut self, v: u32, a: &str, psi: u32) -> Result<u32> {
-        self.check_recursion()?;
+        enter!(self, "#fnd(ν{v}, {a}, {psi}): entered...");
         let v1 = self.dd(v, psi)?;
-        trace!("#fnd(ν{v}, {a}, {psi}): dd(ν{v}) returned ν{v1}");
         let to = self.pf(v1, a, psi)?;
-        trace!("#fnd(ν{v}, {a}, {psi}): pf(ν{v}, {a}) returned ν{to}");
-        self.depth -= 1;
+        exit!(self, "#fnd(ν{v}, {a}, {psi}): pf(ν{v}, {a}) returned ν{to}");
         Ok(to)
     }
 
     /// Path find.
     fn pf(&mut self, v: u32, a: &str, psi: u32) -> Result<u32> {
-        self.check_recursion()?;
-        trace!("#pf(ν{v}, {a}, {psi}): entering...");
+        enter!(self, "#pf(ν{v}, {a}, {psi}): entering...");
         let r = if let Some(to) = self.g.kid(v, a) {
-            Ok(to)
+            to
         } else if let Some(lv) = self.g.kid(v, "λ") {
             let lambda = self.g.data(lv)?.to_utf8()?;
             trace!("#re: calling ν{v}.λ⇓{lambda}(ξ=ν?)...");
@@ -198,67 +223,65 @@ impl Universe {
                 ))
                 .unwrap()(self, v)?;
             trace!("#re: ν{v}.λ⇓{lambda}(ξ=ν?) returned ν{to}");
-            self.fnd(to, a, psi)
+            self.fnd(to, a, psi)?
         } else if let Some(to) = self.g.kid(v, "φ") {
-            self.fnd(to, a, psi)
+            self.fnd(to, a, psi)?
         } else if let Some(to) = self.g.kid(v, "γ") {
             let t = Self::fnd(self, to, a, psi)?;
             self.g.bind(v, t, a)?;
-            Ok(t)
+            t
         } else {
-            Err(anyhow!(
+            return Err(anyhow!(
                 "There is no way to get .{a} from {}",
-                self.g.v_print(v)
-            ))
+                self.g.v_print(v)?
+            ));
         };
-        self.depth -= 1;
-        r
+        exit!(self, "#pf(ν{v}, {a}, {psi}): returning ν{}", r);
+        Ok(r)
     }
 
     /// Dynamic dispatch.
     fn dd(&mut self, v: u32, psi: u32) -> Result<u32> {
-        self.check_recursion()?;
-        trace!("#dd(ν{v}, {psi}): entering...");
-        let r = if let Some(to) = self.g.kid(v, "ε") {
-            self.dd(to, psi)
-        } else if self.g.kid(v, "ξ").is_some() {
-            self.dd(psi, psi)
-        } else if let Some(to) = self.g.kid(v, "β") {
-            let a = self
-                .g
-                .kids(v)?
-                .iter()
-                .find(|e| e.0 != "β")
-                .unwrap()
-                .clone()
-                .0;
-            let nv = self.fnd(to, a.as_str(), psi)?;
-            self.dd(nv, psi)
-        } else if let Some(to) = self.g.kid(v, "π") {
-            let psi2 = if let Some(p) = self.g.kid(v, "ψ") {
-                p
-            } else {
-                psi
-            };
-            let nv = self.dd(to, psi2)?;
-            self.apply(nv, v)
-        } else {
-            Ok(v)
+        enter!(self, "#dd(ν{v}, {psi}): entering...");
+        let psi2 = match self.g.kid(v, "ψ") {
+            Some(p) => p,
+            None => psi,
         };
-        self.depth -= 1;
-        r
+        let r = if let Some(to) = self.g.kid(v, "ε") {
+            self.dd(to, psi2)?
+        } else if self.g.kid(v, "ξ").is_some() {
+            self.dd(psi2, psi2)?
+        } else if let Some(beta) = self.g.kid(v, "β") {
+            let (a, to) = self
+                .g
+                .kids(beta)?
+                .first()
+                .ok_or(anyhow!("Can't find ν{beta}"))?
+                .clone();
+            let nv = self.fnd(to, a.as_str(), psi2)?;
+            self.dd(nv, psi2)?
+        } else if let Some(to) = self.g.kid(v, "π") {
+            let nv = self.dd(to, psi2)?;
+            self.apply(nv, v)?
+        } else {
+            v
+        };
+        exit!(self, "#dd(ν{v}, {psi}): returning ν{}", r);
+        Ok(r)
     }
 
     /// Apply `v1` to `v2` and return a new vertex.
     fn apply(&mut self, v1: u32, v2: u32) -> Result<u32> {
-        trace!("#apply(ν{v1}, ν{v2}): entering...");
+        enter!(self, "#apply(ν{v1}, ν{v2}): entering...");
         self.depth += 1;
         let nv = self.g.next_id();
         self.g.add(nv)?;
         self.pull(nv, v1)?;
         self.push(nv, v2)?;
-        trace!("#apply(ν{v1}, ν{v2}): copy ν{v1}+ν{v2} created as ν{nv}");
-        self.depth -= 1;
+        exit!(
+            self,
+            "#apply(ν{v1}, ν{v2}): copy ν{v1}+ν{v2} created as ν{nv}"
+        );
         Ok(nv)
     }
 
@@ -335,7 +358,7 @@ impl Universe {
             trace!("#tie(ν{v}, {a}): the {i}th attribute is {}", a1.0);
             return self.tie(v, a1.0);
         }
-        return Err(anyhow!("Can't tie to ν{v}.{a}"));
+        Err(anyhow!("Can't tie to ν{v}.{a}"))
     }
 
     /// The vertex is a dead-end, a nil.
@@ -344,11 +367,129 @@ impl Universe {
         return Ok(kids.len() == 1 && kids.iter().all(|(a, _)| a == "ρ"));
     }
 
-    fn check_recursion(&mut self) -> Result<()> {
+    fn enter_it(&mut self, msg: String) -> Result<()> {
         self.depth += 1;
-        if self.depth > 20 {
-            return Err(anyhow!("The recursion is too deep ({} levels)", self.depth));
+        self.snapshot(msg)?;
+        Ok(())
+    }
+
+    fn exit_it(&mut self, msg: String) -> Result<()> {
+        if self.depth > 0 {
+            self.depth -= 1;
         }
+        self.snapshot(msg)?;
+        Ok(())
+    }
+
+    const COLORS: &'static str = "fillcolor=aquamarine3,style=filled,";
+
+    const FLAG: &'static str = "target/surge-recent.txt";
+
+    /// Create a new snapshot (PDF file)
+    fn snapshot(&mut self, msg: String) -> Result<()> {
+        lazy_static! {
+            static ref DOT_LINE: Regex = Regex::new("^ +v([0-9]+)\\[.*$").unwrap();
+        }
+        if !Path::new(Self::FLAG).exists() {
+            return Ok(());
+        }
+        let name = fs::read_to_string(Self::FLAG).context(anyhow!("Can't read the flag file"))?;
+        if name.is_empty() {
+            return Ok(());
+        }
+        let home = format!("target/surge/{name}");
+        fs::create_dir_all(home.clone()).context(anyhow!("Can't create directory '{home}'"))?;
+        let total = fs::read_dir(home.as_str())
+            .context(anyhow!("Can't list files in {home}"))?
+            .filter(|f| {
+                f.as_ref()
+                    .unwrap()
+                    .path()
+                    .as_os_str()
+                    .to_str()
+                    .unwrap()
+                    .ends_with(".dot")
+            })
+            .count();
+        if total == 0 {
+            fs::copy("surge-make/Makefile", format!("{home}/Makefile"))
+                .context(anyhow!("Can't copy Makefile to '{home}'"))?;
+            fs::copy("surge-make/doc.tex", format!("{home}/doc.tex"))
+                .context(anyhow!("Can't copy doc.tex to '{home}'"))?;
+            fs::write(format!("{home}/list.tex"), b"")
+                .context(anyhow!("Can't write empty list.tex"))?;
+        }
+        let pos = total + 1;
+        let mut before = String::new();
+        if pos > 1 {
+            let fname = format!("{}.dot", pos - 1);
+            before = fs::read_to_string(format!("{home}/{fname}"))
+                .context(anyhow!("Can't read previous {fname} file from '{home}'"))?
+                .replace(Self::COLORS, "");
+        }
+        let seen: Vec<u32> = before
+            .split('\n')
+            .map(|t| match &DOT_LINE.captures(t) {
+                Some(m) => m.get(1).unwrap().as_str().parse().unwrap(),
+                None => 0,
+            })
+            .collect();
+        let dot = self.g.to_dot();
+        let dot_file = format!("{home}/{pos}.dot");
+        fs::write(
+            &dot_file,
+            dot.split('\n')
+                .map(|t| match &DOT_LINE.captures(t) {
+                    Some(m) => {
+                        let v = m.get(1).unwrap().as_str().parse::<u32>().unwrap();
+                        if seen.contains(&v) {
+                            t.to_string()
+                        } else {
+                            t.replace('[', format!("[{}", Self::COLORS).as_str())
+                        }
+                    }
+                    None => t.to_string(),
+                })
+                .collect::<Vec<String>>()
+                .join("\n"),
+        )?;
+        if dot == before {
+            if pos > 0 {
+                fs::remove_file(dot_file.as_str())
+                    .context(anyhow!("Can't remove previous .dot file {dot_file}"))?;
+            }
+        } else {
+            let mut list = OpenOptions::new()
+                .write(true)
+                .append(true)
+                .open(format!("{home}/list.tex"))
+                .context(anyhow!("Can't open {home}/list.tex for appending"))?;
+            writeln!(list, "\\graph{{{pos}}}")?;
+        }
+        let mut log = OpenOptions::new()
+            .write(true)
+            .append(true)
+            .create(true)
+            .open(format!("{home}/log.txt"))
+            .context(anyhow!("Can't open {home}/log.txt for writing"))?;
+        writeln!(
+            log,
+            "{}{}",
+            "  ".repeat(self.depth),
+            msg.replace('ν', "v").replace('Δ', "D")
+        )?;
+        let full = fs::read_to_string(format!("{home}/log.txt"))?;
+        let lines = full.split('\n').collect::<Vec<&str>>();
+        let max = 32;
+        fs::write(
+            format!("{home}/log-{pos}.txt"),
+            lines
+                .clone()
+                .into_iter()
+                .skip(cmp::max(0i16, lines.len() as i16 - max) as usize)
+                .collect::<Vec<&str>>()
+                .join("\n"),
+        )?;
         Ok(())
     }
 }
@@ -357,7 +498,10 @@ impl Universe {
 use sodg::Script;
 
 #[cfg(test)]
-use std::fs;
+use std::process::Command;
+
+#[cfg(test)]
+use serial_test::serial;
 
 #[cfg(test)]
 use glob::glob;
@@ -373,6 +517,7 @@ fn rand(uni: &mut Universe, _: u32) -> Result<u32> {
 }
 
 #[test]
+#[serial]
 fn generates_random_int() -> Result<()> {
     let mut uni = Universe::empty();
     let root = uni.add();
@@ -447,18 +592,39 @@ fn fnd_absent_vertex() -> Result<()> {
 }
 
 #[test]
+#[serial]
 fn quick_tests() -> Result<()> {
     for path in sodg_scripts_in_dir("quick-tests") {
-        trace!("#quick_tests: {path}");
-        let mut s = Script::from_str(fs::read_to_string(path.clone())?.as_str());
+        let name = *path
+            .split('/')
+            .collect::<Vec<&str>>()
+            .get(1)
+            .ok_or(anyhow!("Can't understand path"))?;
+        trace!("\n\n#quick_tests: {name}");
+        fs::write(Universe::FLAG, name.as_bytes())
+            .context(anyhow!("Can't write to {}", Universe::FLAG))?;
+        let mut s = Script::from_str(fs::read_to_string(&path)?.as_str());
         let mut g = Sodg::empty();
         s.deploy_to(&mut g)?;
-        trace!("Before:\n {}", g.clone().to_dot());
+        let home = format!("target/surge/{}", name);
+        if Path::new(home.as_str()).exists() {
+            fs::remove_dir_all(&home).context(anyhow!("Can't delete directory '{home}'"))?;
+        }
         let mut uni = Universe::from_graph(g);
         uni.register("inc", inc);
         uni.register("times", times);
         let r = uni.dataize("Φ.foo");
-        trace!("After:\n {}", uni.g.to_dot());
+        uni.exit_it("The end".to_string())?;
+        fs::remove_file(Universe::FLAG).context(anyhow!("Can't delete {}", Universe::FLAG))?;
+        if r.is_err() {
+            assert!(Command::new("make")
+                .current_dir(home)
+                .spawn()
+                .unwrap()
+                .wait()
+                .unwrap()
+                .success());
+        }
         let hex = r.context(anyhow!("Failure in {path}"))?;
         assert_eq!(42, hex.to_i64()?, "Failure in {path}");
     }
@@ -466,10 +632,11 @@ fn quick_tests() -> Result<()> {
 }
 
 #[test]
+#[serial]
 fn quick_errors() -> Result<()> {
     for path in sodg_scripts_in_dir("quick-errors") {
         trace!("#quick_errors: {path}");
-        let mut s = Script::from_str(fs::read_to_string(path.clone())?.as_str());
+        let mut s = Script::from_str(fs::read_to_string(&path)?.as_str());
         let mut g = Sodg::empty();
         s.deploy_to(&mut g)?;
         let mut uni = Universe::from_graph(g);

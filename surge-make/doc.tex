@@ -1,0 +1,20 @@
+\documentclass[landscape,oneside]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[paperwidth=18in, paperheight=9in, left=.2in, right=.2in, top=.2in, bottom=.2in]{geometry}
+\RequirePackage{microtype}
+\usepackage{svg}
+\usepackage{multicol}
+\usepackage{graphicx}
+\usepackage{listings}
+\lstset{basicstyle=\ttfamily}
+\newcommand\graph[1]{%
+    \clearpage%
+    \begin{multicols}{2}
+    \includegraphics[height=8.6in]{#1.pdf}%
+    \par\columnbreak\par
+    \lstinputlisting{log-#1.txt}
+    \end{multicols}
+}
+\begin{document}
+\input{list.tex}
+\end{document}

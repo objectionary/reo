@@ -1,6 +1,6 @@
 # v1/int -> [ v2/times -> [ x -> ?, ρ -> v1, λ ], Δ -> 6 ]
-# v6 -> v1.times
-# v7/foo -> v6(x -> v6)
+# v7 -> v1.times
+# v8/foo -> v7(x -> v6)
 
 ADD(0);
 
@@ -20,16 +20,17 @@ BIND($v1, $v5, Δ);
 PUT($v5, 00-00-00-00-00-00-00-06);
 
 ADD($v6);
-BIND($v6, $v1, β);
 BIND($v6, $v1, times);
-
 ADD($v7);
-BIND($v7, $v6, π);
+BIND($v7, $v6, β);
 
 ADD($v8);
-BIND($v7, $v8, α0);
-ADD($v9);
-BIND($v8, $v9, Δ);
-PUT($v9, 00-00-00-00-00-00-00-07);
+BIND($v8, $v7, π);
 
-BIND(0, $v7, foo);
+ADD($v9);
+BIND($v8, $v9, α0);
+ADD($v10);
+BIND($v9, $v10, Δ);
+PUT($v10, 00-00-00-00-00-00-00-07);
+
+BIND(0, $v8, foo);

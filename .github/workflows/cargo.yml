@@ -3,17 +3,17 @@ on:
   push:
   pull_request:
 concurrency:
-  group: ${{ github.ref }}
+  group: cargo-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  build:
-    runs-on: ubuntu-20.04
+  cargo:
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: 17
+          java-version: 21
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable

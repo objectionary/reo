@@ -1,46 +1,58 @@
-# v1/int -> [ inc -> [ ρ -> v1, λ, x -> ? ], times -> [ ρ -> v1, λ, x -> ? ] ]
-# v6 -> int(v7/Δ -> 6)
-# v8 -> v6.inc
-# v9/foo -> v6.times(α0 -> v8)
+# v1/int -> [ v2/inc -> [ ρ -> v1, λ, v3/x -> ? ], v5/times -> [ ρ -> v1, λ, v6/x -> ? ] ]
+# v8 -> int(v9/Δ -> 6)
+# v11 -> v8.inc
+# v13/foo -> v8.times(α0 -> v11)
 
 ADD(0);
 
+# v1/int -> []
 ADD($v1);
 BIND(0, $v1, int);
+
+# v2/inc -> [ ρ -> v1, v4/λ, v3/x -> ? ]
 ADD($v2);
 BIND($v1, $v2, inc);
 BIND($v2, $v1, ρ);
-ADD($v11);
-BIND($v2, $v11, x);
-BIND($v11, $v2, ρ);
 ADD($v3);
-BIND($v2, $v3, λ);
-PUT($v3, 69-6E-63);
+BIND($v2, $v3, x);
+BIND($v3, $v2, ρ);
 ADD($v4);
-BIND($v1, $v4, times);
-BIND($v4, $v1, ρ);
-ADD($v12);
-BIND($v4, $v12, x);
-BIND($v12, $v4, ρ);
+BIND($v2, $v4, λ);
+PUT($v4, 69-6E-63);
+
+# v5/times -> [ ρ -> v1, λ, v6/x -> ? ] ]
 ADD($v5);
-BIND($v4, $v5, λ);
-PUT($v5, 74-69-6D-65-73);
-
+BIND($v1, $v5, times);
+BIND($v5, $v1, ρ);
 ADD($v6);
-BIND($v6, $v1, π);
+BIND($v5, $v6, x);
+BIND($v6, $v5, ρ);
 ADD($v7);
-BIND($v6, $v7, Δ);
-PUT($v7, 00-00-00-00-00-00-00-06);
+BIND($v5, $v7, λ);
+PUT($v7, 74-69-6D-65-73);
 
+# v8 -> int(v9/Δ -> 6)
 ADD($v8);
-BIND($v8, $v6, β);
-BIND($v8, $v6, inc);
-
+BIND($v8, $v1, π);
 ADD($v9);
-BIND($v9, $v6, β);
-BIND($v9, $v6, times);
-ADD($v10);
-BIND($v10, $v9, π);
-BIND($v10, $v8, α0);
+BIND($v8, $v9, Δ);
+PUT($v9, 00-00-00-00-00-00-00-06);
 
-BIND(0, $v10, foo);
+# v11 -> v8.inc
+ADD($v10);
+BIND($v10, $v8, inc);
+ADD($v11);
+BIND($v11, $v10, β);
+BIND($v11, $v8, ρ);
+
+# v13/foo -> v8.times(α0 -> v9)
+ADD($v12);
+BIND($v12, $v8, times);
+ADD($v13);
+BIND($v13, $v12, β);
+BIND($v13, $v8, ρ);
+ADD($v14);
+BIND($v14, $v13, π);
+BIND($v14, $v11, α0);
+
+BIND(0, $v14, foo);

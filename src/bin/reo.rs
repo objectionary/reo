@@ -304,7 +304,7 @@ pub fn main() -> Result<()> {
             let mut g = Sodg::empty();
             g.add(0)?;
             let size = g.save(bin)?;
-            info!("The SODG saved to '{}' ({size} bytes)", bin.display());
+            info!("Empty SODG saved to '{}' ({size} bytes)", bin.display());
         }
         Some(("merge", subs)) => {
             let target = subs
@@ -329,7 +329,9 @@ pub fn main() -> Result<()> {
             info!("Merging from '{}':", source.display());
             let mut g2 = Sodg::load(source)?;
             print_metas(&mut g2)?;
-            g1.merge(&g2.slice_some("ν0", |_, _, a| !a.starts_with('+'))?, 0, 0)?;
+            let slice = g2.slice_some("ν0", |_, _, a| !a.starts_with('+'))?;
+            debug!("merging {} vertices...", slice.len());
+            g1.merge(&slice, 0, 0)?;
             let size = g1.save(target)?;
             info!("The SODG saved to '{}' ({size} bytes)", target.display());
         }
@@ -424,10 +426,12 @@ pub fn main() -> Result<()> {
                 .unwrap_or(ValuesRef::default())
                 .copied()
                 .collect();
-            println!(
-                "Ignoring: {}",
-                ignore.iter().map(|v| format!("ν{}", v)).join(", ")
-            );
+            if !ignore.is_empty() {
+                println!(
+                    "Ignoring: {}",
+                    ignore.iter().map(|v| format!("ν{}", v)).join(", ")
+                );
+            }
             for v in ignore {
                 seen.insert(v);
             }
@@ -473,7 +477,7 @@ fn print_metas(g: &mut Sodg) -> Result<()> {
         Ok(vec) => {
             for (a, v) in vec {
                 if a.starts_with('+') {
-                    info!("  {a}: {}", g.data(v)?.to_utf8()?)
+                    println!("  {a}: {}", g.data(v)?.to_utf8()?)
                 }
             }
         }

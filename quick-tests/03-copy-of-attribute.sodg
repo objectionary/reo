@@ -1,5 +1,5 @@
 # v1/bar -> [ a/v3 -> [ Δ -> 42 ] ]
-# v4/foo -> v1.a()
+# v6/foo -> v1.a()
 
 ADD(0);
 
@@ -12,9 +12,10 @@ BIND($v2, $v3, Δ);
 PUT($v3, 00-00-00-00-00-00-00-2A);
 
 ADD($v4);
-BIND($v4, $v1, β);
 BIND($v4, $v1, a);
-
 ADD($v5);
-BIND($v5, $v4, π);
-BIND(0, $v5, foo);
+BIND($v5, $v4, β);
+
+ADD($v6);
+BIND($v6, $v5, π);
+BIND(0, $v6, foo);

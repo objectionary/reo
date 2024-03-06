@@ -55,8 +55,11 @@ pub type Atom = fn(&mut Universe, v: u32) -> Result<u32>;
 
 /// A Universe.
 pub struct Universe {
+    /// The graph.
     g: Sodg,
+    /// All known atoms.
     atoms: HashMap<String, Atom>,
+    /// The depth of recursion of the current dataization.
     depth: usize,
 }
 
