@@ -503,6 +503,9 @@ use sodg::Script;
 use std::process::Command;
 
 #[cfg(test)]
+use serial_test::serial;
+
+#[cfg(test)]
 use glob::glob;
 
 #[cfg(test)]
@@ -516,6 +519,7 @@ fn rand(uni: &mut Universe, _: u32) -> Result<u32> {
 }
 
 #[test]
+#[serial]
 fn generates_random_int() -> Result<()> {
     let mut uni = Universe::empty();
     let root = uni.add();
@@ -589,9 +593,6 @@ fn fnd_absent_vertex() -> Result<()> {
     Ok(())
 }
 
-#[cfg(test)]
-use serial_test::serial;
-
 #[test]
 #[serial]
 fn quick_tests() -> Result<()> {
@@ -608,7 +609,7 @@ fn quick_tests() -> Result<()> {
         s.deploy_to(&mut g)?;
         let home = format!("target/surge/{}", name);
         if Path::new(home.as_str()).exists() {
-            panic!("Directory already {home} exists");
+            fs::remove_dir_all(&home).context(anyhow!("Can't delete directory '{home}'"))?;
         }
         let mut uni = Universe::from_graph(g);
         uni.register("inc", inc);
