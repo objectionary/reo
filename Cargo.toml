@@ -15,7 +15,7 @@ anyhow = "1.0.80"
 clap = { version = "3.2.23", features = ["cargo"] }
 colored = "2.1.0"
 ctor = "0.2.7"
-filetime = "0.2.21"
+filetime = "0.2.23"
 fsutils = "0.1.7"
 glob = "0.3.1"
 itertools = "0.10.5"
