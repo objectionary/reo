@@ -78,6 +78,17 @@ impl Universe {
             g,
             atoms: HashMap::new(),
             depth: 0,
+            snapshots: None,
+        }
+    }
+
+    /// Point it to snapshots directory.
+    pub fn with_snapshots(&self, p: &Path) -> Self {
+        Universe {
+            g: self.g.clone(),
+            atoms: self.atoms.clone(),
+            depth: self.depth,
+            snapshots: Some(p.as_os_str().to_str().unwrap().to_string()),
         }
     }
 
@@ -383,24 +394,20 @@ impl Universe {
 
     const COLORS: &'static str = "fillcolor=aquamarine3,style=filled,";
 
-    const FLAG: &'static str = "target/surge-recent.txt";
-
     /// Create a new snapshot (PDF file)
     fn snapshot(&mut self, msg: String) -> Result<()> {
         lazy_static! {
             static ref DOT_LINE: Regex = Regex::new("^ +v([0-9]+)\\[.*$").unwrap();
         }
-        if !Path::new(Self::FLAG).exists() {
+        if self.snapshots.is_none() {
             return Ok(());
         }
-        let name = fs::read_to_string(Self::FLAG).context(anyhow!("Can't read the flag file"))?;
-        if name.is_empty() {
-            return Ok(());
-        }
-        let home = format!("target/surge/{name}");
-        fs::create_dir_all(home.clone()).context(anyhow!("Can't create directory '{home}'"))?;
-        let total = fs::read_dir(home.as_str())
-            .context(anyhow!("Can't list files in {home}"))?
+        let p = self.snapshots.take().unwrap();
+        let home = Path::new(&p);
+        fs::create_dir_all(home)
+            .context(anyhow!("Can't create directory {}", home.to_str().unwrap()))?;
+        let total = fs::read_dir(home)
+            .context(anyhow!("Can't list files in {}", home.to_str().unwrap()))?
             .filter(|f| {
                 f.as_ref()
                     .unwrap()
@@ -412,19 +419,25 @@ impl Universe {
             })
             .count();
         if total == 0 {
-            fs::copy("surge-make/Makefile", format!("{home}/Makefile"))
-                .context(anyhow!("Can't copy Makefile to '{home}'"))?;
-            fs::copy("surge-make/doc.tex", format!("{home}/doc.tex"))
-                .context(anyhow!("Can't copy doc.tex to '{home}'"))?;
-            fs::write(format!("{home}/list.tex"), b"")
-                .context(anyhow!("Can't write empty list.tex"))?;
+            fs::copy("surge-make/Makefile", home.join("Makefile")).context(anyhow!(
+                "Can't copy Makefile to '{}'",
+                home.to_str().unwrap()
+            ))?;
+            fs::copy("surge-make/doc.tex", home.join("doc.tex")).context(anyhow!(
+                "Can't copy doc.tex to '{}'",
+                home.to_str().unwrap()
+            ))?;
+            fs::write(home.join("list.tex"), b"").context(anyhow!("Can't write empty list.tex"))?;
         }
         let pos = total + 1;
         let mut before = String::new();
         if pos > 1 {
             let fname = format!("{}.dot", pos - 1);
-            before = fs::read_to_string(format!("{home}/{fname}"))
-                .context(anyhow!("Can't read previous {fname} file from '{home}'"))?
+            before = fs::read_to_string(home.join(fname.clone()))
+                .context(anyhow!(
+                    "Can't read previous {fname} file from '{}'",
+                    home.to_str().unwrap()
+                ))?
                 .replace(Self::COLORS, "");
         }
         let seen: Vec<u32> = before
@@ -435,7 +448,7 @@ impl Universe {
             })
             .collect();
         let dot = self.g.to_dot();
-        let dot_file = format!("{home}/{pos}.dot");
+        let dot_file = home.join(format!("{pos}.dot"));
         fs::write(
             &dot_file,
             dot.split('\n')
@@ -455,34 +468,40 @@ impl Universe {
         )?;
         if dot == before {
             if pos > 0 {
-                fs::remove_file(dot_file.as_str())
-                    .context(anyhow!("Can't remove previous .dot file {dot_file}"))?;
+                fs::remove_file(dot_file.clone()).context(anyhow!(
+                    "Can't remove previous .dot file {}",
+                    dot_file.to_str().unwrap()
+                ))?;
             }
         } else {
             let mut list = OpenOptions::new()
-                .write(true)
                 .append(true)
-                .open(format!("{home}/list.tex"))
-                .context(anyhow!("Can't open {home}/list.tex for appending"))?;
+                .open(home.join("list.tex"))
+                .context(anyhow!(
+                    "Can't open {}/list.tex for appending",
+                    home.to_str().unwrap()
+                ))?;
             writeln!(list, "\\graph{{{pos}}}")?;
         }
         let mut log = OpenOptions::new()
-            .write(true)
             .append(true)
             .create(true)
-            .open(format!("{home}/log.txt"))
-            .context(anyhow!("Can't open {home}/log.txt for writing"))?;
+            .open(home.join("log.txt"))
+            .context(anyhow!(
+                "Can't open {}/log.txt for writing",
+                home.to_str().unwrap()
+            ))?;
         writeln!(
             log,
             "{}{}",
             "  ".repeat(self.depth),
             msg.replace('ν', "v").replace('Δ', "D")
         )?;
-        let full = fs::read_to_string(format!("{home}/log.txt"))?;
+        let full = fs::read_to_string(home.join("log.txt"))?;
         let lines = full.split('\n').collect::<Vec<&str>>();
         let max = 32;
         fs::write(
-            format!("{home}/log-{pos}.txt"),
+            home.join(format!("log-{pos}.txt")),
             lines
                 .clone()
                 .into_iter()
@@ -592,7 +611,6 @@ fn fnd_absent_vertex() -> Result<()> {
 }
 
 #[test]
-#[serial]
 fn quick_tests() -> Result<()> {
     for path in sodg_scripts_in_dir("quick-tests") {
         let name = *path
@@ -601,21 +619,22 @@ fn quick_tests() -> Result<()> {
             .get(1)
             .ok_or(anyhow!("Can't understand path"))?;
         trace!("\n\n#quick_tests: {name}");
-        fs::write(Universe::FLAG, name.as_bytes())
-            .context(anyhow!("Can't write to {}", Universe::FLAG))?;
         let mut s = Script::from_str(fs::read_to_string(&path)?.as_str());
         let mut g = Sodg::empty();
         s.deploy_to(&mut g)?;
-        let home = format!("target/surge/{}", name);
-        if Path::new(home.as_str()).exists() {
-            fs::remove_dir_all(&home).context(anyhow!("Can't delete directory '{home}'"))?;
+        let p = format!("target/surge/{}", name);
+        let home = Path::new(p.as_str());
+        if home.exists() {
+            fs::remove_dir_all(home).context(anyhow!(
+                "Can't delete directory '{}'",
+                home.to_str().unwrap()
+            ))?;
         }
-        let mut uni = Universe::from_graph(g);
+        let mut uni = Universe::from_graph(g).with_snapshots(home);
         uni.register("inc", inc);
         uni.register("times", times);
         let r = uni.dataize("Φ.foo");
         uni.exit_it("The end".to_string())?;
-        fs::remove_file(Universe::FLAG).context(anyhow!("Can't delete {}", Universe::FLAG))?;
         if r.is_err() {
             assert!(Command::new("make")
                 .current_dir(home)
@@ -632,7 +651,6 @@ fn quick_tests() -> Result<()> {
 }
 
 #[test]
-#[serial]
 fn quick_errors() -> Result<()> {
     for path in sodg_scripts_in_dir("quick-errors") {
         trace!("#quick_errors: {path}");

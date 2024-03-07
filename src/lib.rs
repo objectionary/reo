@@ -61,6 +61,8 @@ pub struct Universe {
     atoms: HashMap<String, Atom>,
     /// The depth of recursion of the current dataization.
     depth: usize,
+    /// Location of snapshots directory.
+    snapshots: Option<String>,
 }
 
 #[cfg(test)]
