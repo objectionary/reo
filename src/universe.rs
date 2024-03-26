@@ -402,7 +402,7 @@ impl Universe {
         if self.snapshots.is_none() {
             return Ok(());
         }
-        let p = self.snapshots.take().unwrap();
+        let p = self.snapshots.clone().unwrap();
         let home = Path::new(&p);
         fs::create_dir_all(home)
             .context(anyhow!("Can't create directory {}", home.to_str().unwrap()))?;
