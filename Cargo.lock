@@ -416,6 +416,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "itertools"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba291022dbbd398a455acf126c1e341954079855bc60dfdda641363bd6922569"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -690,7 +699,7 @@ dependencies = [
  "filetime",
  "fsutils",
  "glob",
- "itertools",
+ "itertools 0.12.1",
  "lazy_static",
  "log",
  "predicates",
@@ -844,7 +853,7 @@ dependencies = [
  "bincode",
  "ctor 0.1.26",
  "hex",
- "itertools",
+ "itertools 0.10.5",
  "lazy_static",
  "log",
  "regex",

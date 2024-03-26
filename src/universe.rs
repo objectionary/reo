@@ -21,7 +21,7 @@
 use crate::{Atom, Universe};
 use anyhow::{anyhow, Context, Result};
 use lazy_static::lazy_static;
-use log::trace;
+use log::{debug, trace};
 use regex::Regex;
 use sodg::Sodg;
 use sodg::{Hex, Relay};
@@ -30,7 +30,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 macro_rules! enter {
@@ -418,6 +418,7 @@ impl Universe {
                     .ends_with(".dot")
             })
             .count();
+        debug!("{total} snapshot files already in {}", home.to_str().unwrap());
         if total == 0 {
             fs::copy("surge-make/Makefile", home.join("Makefile")).context(anyhow!(
                 "Can't copy Makefile to '{}'",
@@ -428,17 +429,20 @@ impl Universe {
                 home.to_str().unwrap()
             ))?;
             fs::write(home.join("list.tex"), b"").context(anyhow!("Can't write empty list.tex"))?;
+            debug!("Snapshot dir created: {}", home.to_str().unwrap());
         }
         let pos = total + 1;
         let mut before = String::new();
         if pos > 1 {
             let fname = format!("{}.dot", pos - 1);
-            before = fs::read_to_string(home.join(fname.clone()))
+            let b = home.join(fname.clone());
+            before = fs::read_to_string(b.clone())
                 .context(anyhow!(
                     "Can't read previous {fname} file from '{}'",
                     home.to_str().unwrap()
                 ))?
                 .replace(Self::COLORS, "");
+            debug!("Previous snapshot read from: {}", Self::fprint(b));
         }
         let seen: Vec<u32> = before
             .split('\n')
@@ -466,12 +470,15 @@ impl Universe {
                 .collect::<Vec<String>>()
                 .join("\n"),
         )?;
+        debug!("Dot file saved: {}", Self::fprint(dot_file.clone()));
         if dot == before {
             if pos > 0 {
+                let m = Self::fprint(dot_file.clone());
                 fs::remove_file(dot_file.clone()).context(anyhow!(
                     "Can't remove previous .dot file {}",
                     dot_file.to_str().unwrap()
                 ))?;
+                debug!("Similar dot file removed: {m}");
             }
         } else {
             let mut list = OpenOptions::new()
@@ -509,7 +516,14 @@ impl Universe {
                 .collect::<Vec<&str>>()
                 .join("\n"),
         )?;
+        debug!("Log #{pos} added (lines={})", lines.len());
         Ok(())
+    }
+
+    /// Turn file name into a better visible string, for logs.
+    fn fprint(f: PathBuf) -> String {
+        let size = f.metadata().unwrap().len();
+        format!("{} ({size} bytes)", f.to_str().unwrap())
     }
 }
 
@@ -518,9 +532,6 @@ use sodg::Script;
 
 #[cfg(test)]
 use std::process::Command;
-
-#[cfg(test)]
-use serial_test::serial;
 
 #[cfg(test)]
 use glob::glob;
@@ -536,7 +547,6 @@ fn rand(uni: &mut Universe, _: u32) -> Result<u32> {
 }
 
 #[test]
-#[serial]
 fn generates_random_int() -> Result<()> {
     let mut uni = Universe::empty();
     let root = uni.add();
