@@ -3,6 +3,8 @@
 # v11 -> v8.inc
 # v13/foo -> v8.times(α0 -> v11)
 
+# int(6).times(int(6).inc) > foo
+
 ADD(0);
 
 # v1/int -> []
