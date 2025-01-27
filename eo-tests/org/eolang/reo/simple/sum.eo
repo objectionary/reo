@@ -26,4 +26,3 @@
 [] > sum
   43 > expected
   42.plus 1 > @
-
