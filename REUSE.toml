@@ -22,11 +22,13 @@ path = [
     "**/.gitignore",
     "**/CNAME",
     "**/Cargo.toml",
+    "**/MANIFEST.MF",
     ".DS_Store",
     ".gitattributes",
     ".gitignore",
     "Cargo.lock",
     "Cargo.toml",
+    "MANIFEST.MF",
     "README.md",
     "renovate.json",
 ]
