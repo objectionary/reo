@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2022-2025 Yegor Bugayenko
+# SPDX-License-Identifier: MIT
+
 # v1 -> [ Δ -> 41 ]
 # v3 -> v1
 # v4/foo -> v3()

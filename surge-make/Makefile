@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2022-2025 Yegor Bugayenko
+# SPDX-License-Identifier: MIT
+
 DOTS := $(wildcard *.dot)
 BINS := $(patsubst %.dot,%.pdf,$(DOTS))
 PDF = doc.pdf

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2022-2025 Yegor Bugayenko
+# SPDX-License-Identifier: MIT
+
 # v1/integer -> [ v2/inc -> [ ρ -> v1, λ ] ]
 # v4 -> integer(Δ-> 41)
 # v7/foo -> v4.inc

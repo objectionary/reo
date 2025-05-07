@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2022-2025 Yegor Bugayenko
+# SPDX-License-Identifier: MIT
+
 .ONESHELL:
 .SHELLFLAGS: -e -x -o pipefail -c
 .PHONY: clean

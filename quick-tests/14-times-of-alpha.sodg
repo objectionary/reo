@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2022-2025 Yegor Bugayenko
+# SPDX-License-Identifier: MIT
+
 # v1/int -> [ v2/times -> [ x -> ?, ρ -> v1, λ ], Δ -> 6 ]
 # v7 -> v1.times
 # v8/foo -> v7(x -> v6)
