@@ -10,9 +10,10 @@
 [![Hits-of-Code](https://hitsofcode.com/github/objectionary/reo)](https://hitsofcode.com/view/github/objectionary/reo)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/objectionary/reo/blob/master/LICENSE.txt)
 
-**ATTENTION**: It's a very early draft currently in active development!
-Most probably it doesn't work. Don't try to contribute, unless you know
-what you are doing.
+> [!WARNING]
+> It's a very early draft currently in active development!
+> Most probably it doesn't work.
+> Don't try to contribute, unless you know what you are doing.
 
 It's an experimental virtual machine of [EO](https://www.eolang.org) programs,
 represented as [SODG](https://github.com/objectionary/sodg) graphs.
