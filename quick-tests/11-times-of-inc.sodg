@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2022-2025 Yegor Bugayenko
+# SPDX-FileCopyrightText: Copyright (c) 2022-2026 Yegor Bugayenko
 # SPDX-License-Identifier: MIT
 
 # v1/int -> [ v2/inc -> [ ρ -> v1, λ, v3/x -> ? ], v5/times -> [ ρ -> v1, λ, v6/x -> ? ] ]
