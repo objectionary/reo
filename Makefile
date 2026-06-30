@@ -3,13 +3,18 @@
 
 .ONESHELL:
 .SHELLFLAGS: -e -x -o pipefail -c
-.PHONY: clean
+.PHONY: all clean test
 
 SHELL = bash
 REO = target/debug/reo --verbose
 
 SODGS = $(shell find . -type f -path './target/eo/sodg/*' -name '*.sodg')
 BINARIES = $(subst .sodg,.reo,$(subst sodg/,reo/,$(SODGS)))
+
+all: target/runtime.reo
+
+test:
+	cargo test
 
 target/runtime.reo: target/eo/1-parse ${BINARIES} $(REO)
 	rm -f $@

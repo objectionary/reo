@@ -1,0 +1,7 @@
+# SPDX-FileCopyrightText: Copyright (c) 2022-2026 Yegor Bugayenko
+# SPDX-License-Identifier: MIT
+
+[default.extend-words]
+# "fnd" is a deliberate short name for the internal "find" routine
+# in src/universe.rs, not a typo.
+fnd = "fnd"
