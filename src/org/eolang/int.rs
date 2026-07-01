@@ -16,14 +16,20 @@ pub fn register(uni: &mut Universe) {
 pub fn int_plus(uni: &mut Universe, v: u32) -> Result<u32> {
     let rho = uni.dataize(format!("ν{}.ρ", v).as_str())?.to_i64()?;
     let x = uni.dataize(format!("ν{}.α0", v).as_str())?.to_i64()?;
-    copy_of_int(uni, rho + x)
+    let sum = rho
+        .checked_add(x)
+        .ok_or_else(|| anyhow!("Integer overflow in {rho} + {x}"))?;
+    copy_of_int(uni, sum)
 }
 
 /// EO atom `int.times`.
 pub fn int_times(uni: &mut Universe, v: u32) -> Result<u32> {
     let rho = uni.dataize(format!("ν{}.ρ", v).as_str())?.to_i64()?;
     let x = uni.dataize(format!("ν{}.α0", v).as_str())?.to_i64()?;
-    copy_of_int(uni, rho * x)
+    let product = rho
+        .checked_mul(x)
+        .ok_or_else(|| anyhow!("Integer overflow in {rho} * {x}"))?;
+    copy_of_int(uni, product)
 }
 
 /// EO atom `int.div`.
@@ -69,6 +75,48 @@ fn make_call(uni: &mut Universe, rho: i64, x: i64) -> u32 {
     uni.bind(x_v, x_d, "Δ");
     uni.put(x_d, Hex::from(x));
     v
+}
+
+#[test]
+fn adds_two_integers() -> Result<()> {
+    let mut uni = Universe::empty();
+    make_int_object(&mut uni);
+    let v = make_call(&mut uni, 40, 2);
+    let result = int_plus(&mut uni, v)?;
+    assert_eq!(42, uni.dataize(format!("ν{result}").as_str())?.to_i64()?);
+    Ok(())
+}
+
+#[test]
+fn multiplies_two_integers() -> Result<()> {
+    let mut uni = Universe::empty();
+    make_int_object(&mut uni);
+    let v = make_call(&mut uni, 6, 7);
+    let result = int_times(&mut uni, v)?;
+    assert_eq!(42, uni.dataize(format!("ν{result}").as_str())?.to_i64()?);
+    Ok(())
+}
+
+#[test]
+fn fails_when_plus_overflows() {
+    let mut uni = Universe::empty();
+    make_int_object(&mut uni);
+    let v = make_call(&mut uni, i64::MAX, 1);
+    assert!(
+        int_plus(&mut uni, v).is_err(),
+        "Overflowing addition must return an error, not panic or wrap around"
+    );
+}
+
+#[test]
+fn fails_when_times_overflows() {
+    let mut uni = Universe::empty();
+    make_int_object(&mut uni);
+    let v = make_call(&mut uni, i64::MAX, 2);
+    assert!(
+        int_times(&mut uni, v).is_err(),
+        "Overflowing multiplication must return an error, not panic or wrap around"
+    );
 }
 
 #[test]
