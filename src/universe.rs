@@ -401,7 +401,10 @@ impl Universe {
                     .ends_with(".dot")
             })
             .count();
-        debug!("{total} snapshot files already in {}", home.to_str().unwrap());
+        debug!(
+            "{total} snapshot files already in {}",
+            home.to_str().unwrap()
+        );
         if total == 0 {
             fs::copy("surge-make/Makefile", home.join("Makefile")).context(anyhow!(
                 "Can't copy Makefile to '{}'",
