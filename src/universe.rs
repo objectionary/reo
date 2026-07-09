@@ -28,10 +28,7 @@ macro_rules! exit {
     }
 }
 
-// self.depth += 1;
-// if self.depth > 20 {
-// return Err(anyhow!("The recursion is too deep ({} levels)", self.depth));
-// }
+const MAX_RECURSION_DEPTH: usize = 20;
 
 impl Universe {
     /// Makes an empty Universe.
@@ -363,6 +360,9 @@ impl Universe {
 
     fn enter_it(&mut self, msg: String) -> Result<()> {
         self.depth += 1;
+        if self.depth > MAX_RECURSION_DEPTH {
+            return Err(anyhow!("The recursion is too deep ({} levels)", self.depth));
+        }
         self.snapshot(msg)?;
         Ok(())
     }
@@ -603,6 +603,30 @@ fn fnd_absent_vertex() -> Result<()> {
     let mut uni = Universe::from_graph(g);
     uni.add();
     assert!(uni.dataize("ν42.foo").is_err());
+    Ok(())
+}
+
+#[test]
+fn fails_on_phi_cycle() -> Result<()> {
+    let mut s = Script::from_str(
+        "
+        ADD(ν0);
+        ADD($ν1);
+        BIND(ν0, $ν1, foo);
+        ADD($ν2);
+        BIND($ν1, $ν2, φ);
+        BIND($ν2, $ν1, φ);
+        ",
+    );
+    let mut g = Sodg::empty();
+    s.deploy_to(&mut g)?;
+    let mut uni = Universe::from_graph(g);
+    let err = uni.dataize("Φ.foo").unwrap_err();
+    assert!(
+        err.chain()
+            .any(|e| e.to_string().contains("The recursion is too deep")),
+        "Unexpected error: {err}"
+    );
     Ok(())
 }
 
