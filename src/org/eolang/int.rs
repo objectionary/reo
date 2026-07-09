@@ -39,7 +39,10 @@ pub fn int_div(uni: &mut Universe, v: u32) -> Result<u32> {
     if x == 0 {
         return Err(anyhow!("Can't divide {rho} by zero"));
     }
-    copy_of_int(uni, rho / x)
+    let quotient = rho
+        .checked_div(x)
+        .ok_or_else(|| anyhow!("Integer overflow in {rho} / {x}"))?;
+    copy_of_int(uni, quotient)
 }
 
 #[cfg(test)]
@@ -137,5 +140,16 @@ fn fails_to_divide_by_zero() {
     assert!(
         int_div(&mut uni, v).is_err(),
         "Division by zero must return an error, not panic"
+    );
+}
+
+#[test]
+fn fails_when_div_overflows() {
+    let mut uni = Universe::empty();
+    make_int_object(&mut uni);
+    let v = make_call(&mut uni, i64::MIN, -1);
+    assert!(
+        int_div(&mut uni, v).is_err(),
+        "Overflowing division must return an error, not panic"
     );
 }
