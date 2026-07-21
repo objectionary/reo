@@ -223,9 +223,8 @@ pub fn main() -> Result<()> {
                 )
                 .arg(
                     Arg::new("dot")
-                        .required(true)
                         .value_parser(PathValueParser {})
-                        .help("Name of a .dot file to create")
+                        .help("Name of a .dot file to create; prints to stdout when omitted")
                         .takes_value(true)
                         .required(false)
                         .action(ArgAction::Set),

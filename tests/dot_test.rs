@@ -5,6 +5,7 @@ mod common;
 
 use crate::common::compiler::compile_one;
 use anyhow::Result;
+use predicates::prelude::predicate;
 use tempfile::TempDir;
 
 #[test]
@@ -33,4 +34,15 @@ fn prints_dot() -> Result<()> {
         .success();
     assert!(dot.exists());
     Ok(())
+}
+
+#[test]
+fn mentions_stdout_fallback_in_help() {
+    assert_cmd::Command::cargo_bin("reo")
+        .unwrap()
+        .arg("dot")
+        .arg("--help")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("prints to stdout when omitted"));
 }
