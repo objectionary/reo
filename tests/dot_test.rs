@@ -46,3 +46,20 @@ fn mentions_stdout_fallback_in_help() {
         .success()
         .stdout(predicate::str::contains("prints to stdout when omitted"));
 }
+
+#[test]
+fn rejects_non_numeric_root_for_dot() -> Result<()> {
+    let tmp = TempDir::new()?;
+    let bin = tmp.path().join("first.reo");
+    compile_one("ADD(ν0);", bin.clone())?;
+    assert_cmd::Command::cargo_bin("reo")
+        .unwrap()
+        .current_dir(tmp.path())
+        .arg("dot")
+        .arg("--root=oops")
+        .arg(bin.as_os_str())
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("invalid value 'oops' for '--root <root>'"));
+    Ok(())
+}

@@ -146,6 +146,7 @@ pub fn main() -> Result<()> {
                         .short('r')
                         .required(false)
                         .default_value("0")
+                        .value_parser(value_parser!(u32))
                         .help("The ID of the root vertex")
                         .action(ArgAction::Set),
                 )
@@ -200,6 +201,7 @@ pub fn main() -> Result<()> {
                         .short('r')
                         .required(false)
                         .default_value("0")
+                        .value_parser(value_parser!(u32))
                         .help("The ID of the root vertex to print")
                         .action(ArgAction::Set),
                 )
@@ -367,7 +369,9 @@ pub fn main() -> Result<()> {
                 fs::metadata(bin)?.len(),
                 start.elapsed()
             );
-            let root: u32 = subs.get_one::<String>("root").unwrap().parse().unwrap();
+            let root = *subs
+                .get_one::<u32>("root")
+                .context("The root vertex ID is required")?;
             let ignore: HashSet<u32> = HashSet::from_iter(
                 subs.get_many("ignore")
                     .unwrap_or(ValuesRef::default())
@@ -401,7 +405,9 @@ pub fn main() -> Result<()> {
             println!("Total vertices: {}", g.len());
             println!("Metas:");
             print_metas(&mut g)?;
-            let root = subs.get_one::<String>("root").unwrap().parse().unwrap();
+            let root = *subs
+                .get_one::<u32>("root")
+                .context("The root vertex ID is required")?;
             let mut seen = HashSet::new();
             let ignore: Vec<u32> = subs
                 .get_many("ignore")

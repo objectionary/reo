@@ -5,6 +5,7 @@ mod common;
 
 use crate::common::compiler::compile_one;
 use anyhow::Result;
+use predicates::prelude::predicate;
 use tempfile::TempDir;
 
 #[test]
@@ -32,5 +33,22 @@ fn inspects_one_binary() -> Result<()> {
         .arg(first.as_os_str())
         .assert()
         .success();
+    Ok(())
+}
+
+#[test]
+fn rejects_non_numeric_root_for_inspect() -> Result<()> {
+    let tmp = TempDir::new()?;
+    let first = tmp.path().join("first.reo");
+    compile_one("ADD(ν0);", first.clone())?;
+    assert_cmd::Command::cargo_bin("reo")
+        .unwrap()
+        .current_dir(tmp.path())
+        .arg("inspect")
+        .arg("--root=oops")
+        .arg(first.as_os_str())
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("invalid value 'oops' for '--root <root>'"));
     Ok(())
 }
