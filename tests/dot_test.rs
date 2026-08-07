@@ -46,3 +46,22 @@ fn mentions_stdout_fallback_in_help() {
         .success()
         .stdout(predicate::str::contains("prints to stdout when omitted"));
 }
+
+#[test]
+fn rejects_non_numeric_root() -> Result<()> {
+    let tmp = TempDir::new()?;
+    let bin = tmp.path().join("first.reo");
+    let dot = tmp.path().join("first.dot");
+    compile_one("ADD(ν0);", bin.clone())?;
+    assert_cmd::Command::cargo_bin("reo")
+        .unwrap()
+        .current_dir(tmp.path())
+        .arg("dot")
+        .arg("--root=xyz")
+        .arg(bin.as_os_str())
+        .arg(dot.as_os_str())
+        .assert()
+        .failure()
+        .code(2);
+    Ok(())
+}

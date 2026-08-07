@@ -34,3 +34,20 @@ fn inspects_one_binary() -> Result<()> {
         .success();
     Ok(())
 }
+
+#[test]
+fn rejects_non_numeric_root() -> Result<()> {
+    let tmp = TempDir::new()?;
+    let first = tmp.path().join("first.reo");
+    compile_one("ADD(ν0);", first.clone())?;
+    assert_cmd::Command::cargo_bin("reo")
+        .unwrap()
+        .current_dir(tmp.path())
+        .arg("inspect")
+        .arg("--root=abc")
+        .arg(first.as_os_str())
+        .assert()
+        .failure()
+        .code(2);
+    Ok(())
+}
