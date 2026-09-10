@@ -264,7 +264,6 @@ impl Universe {
     /// Apply `v1` to `v2` and return a new vertex.
     fn apply(&mut self, v1: u32, v2: u32) -> Result<u32> {
         enter!(self, "#apply(ν{v1}, ν{v2}): entering...");
-        self.depth += 1;
         let nv = self.g.next_id();
         self.g.add(nv)?;
         self.pull(nv, v1)?;
@@ -603,6 +602,29 @@ fn fnd_absent_vertex() -> Result<()> {
     let mut uni = Universe::from_graph(g);
     uni.add();
     assert!(uni.dataize("ν42.foo").is_err());
+    Ok(())
+}
+
+#[test]
+fn dataizes_repeated_application_without_leaking_depth() -> Result<()> {
+    let mut script = Script::from_str(
+        "
+        ADD(ν0);
+        ADD($ν1);
+        ADD($ν2);
+        BIND($ν1, $ν2, Δ);
+        PUT($ν2, 00-00-00-00-00-00-00-2A);
+        ADD($ν3);
+        BIND($ν3, $ν1, π);
+        BIND(ν0, $ν3, foo);
+        ",
+    );
+    let mut graph = Sodg::empty();
+    script.deploy_to(&mut graph)?;
+    let mut universe = Universe::from_graph(graph);
+    for _ in 0..30 {
+        assert_eq!(42, universe.dataize("Φ.foo")?.to_i64()?);
+    }
     Ok(())
 }
 
