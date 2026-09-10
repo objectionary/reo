@@ -384,7 +384,7 @@ pub fn main() -> Result<()> {
                 }
                 None => Box::new(io::stdout()) as Box<dyn Write>,
             };
-            let bytes = out.write(content.as_bytes())?;
+            let bytes = write_dot(&mut *out, &content)?;
             info!("DOT graph saved, {bytes} bytes in {:?}", start.elapsed());
         }
         Some(("inspect", subs)) => {
@@ -454,6 +454,11 @@ pub fn main() -> Result<()> {
     Ok(())
 }
 
+fn write_dot(out: &mut dyn Write, content: &str) -> Result<usize> {
+    out.write_all(content.as_bytes())?;
+    Ok(content.len())
+}
+
 fn print_metas(g: &mut Sodg) -> Result<()> {
     match g.kids(0) {
         Ok(vec) => {
@@ -488,5 +493,41 @@ fn inspect_v(g: &mut Sodg, v: u32, indent: usize, seen: &mut HashSet<u32>) {
         }
         seen.insert(e.1);
         inspect_v(g, e.1, indent + 1, seen);
+    }
+}
+
+#[cfg(test)]
+mod output_tests {
+    use super::write_dot;
+    use std::io::{Result as IoResult, Write};
+
+    struct ShortWriter {
+        bytes: Vec<u8>,
+        limit: usize,
+    }
+
+    impl Write for ShortWriter {
+        fn write(&mut self, buf: &[u8]) -> IoResult<usize> {
+            let size = self.limit.min(buf.len());
+            self.bytes.extend_from_slice(&buf[..size]);
+            Ok(size)
+        }
+
+        fn flush(&mut self) -> IoResult<()> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn writes_complete_dot_after_short_writes() -> anyhow::Result<()> {
+        let content = "digraph { v0 -> v1; }";
+        let mut out = ShortWriter {
+            bytes: Vec::new(),
+            limit: 3,
+        };
+        let written = write_dot(&mut out, content)?;
+        assert_eq!(content.len(), written);
+        assert_eq!(content.as_bytes(), out.bytes.as_slice());
+        Ok(())
     }
 }
