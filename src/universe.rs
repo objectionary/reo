@@ -205,14 +205,11 @@ impl Universe {
         } else if let Some(lv) = self.g.kid(v, "λ") {
             let lambda = self.g.data(lv)?.to_utf8()?;
             trace!("#re: calling ν{v}.λ⇓{lambda}(ξ=ν?)...");
-            let to = self
-                .atoms
-                .get(lambda.as_str())
-                .context(anyhow!(
-                    "Can't find function {lambda} among {} others",
-                    self.atoms.len()
-                ))
-                .unwrap()(self, v)?;
+            let atom = self.atoms.get(lambda.as_str()).copied().context(anyhow!(
+                "Can't find function {lambda} among {} others",
+                self.atoms.len()
+            ))?;
+            let to = atom(self, v)?;
             trace!("#re: ν{v}.λ⇓{lambda}(ξ=ν?) returned ν{to}");
             self.fnd(to, a, psi)?
         } else if let Some(to) = self.g.kid(v, "φ") {
