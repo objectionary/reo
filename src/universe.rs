@@ -389,23 +389,25 @@ impl Universe {
         let home = Path::new(&p);
         fs::create_dir_all(home)
             .context(anyhow!("Can't create directory {}", home.to_str().unwrap()))?;
-        let total = fs::read_dir(home)
-            .context(anyhow!("Can't list files in {}", home.to_str().unwrap()))?
-            .filter(|f| {
-                f.as_ref()
-                    .unwrap()
-                    .path()
-                    .as_os_str()
-                    .to_str()
-                    .unwrap()
-                    .ends_with(".dot")
-            })
-            .count();
+        let mut previous = None;
+        for entry in
+            fs::read_dir(home).context(anyhow!("Can't list files in {}", home.to_str().unwrap()))?
+        {
+            let name = entry?.file_name();
+            if let Some(number) = name
+                .to_str()
+                .and_then(|file| file.strip_suffix(".dot"))
+                .and_then(|stem| stem.parse::<usize>().ok())
+            {
+                previous = Some(previous.map_or(number, |last: usize| last.max(number)));
+            }
+        }
         debug!(
-            "{total} snapshot files already in {}",
+            "Last numbered snapshot is {:?} in {}",
+            previous,
             home.to_str().unwrap()
         );
-        if total == 0 {
+        if previous.is_none() {
             fs::copy("surge-make/Makefile", home.join("Makefile")).context(anyhow!(
                 "Can't copy Makefile to '{}'",
                 home.to_str().unwrap()
@@ -417,10 +419,10 @@ impl Universe {
             fs::write(home.join("list.tex"), b"").context(anyhow!("Can't write empty list.tex"))?;
             debug!("Snapshot dir created: {}", home.to_str().unwrap());
         }
-        let pos = total + 1;
+        let pos = previous.map_or(1, |last| last + 1);
         let mut before = String::new();
-        if pos > 1 {
-            let fname = format!("{}.dot", pos - 1);
+        if let Some(last) = previous {
+            let fname = format!("{last}.dot");
             let b = home.join(fname.clone());
             before = fs::read_to_string(b.clone())
                 .context(anyhow!(
@@ -685,5 +687,16 @@ fn quick_errors() -> Result<()> {
             "A failure is expected in {path}, but it didn't happen"
         );
     }
+    Ok(())
+}
+
+#[test]
+fn ignores_unrelated_dot_when_numbering_snapshots() -> Result<()> {
+    let tmp = tempfile::TempDir::new()?;
+    fs::write(tmp.path().join("notes.dot"), "digraph notes {}")?;
+    let mut uni = Universe::empty().with_snapshots(tmp.path());
+    uni.snapshot("probe".to_string())?;
+    assert!(tmp.path().join("notes.dot").exists());
+    assert!(tmp.path().join("1.dot").exists());
     Ok(())
 }
