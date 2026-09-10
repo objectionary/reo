@@ -38,7 +38,7 @@ impl TypedValueParser for PathValueParser {
         if value.is_empty() {
             return Err(clap::Error::raw(EmptyValue, "Can't be empty"));
         }
-        let path = Path::new(value.to_str().unwrap());
+        let path = Path::new(value);
         let abs = if path.exists() {
             fs::canonicalize(path).unwrap()
         } else {

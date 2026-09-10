@@ -20,3 +20,23 @@ fn makes_empty_binary() -> Result<()> {
     assert!(bin.exists());
     Ok(())
 }
+
+#[cfg(unix)]
+#[test]
+fn accepts_non_utf_output_path() -> Result<()> {
+    use std::ffi::OsString;
+    use std::os::unix::ffi::OsStringExt;
+
+    let tmp = TempDir::new()?;
+    let bin = tmp.path().join(OsString::from_vec(vec![
+        b'o', b'u', b't', b'-', 0xff, b'.', b'r', b'e', b'o',
+    ]));
+    assert_cmd::Command::cargo_bin("reo")
+        .unwrap()
+        .arg("empty")
+        .arg(bin.as_os_str())
+        .assert()
+        .success();
+    assert!(bin.exists());
+    Ok(())
+}
