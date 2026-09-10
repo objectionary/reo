@@ -5,7 +5,7 @@ mod common;
 
 use crate::common::compiler::compile_one;
 use anyhow::Result;
-use predicates::prelude::predicate;
+use predicates::prelude::{predicate, PredicateBooleanExt};
 use tempfile::TempDir;
 
 #[test]
@@ -45,4 +45,22 @@ fn mentions_stdout_fallback_in_help() {
         .assert()
         .success()
         .stdout(predicate::str::contains("prints to stdout when omitted"));
+}
+
+#[test]
+fn reports_output_creation_error_without_panicking() -> Result<()> {
+    let tmp = TempDir::new()?;
+    let bin = tmp.path().join("input.reo");
+    let dot = tmp.path().join("missing").join("output.dot");
+    compile_one("ADD(ν0);", bin.clone())?;
+    assert_cmd::Command::cargo_bin("reo")
+        .unwrap()
+        .arg("dot")
+        .arg(bin.as_os_str())
+        .arg(dot.as_os_str())
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Error:"))
+        .stderr(predicate::str::contains("panicked").not());
+    Ok(())
 }
