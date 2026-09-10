@@ -5,6 +5,7 @@ mod common;
 
 use crate::common::compiler::compile_one;
 use anyhow::Result;
+use predicates::prelude::predicate;
 use tempfile::TempDir;
 
 #[test]
@@ -33,4 +34,16 @@ fn inspects_one_binary() -> Result<()> {
         .assert()
         .success();
     Ok(())
+}
+
+#[test]
+fn rejects_non_numeric_root() {
+    assert_cmd::Command::cargo_bin("reo")
+        .unwrap()
+        .arg("inspect")
+        .arg("--root=abc")
+        .arg("missing.reo")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Invalid value"));
 }

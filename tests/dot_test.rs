@@ -46,3 +46,15 @@ fn mentions_stdout_fallback_in_help() {
         .success()
         .stdout(predicate::str::contains("prints to stdout when omitted"));
 }
+
+#[test]
+fn rejects_non_numeric_root() {
+    assert_cmd::Command::cargo_bin("reo")
+        .unwrap()
+        .arg("dot")
+        .arg("--root=abc")
+        .arg("missing.reo")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Invalid value"));
+}
