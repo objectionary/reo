@@ -27,6 +27,7 @@ mod universe;
 
 use anyhow::Result;
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 /// A single atom to be attached to a vertex.
 ///
@@ -45,7 +46,7 @@ pub struct Universe {
     /// The depth of recursion of the current dataization.
     depth: usize,
     /// Location of snapshots directory.
-    snapshots: Option<String>,
+    snapshots: Option<PathBuf>,
 }
 
 #[cfg(test)]
