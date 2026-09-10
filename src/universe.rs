@@ -141,11 +141,13 @@ impl Universe {
         if self.g.is_empty() {
             return Err(anyhow!("The Universe is empty, can't dataize {loc}"));
         }
-        let v = self
+        let depth = self.depth;
+        let found = self
             .g
             .find(0, loc, self)
-            .context(format!("Failed to find {loc}"))?;
-        Ok(v)
+            .context(format!("Failed to find {loc}"));
+        self.depth = depth;
+        found
     }
 
     /// Get a slice of the graph by the locator.
@@ -603,6 +605,33 @@ fn fnd_absent_vertex() -> Result<()> {
     let mut uni = Universe::from_graph(g);
     uni.add();
     assert!(uni.dataize("ν42.foo").is_err());
+    Ok(())
+}
+
+#[test]
+fn recovers_depth_after_failed_dataization() -> Result<()> {
+    let mut script = Script::from_str(
+        "
+        ADD(ν0);
+        ADD($ν1);
+        BIND(ν0, $ν1, bad);
+        ADD($ν2);
+        BIND($ν1, $ν2, φ);
+        BIND($ν2, $ν1, φ);
+        ADD($ν3);
+        ADD($ν4);
+        BIND($ν3, $ν4, Δ);
+        PUT($ν4, 00-00-00-00-00-00-00-2A);
+        ADD($ν5);
+        BIND($ν5, $ν3, π);
+        BIND(ν0, $ν5, good);
+        ",
+    );
+    let mut graph = Sodg::empty();
+    script.deploy_to(&mut graph)?;
+    let mut universe = Universe::from_graph(graph);
+    assert!(universe.dataize("Φ.bad").is_err());
+    assert_eq!(42, universe.dataize("Φ.good")?.to_i64()?);
     Ok(())
 }
 
