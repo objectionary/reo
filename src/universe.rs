@@ -345,7 +345,7 @@ impl Universe {
                 .into_iter()
                 .filter(|(aa, _)| aa.is_ascii())
                 .nth(i)
-                .unwrap();
+                .ok_or(anyhow!("Can't find positional attribute α{i} in ν{v}"))?;
             trace!("#tie(ν{v}, {a}): the {i}th attribute is {}", a1.0);
             return self.tie(v, a1.0);
         }
@@ -603,6 +603,18 @@ fn fnd_absent_vertex() -> Result<()> {
     let mut uni = Universe::from_graph(g);
     uni.add();
     assert!(uni.dataize("ν42.foo").is_err());
+    Ok(())
+}
+
+#[test]
+fn rejects_out_of_range_positional_attribute_without_panicking() -> Result<()> {
+    let source = fs::read_to_string("quick-tests/14-times-of-alpha.sodg")?.replace("α0", "α99");
+    let mut script = Script::from_str(&source);
+    let mut graph = Sodg::empty();
+    script.deploy_to(&mut graph)?;
+    let mut universe = Universe::from_graph(graph);
+    universe.register("times", times);
+    assert!(universe.dataize("Φ.foo").is_err());
     Ok(())
 }
 
