@@ -480,7 +480,11 @@ fn inspect_v(g: &mut Sodg, v: u32, indent: usize, seen: &mut HashSet<u32>) {
             print!(" {}", g.data(e.1).unwrap().to_string().blue());
         }
         if e.0 == "λ" {
-            print!(" {}", g.data(e.1).unwrap().to_utf8().unwrap().yellow());
+            let data = g.data(e.1).unwrap();
+            print!(
+                " {}",
+                data.to_utf8().unwrap_or_else(|_| data.to_string()).yellow()
+            );
         }
         println!();
         if seen.contains(&e.1) {

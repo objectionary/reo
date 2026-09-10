@@ -5,6 +5,7 @@ mod common;
 
 use crate::common::compiler::compile_one;
 use anyhow::Result;
+use predicates::prelude::predicate;
 use tempfile::TempDir;
 
 #[test]
@@ -32,5 +33,28 @@ fn inspects_one_binary() -> Result<()> {
         .arg(first.as_os_str())
         .assert()
         .success();
+    Ok(())
+}
+
+#[test]
+fn inspects_non_utf8_lambda_payload() -> Result<()> {
+    let tmp = TempDir::new()?;
+    let binary = tmp.path().join("nonutf8.reo");
+    compile_one(
+        "
+        ADD(ν0);
+        ADD($ν1);
+        BIND(ν0, $ν1, λ);
+        PUT($ν1, ff);
+        ",
+        binary.clone(),
+    )?;
+    assert_cmd::Command::cargo_bin("reo")
+        .unwrap()
+        .arg("inspect")
+        .arg(binary.as_os_str())
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("λ -> ν1 FF"));
     Ok(())
 }
