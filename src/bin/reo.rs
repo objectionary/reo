@@ -419,7 +419,7 @@ pub fn main() -> Result<()> {
             }
             println!("\nν{root}");
             seen.insert(root);
-            inspect_v(&mut g, root, 1, &mut seen);
+            inspect_v(&mut g, root, 1, &mut seen)?;
             println!("Vertices just printed: {}", seen.len());
             if seen.len() != g.ids().len() {
                 let mut missed = vec![];
@@ -441,7 +441,7 @@ pub fn main() -> Result<()> {
                     for v in missed.into_iter().take(10) {
                         seen.insert(v);
                         println!("  ν{}", v);
-                        inspect_v(&mut g, v, 2, &mut seen);
+                        inspect_v(&mut g, v, 2, &mut seen)?;
                     }
                 }
             }
@@ -470,23 +470,24 @@ fn print_metas(g: &mut Sodg) -> Result<()> {
     Ok(())
 }
 
-fn inspect_v(g: &mut Sodg, v: u32, indent: usize, seen: &mut HashSet<u32>) {
-    let mut kids = g.kids(v).unwrap();
+fn inspect_v(g: &mut Sodg, v: u32, indent: usize, seen: &mut HashSet<u32>) -> Result<()> {
+    let mut kids = g.kids(v)?;
     kids.sort_by(|a, b| a.0.cmp(&b.0.clone()));
     for e in kids {
         print!("{}", "  ".repeat(indent));
         print!("{} -> ν{}", e.0, e.1);
         if e.0 == "Δ" {
-            print!(" {}", g.data(e.1).unwrap().to_string().blue());
+            print!(" {}", g.data(e.1)?.to_string().blue());
         }
         if e.0 == "λ" {
-            print!(" {}", g.data(e.1).unwrap().to_utf8().unwrap().yellow());
+            print!(" {}", g.data(e.1)?.to_utf8()?.yellow());
         }
         println!();
         if seen.contains(&e.1) {
             continue;
         }
         seen.insert(e.1);
-        inspect_v(g, e.1, indent + 1, seen);
+        inspect_v(g, e.1, indent + 1, seen)?;
     }
+    Ok(())
 }

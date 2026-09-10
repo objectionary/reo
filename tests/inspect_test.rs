@@ -5,6 +5,7 @@ mod common;
 
 use crate::common::compiler::compile_one;
 use anyhow::Result;
+use predicates::prelude::{predicate, PredicateBooleanExt};
 use tempfile::TempDir;
 
 #[test]
@@ -32,5 +33,22 @@ fn inspects_one_binary() -> Result<()> {
         .arg(first.as_os_str())
         .assert()
         .success();
+    Ok(())
+}
+
+#[test]
+fn reports_missing_root_without_panicking() -> Result<()> {
+    let tmp = TempDir::new()?;
+    let bin = tmp.path().join("input.reo");
+    compile_one("ADD(ν0);", bin.clone())?;
+    assert_cmd::Command::cargo_bin("reo")
+        .unwrap()
+        .arg("inspect")
+        .arg("--root=999")
+        .arg(bin.as_os_str())
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Can't find ν999"))
+        .stderr(predicate::str::contains("panicked").not());
     Ok(())
 }
