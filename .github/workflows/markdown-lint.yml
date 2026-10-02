@@ -7,9 +7,17 @@ name: markdown-lint
   push:
     branches:
       - master
+    paths:
+      - '**.md'
+      - '.github/workflows/markdown-lint.yml'
+      - '.markdownlint.json'
   pull_request:
     branches:
       - master
+    paths:
+      - '**.md'
+      - '.github/workflows/markdown-lint.yml'
+      - '.markdownlint.json'
 jobs:
   markdown-lint:
     timeout-minutes: 15
