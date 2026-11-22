@@ -36,6 +36,30 @@ fn inspects_one_binary() -> Result<()> {
 }
 
 #[test]
+fn ignores_unknown_ids_when_reporting_missed_vertices() -> Result<()> {
+    let tmp = TempDir::new()?;
+    let first = tmp.path().join("first.reo");
+    compile_one(
+        "
+        ADD(ν0);
+        ADD(ν1);
+        ",
+        first.clone(),
+    )?;
+    assert_cmd::Command::cargo_bin("reo")
+        .unwrap()
+        .current_dir(tmp.path())
+        .arg("inspect")
+        .arg("--root=0")
+        .arg("--ignore=99")
+        .arg(first.as_os_str())
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("Missed 1: ν1"));
+    Ok(())
+}
+
+#[test]
 fn rejects_non_numeric_root() -> Result<()> {
     let tmp = TempDir::new()?;
     let first = tmp.path().join("first.reo");
