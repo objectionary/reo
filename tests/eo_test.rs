@@ -12,7 +12,7 @@ use reo::Universe;
 
 fn all_apps() -> Result<Vec<String>> {
     let mut apps = Vec::new();
-    for f in glob("eo-tests/**/*.eo")? {
+    for f in glob("eo-tests/*.eo")? {
         let path = f?;
         let app = path
             .strip_prefix("eo-tests")?
@@ -26,7 +26,7 @@ fn all_apps() -> Result<Vec<String>> {
 }
 
 #[test]
-#[ignore]
+#[ignore = "REO can't deploy the .sodg files of the EO runtime yet, see #285"]
 fn deploys_and_runs_all_apps() -> Result<()> {
     let mut uni = Universe::from_graph(load_runtime()?)?;
     register(&mut uni);
