@@ -1,63 +1,31 @@
 # SPDX-FileCopyrightText: Copyright (c) 2022-2026 Yegor Bugayenko
 # SPDX-License-Identifier: MIT
 
-# v1/int -> [ v2/inc -> [ ρ -> v1, λ, v3/x -> ? ], v5/times -> [ ρ -> v1, λ, v6/x -> ? ] ]
-# v8 -> int(v9/Δ -> 6)
-# v11 -> v8.inc
-# v13/foo -> v8.times(α0 -> v11)
+# Two atoms, one of which takes the result of another one as an argument.
+#
+#   ⟦ int ↦ ⟦ v ↦ ∅, inc ↦ ⟦ ρ ↦ ∅, λ ⤍ L_inc ⟧, times ↦ ⟦ ρ ↦ ∅, x ↦ ∅, λ ⤍ L_times ⟧, φ ↦ ξ.v ⟧, six ↦ Φ.int(v ↦ ⟦ Δ ⤍ 00-00-00-00-00-00-00-06 ⟧), foo ↦ Φ.six.times(x ↦ Φ.six.inc) ⟧
+#
+# The script below is printed by `phino sodg` 0.0.167.
 
-# int(6).times(int(6).inc) > foo
-
-ADD(0);
-
-# v1/int -> []
-ADD($v1);
-BIND(0, $v1, int);
-
-# v2/inc -> [ ρ -> v1, v4/λ, v3/x -> ? ]
-ADD($v2);
-BIND($v1, $v2, inc);
-BIND($v2, $v1, ρ);
-ADD($v3);
-BIND($v2, $v3, x);
-BIND($v3, $v2, ρ);
-ADD($v4);
-BIND($v2, $v4, λ);
-PUT($v4, 69-6E-63);
-
-# v5/times -> [ ρ -> v1, λ, v6/x -> ? ] ]
-ADD($v5);
-BIND($v1, $v5, times);
-BIND($v5, $v1, ρ);
-ADD($v6);
-BIND($v5, $v6, x);
-BIND($v6, $v5, ρ);
-ADD($v7);
-BIND($v5, $v7, λ);
-PUT($v7, 74-69-6D-65-73);
-
-# v8 -> int(v9/Δ -> 6)
-ADD($v8);
-BIND($v8, $v1, π);
-ADD($v9);
-BIND($v8, $v9, Δ);
-PUT($v9, 00-00-00-00-00-00-00-06);
-
-# v11 -> v8.inc
-ADD($v10);
-BIND($v10, $v8, inc);
-ADD($v11);
-BIND($v11, $v10, β);
-BIND($v11, $v8, ρ);
-
-# v13/foo -> v8.times(α0 -> v9)
-ADD($v12);
-BIND($v12, $v8, times);
-ADD($v13);
-BIND($v13, $v12, β);
-BIND($v13, $v8, ρ);
-ADD($v14);
-BIND($v14, $v13, π);
-BIND($v14, $v11, α0);
-
-BIND(0, $v14, foo);
+F c0 int six foo
+F c1 v inc times φ
+F c2 ρ
+λ c2 L_inc
+P c1 inc c2
+F c3 ρ x
+λ c3 L_times
+P c1 times c3
+D c4 c1 v
+P c1 φ c4
+P c0 int c1
+D c5 c0 int
+F c6
+Δ c6 00-00-00-00-00-00-00-06
+A c7 c5 v c6
+P c0 six c7
+D c8 c0 six
+D c9 c8 times
+D c10 c0 six
+D c11 c10 inc
+A c12 c9 x c11
+P c0 foo c12

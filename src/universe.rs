@@ -1,61 +1,55 @@
 // SPDX-FileCopyrightText: Copyright (c) 2022-2026 Yegor Bugayenko
 // SPDX-License-Identifier: MIT
 
-use crate::{Atom, Universe};
-use anyhow::{anyhow, Context, Result};
+use crate::graph::{next_after, rebuilt, validate, PHI, PI, RHO};
+use crate::{Atom, Graph, Universe, EDGES};
+use anyhow::{anyhow, bail, Context, Result};
 use lazy_static::lazy_static;
 use log::{debug, trace};
 use regex::Regex;
-use sodg::Sodg;
-use sodg::{Hex, Relay};
+use sodg::{Hex, Kind, Label};
 use std::cmp;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
-macro_rules! enter {
-    ($self:expr, $($arg:tt)+) => {
-        $self.enter_it(format!($($arg)+))?;
-    }
-}
+/// How deep the evaluation may go, before it is considered endless.
+const MAX_DEPTH: usize = 256;
 
-macro_rules! exit {
-    ($self:expr, $($arg:tt)+) => {
-        $self.exit_it(format!($($arg)+))?;
-    }
-}
+/// The capacity of the graph of an empty [`Universe`].
+const MIN_CAPACITY: usize = 16;
 
-const MAX_RECURSION_DEPTH: usize = 20;
+/// The ID of the root cell, which is `Φ`.
+const ROOT: usize = 0;
 
 impl Universe {
     /// Makes an empty Universe.
     pub fn empty() -> Self {
-        let mut g = Sodg::empty();
-        g.alert_on(|g, vx| {
-            let mut errors = Vec::new();
-            for v in vx.iter() {
-                let attrs = g
-                    .kids(*v)
-                    .unwrap()
-                    .iter()
-                    .filter(|(a, _)| a == "π" || a == "φ")
-                    .count();
-                if attrs > 1 {
-                    errors.push(format!("ν{v} can't have both π and φ"));
-                }
-            }
-            errors
-        });
-        Self::from_graph(g)
+        Self::with_graph(Graph::empty(MIN_CAPACITY), MIN_CAPACITY, 0)
     }
 
-    /// Makes a Universe from a graph.
-    pub fn from_graph(g: Sodg) -> Self {
+    /// Makes a Universe from a graph, for example, the one
+    /// made by [`crate::deploy`] or loaded from a `.reo` file.
+    ///
+    /// # Errors
+    ///
+    /// If the graph uses positional attributes, like `α0`, which
+    /// are not supported.
+    pub fn from_graph(g: Graph) -> Result<Self> {
+        validate(&g)?;
+        let next = next_after(&g);
+        let cap = cmp::max(MIN_CAPACITY, next * 2);
+        Ok(Self::with_graph(rebuilt(&g, cap), cap, next))
+    }
+
+    fn with_graph(g: Graph, cap: usize, next: usize) -> Self {
         Universe {
             g,
+            cap,
+            next,
             atoms: HashMap::new(),
             depth: 0,
             snapshots: None,
@@ -66,321 +60,448 @@ impl Universe {
     pub fn with_snapshots(&self, p: &Path) -> Self {
         Universe {
             g: self.g.clone(),
+            cap: self.cap,
+            next: self.next,
             atoms: self.atoms.clone(),
             depth: self.depth,
             snapshots: Some(p.as_os_str().to_str().unwrap().to_string()),
         }
     }
 
-    /// Registers a new atom.
+    /// Registers a new atom, by the name of the λ-asset, like `L_inc`.
     pub fn register(&mut self, name: &str, a: Atom) {
         self.atoms.insert(name.to_string(), a);
         trace!("#register: atom {name} registered as {:p}", a as *const ());
     }
 
-    /// Add new vertex and return its ID.
-    pub fn add(&mut self) -> u32 {
-        let v = self.g.next_id();
-        self.g
-            .add(v)
-            .context(anyhow!("Failed to add ν{v}"))
-            .unwrap();
-        v
+    /// Make a new formation with these attributes (the command `F`)
+    /// and return its ID.
+    ///
+    /// # Errors
+    ///
+    /// If an attribute can't be parsed or is positional, like `α0`.
+    pub fn formation(&mut self, attrs: &[&str]) -> Result<usize> {
+        let labels = attrs
+            .iter()
+            .map(|a| Self::label(a))
+            .collect::<Result<Vec<Label>>>()?;
+        let c = self.fresh();
+        self.g.formation(c, &labels);
+        Ok(c)
     }
 
-    /// Bind two new vertices.
-    pub fn bind(&mut self, v1: u32, v2: u32, a: &str) {
-        self.g
-            .bind(v1, v2, a)
-            .context(anyhow!("Failed to bind ν{v1} to ν{v2} as '{a}'"))
-            .unwrap();
+    /// Make a new dispatch `base.attr` (the command `D`) and return its ID.
+    ///
+    /// # Errors
+    ///
+    /// If the base is absent or the attribute can't be parsed.
+    pub fn dispatch(&mut self, base: usize, attr: &str) -> Result<usize> {
+        self.ensure(base)?;
+        let a = Self::label(attr)?;
+        let c = self.fresh();
+        self.g.dispatch(c, base, a);
+        Ok(c)
     }
 
-    /// Save data into a vertex. If there is no vertex `v`, the function
-    /// will panic.
-    pub fn put(&mut self, v: u32, d: Hex) {
-        self.g
-            .put(v, &d)
-            .context(anyhow!("Failed to put the data to ν{v}"))
-            .unwrap();
+    /// Make a new application `proto( attr ↦ arg )` (the command `A`)
+    /// and return its ID.
+    ///
+    /// # Errors
+    ///
+    /// If a cell is absent or the attribute can't be parsed.
+    pub fn application(&mut self, proto: usize, attr: &str, arg: usize) -> Result<usize> {
+        self.ensure(proto)?;
+        self.ensure(arg)?;
+        let a = Self::label(attr)?;
+        let c = self.fresh();
+        self.g.application(c, proto, a, arg);
+        Ok(c)
     }
 
-    /// Get the `Hex` from the vertex.
-    /// If there is no vertex `v`, the function will panic.
-    pub fn data(&mut self, v: u32) -> Hex {
-        self.g
-            .data(v)
-            .context(anyhow!("Failed to get data from ν{v}"))
-            .unwrap()
+    /// Put the cell `kid` to the attribute `attr` of the cell `c`
+    /// (the command `P`).
+    ///
+    /// # Errors
+    ///
+    /// If a cell is absent, the attribute can't be parsed, or the cell
+    /// has no room for one more edge.
+    pub fn put(&mut self, c: usize, attr: &str, kid: usize) -> Result<()> {
+        self.ensure(c)?;
+        self.ensure(kid)?;
+        let a = Self::label(attr)?;
+        self.link(c, a, kid)
     }
 
-    /// Dataize by absolute locator. The search always starts from the
-    /// root node of the tree. It is recommended to start the locator
-    /// from "Φ". If you need to find any vertex starting from non-root
-    /// one, use `find` method.
+    /// Set the Δ-asset of the cell `c` (the command `Δ`).
+    ///
+    /// # Errors
+    ///
+    /// If the cell is absent.
+    pub fn delta(&mut self, c: usize, d: &Hex) -> Result<()> {
+        self.ensure(c)?;
+        self.g.delta(c, d);
+        Ok(())
+    }
+
+    /// Set the λ-asset of the cell `c` (the command `λ`).
+    ///
+    /// # Errors
+    ///
+    /// If the cell is absent.
+    pub fn lambda(&mut self, c: usize, name: &str) -> Result<()> {
+        self.ensure(c)?;
+        self.g.lambda(c, name);
+        Ok(())
+    }
+
+    /// Get the Δ-asset of the cell `c`, if it is there.
+    ///
+    /// # Errors
+    ///
+    /// If the cell is absent.
+    pub fn data(&self, c: usize) -> Result<Option<Hex>> {
+        self.ensure(c)?;
+        Ok(self.g.data(c))
+    }
+
+    /// Dataize by locator, like `Φ.foo.bar` or `ν42.x`.
+    ///
+    /// The object is found by [`Universe::find`], and then its data
+    /// is taken: from its Δ-asset, from its atom, or from its `φ`.
+    ///
+    /// # Errors
+    ///
+    /// If the object can't be found or has no data.
     pub fn dataize(&mut self, loc: &str) -> Result<Hex> {
-        let v = self
-            .find(format!("{loc}.Δ").as_str())
-            .context(format!("Can't find {loc}"))?;
+        let c = self.find(loc)?;
         let data = self
-            .g
-            .data(v)
-            .context(format!("There is no data in {}", self.g.v_print(v)?))?;
+            .dataized(c)
+            .with_context(|| format!("Can't dataize {loc}"))?;
         trace!(
-            "#dataize: data found in ν{v} ({} bytes): {}",
-            data.len(),
-            data
+            "#dataize: data found for {loc} at c{c} ({} bytes): {data}",
+            data.len()
         );
         Ok(data)
     }
 
-    /// Find vertex by absolute locator. The search always starts from the
-    /// root node of the tree. It is recommended to start the locator
-    /// from "Φ".
-    pub fn find(&mut self, loc: &str) -> Result<u32> {
-        if self.g.is_empty() {
-            return Err(anyhow!("The Universe is empty, can't dataize {loc}"));
+    /// Find an object by locator and return the ID of its formation.
+    ///
+    /// The locator is a dot-separated list of attributes, like `Φ.foo.bar`.
+    /// The search starts from the root `Φ`, unless the locator has
+    /// a segment like `ν42`, which jumps to the cell no.42.
+    ///
+    /// # Errors
+    ///
+    /// If the object can't be found.
+    pub fn find(&mut self, loc: &str) -> Result<usize> {
+        if self.g.kind(ROOT) == Kind::Void {
+            bail!("The Universe is empty, can't find {loc}");
         }
-        let v = self
-            .g
-            .find(0, loc, self)
-            .context(format!("Failed to find {loc}"))?;
-        Ok(v)
+        let mut cur = ROOT;
+        for seg in loc.split('.').filter(|s| !s.is_empty()) {
+            if seg == "Φ" {
+                cur = ROOT;
+            } else if let Some(tail) = seg.strip_prefix('ν') {
+                let c = usize::from_str(tail)
+                    .with_context(|| format!("Can't parse '{seg}' in '{loc}'"))?;
+                self.ensure(c)?;
+                cur = c;
+            } else {
+                let a = Self::label(seg)?;
+                let o = self.eval(cur)?;
+                cur = self
+                    .take(o, a)
+                    .with_context(|| format!("Can't find {loc}"))?;
+            }
+        }
+        self.eval(cur)
     }
 
-    /// Get a slice of the graph by the locator.
-    pub fn slice(&mut self, loc: &str) -> Result<Sodg> {
-        self.g
-            .slice_some(loc, |_v, _to, a| !a.starts_with('ρ') && !a.starts_with('σ'))
+    /// Get a slice of the graph, starting from the cell `c`,
+    /// without `ρ` edges.
+    ///
+    /// # Errors
+    ///
+    /// If the cell is absent.
+    pub fn slice(&self, c: usize) -> Result<Graph> {
+        self.ensure(c)?;
+        self.g.slice_some(c, |_, _, a| a != RHO)
     }
 
     /// Dump the graph to a file.
+    ///
+    /// # Errors
+    ///
+    /// If the file can't be written.
     pub fn dump(&self, p: &Path) -> Result<usize> {
         self.g.save(p)
     }
 }
 
-/// I have no idea why we need to have this intermediate
-/// function, but without it Relay::re doesn't compile.
-fn relay_it(u: *const Universe, at: u32, a: &str) -> Result<String> {
-    unsafe {
-        let u1 = u as *mut Universe;
-        let u2 = &mut *u1;
-        Universe::mut_re(u2, at, a)
-    }
-}
-
-impl Relay for Universe {
-    /// Resolve a locator on a vertex, if it is not found.
-    fn re(&self, at: u32, a: &str) -> Result<String> {
-        relay_it(self, at, a)
-    }
-}
-
 impl Universe {
-    /// Resolve a locator on a vertex, if it's not found. The returned string
-    /// is treated as a new locator, where the search will continue.
-    fn mut_re(uni: &mut Universe, v: u32, a: &str) -> Result<String> {
-        if a == "Φ" {
-            return Ok("ν0".to_string());
-        };
-        let v1 = uni.fnd(v, a, 0)?;
-        Ok(format!("ν{v1}"))
+    /// Evaluate the cell `c` to a formation and return its ID.
+    fn eval(&mut self, c: usize) -> Result<usize> {
+        self.deeper(format!("#eval(c{c})"), |u| match u.g.kind(c) {
+            Kind::Formation => Ok(c),
+            Kind::Dispatch(a) => {
+                let base = u.eval(u.edge(c, PI)?)?;
+                u.take(base, a)
+            }
+            Kind::Application(a) => u.apply(c, a),
+            Kind::Void => Err(anyhow!("c{c} is not an object, it can't be evaluated")),
+        })
     }
 
-    /// Find.
-    fn fnd(&mut self, v: u32, a: &str, psi: u32) -> Result<u32> {
-        enter!(self, "#fnd(ν{v}, {a}, {psi}): entered...");
-        let v1 = self.dd(v, psi)?;
-        let to = self.pf(v1, a, psi)?;
-        exit!(self, "#fnd(ν{v}, {a}, {psi}): pf(ν{v}, {a}) returned ν{to}");
-        Ok(to)
+    /// Evaluate the application in the cell `c`, which binds the
+    /// attribute `a`, and return the ID of a new formation.
+    fn apply(&mut self, c: usize, a: Label) -> Result<usize> {
+        let proto = self.eval(self.edge(c, PI)?)?;
+        let arg = self.edge(c, a)?;
+        if !self.g.attrs(proto).contains(&a) {
+            bail!("Can't apply c{proto} in c{c}, it has no attribute {a}");
+        }
+        if let Some(k) = self.g.kid(proto, a) {
+            bail!("Can't apply c{proto} in c{c}, its attribute {a} is not void, it is c{k}");
+        }
+        let copy = self.copy(proto)?;
+        self.link(copy, a, arg)?;
+        trace!("#apply: c{c} is c{proto} copied to c{copy} with {a} ↦ c{arg}");
+        Ok(copy)
     }
 
-    /// Path find.
-    fn pf(&mut self, v: u32, a: &str, psi: u32) -> Result<u32> {
-        enter!(self, "#pf(ν{v}, {a}, {psi}): entering...");
-        let r = if let Some(to) = self.g.kid(v, a) {
-            to
-        } else if let Some(lv) = self.g.kid(v, "λ") {
-            let lambda = self.g.data(lv)?.to_utf8()?;
-            trace!("#re: calling ν{v}.λ⇓{lambda}(ξ=ν?)...");
-            let to = self
-                .atoms
-                .get(lambda.as_str())
-                .context(anyhow!(
-                    "Can't find function {lambda} among {} others",
-                    self.atoms.len()
-                ))
-                .unwrap()(self, v)?;
-            trace!("#re: ν{v}.λ⇓{lambda}(ξ=ν?) returned ν{to}");
-            self.fnd(to, a, psi)?
-        } else if let Some(to) = self.g.kid(v, "φ") {
-            self.fnd(to, a, psi)?
-        } else if let Some(to) = self.g.kid(v, "γ") {
-            let t = Self::fnd(self, to, a, psi)?;
-            self.g.bind(v, t, a)?;
-            t
-        } else {
-            return Err(anyhow!(
-                "There is no way to get .{a} from {}",
-                self.g.v_print(v)?
-            ));
-        };
-        exit!(self, "#pf(ν{v}, {a}, {psi}): returning ν{}", r);
+    /// Take the attribute `a` from the formation `o` and return the ID
+    /// of the formation it is.
+    fn take(&mut self, o: usize, a: Label) -> Result<usize> {
+        self.deeper(format!("#take(c{o}, {a})"), |u| {
+            let found = if let Some(k) = u.g.kid(o, a) {
+                u.eval(k)?
+            } else if u.g.attrs(o).contains(&a) {
+                bail!("The attribute {a} of c{o} is void")
+            } else if u.g.atom(o).is_some() {
+                let r = u.call(o)?;
+                let r = u.eval(r)?;
+                u.take(r, a)?
+            } else if a != PHI && (u.g.kid(o, PHI).is_some() || u.g.attrs(o).contains(&PHI)) {
+                let phi = u.take(o, PHI)?;
+                u.take(phi, a)?
+            } else {
+                bail!("There is no attribute {a} in c{o}")
+            };
+            let r = if a != RHO && u.misses_rho(found) {
+                let copy = u.copy(found)?;
+                u.link(copy, RHO, o)?;
+                trace!("#take: c{found} copied to c{copy} with ρ ↦ c{o}");
+                copy
+            } else {
+                found
+            };
+            if u.is_closed(o) {
+                u.memo(o, a, r);
+            }
+            Ok(r)
+        })
+    }
+
+    /// Dataize the cell `c`: evaluate it and take its Δ-asset, or call
+    /// its atom, or dataize its `φ`.
+    fn dataized(&mut self, c: usize) -> Result<Hex> {
+        self.deeper(format!("#dataized(c{c})"), |u| {
+            let o = u.eval(c)?;
+            if let Some(d) = u.g.data(o) {
+                return Ok(d);
+            }
+            if u.g.atom(o).is_some() {
+                let r = u.call(o)?;
+                return u.dataized(r);
+            }
+            if u.g.kid(o, PHI).is_some() || u.g.attrs(o).contains(&PHI) {
+                let phi = u.take(o, PHI)?;
+                return u.dataized(phi);
+            }
+            Err(anyhow!("There is no data in c{o}: no Δ, no λ, and no φ"))
+        })
+    }
+
+    /// Call the atom of the formation `o` and return the cell it returns.
+    fn call(&mut self, o: usize) -> Result<usize> {
+        let name = self
+            .g
+            .atom(o)
+            .with_context(|| format!("There is no λ-asset in c{o}"))?
+            .to_string();
+        let atom = *self.atoms.get(name.as_str()).with_context(|| {
+            format!(
+                "Can't find the atom {name} of c{o} among {} others",
+                self.atoms.len()
+            )
+        })?;
+        trace!("#call: calling {name} for c{o}...");
+        let r = atom(self, o).with_context(|| format!("The atom {name} of c{o} failed"))?;
+        self.ensure(r)
+            .with_context(|| format!("The atom {name} of c{o} returned a wrong cell"))?;
+        trace!("#call: {name} for c{o} returned c{r}");
         Ok(r)
     }
 
-    /// Dynamic dispatch.
-    fn dd(&mut self, v: u32, psi: u32) -> Result<u32> {
-        enter!(self, "#dd(ν{v}, {psi}): entering...");
-        let psi2 = match self.g.kid(v, "ψ") {
-            Some(p) => p,
-            None => psi,
-        };
-        let r = if let Some(to) = self.g.kid(v, "ε") {
-            self.dd(to, psi2)?
-        } else if self.g.kid(v, "ξ").is_some() {
-            self.dd(psi2, psi2)?
-        } else if let Some(beta) = self.g.kid(v, "β") {
-            let (a, to) = self
-                .g
-                .kids(beta)?
-                .first()
-                .ok_or(anyhow!("Can't find ν{beta}"))?
-                .clone();
-            let nv = self.fnd(to, a.as_str(), psi2)?;
-            self.dd(nv, psi2)?
-        } else if let Some(to) = self.g.kid(v, "π") {
-            let nv = self.dd(to, psi2)?;
-            self.apply(nv, v)?
-        } else {
-            v
-        };
-        exit!(self, "#dd(ν{v}, {psi}): returning ν{}", r);
+    /// Make a copy of the abstract formation `f` and return its ID.
+    ///
+    /// Every cell reachable from `f` through its kids is copied too,
+    /// except the root, closed formations, and the cells behind `ρ` edges
+    /// of formations. Edges to the copied cells point to their copies,
+    /// while other edges stay as they are.
+    fn copy(&mut self, f: usize) -> Result<usize> {
+        let mut order = vec![];
+        let mut seen = HashSet::new();
+        let mut todo = vec![f];
+        while let Some(c) = todo.pop() {
+            if !seen.insert(c) {
+                continue;
+            }
+            order.push(c);
+            let formation = self.g.kind(c) == Kind::Formation;
+            for (a, k) in self.g.kids(c) {
+                if formation && *a == RHO {
+                    continue;
+                }
+                if *k == ROOT || seen.contains(k) {
+                    continue;
+                }
+                match self.g.kind(*k) {
+                    Kind::Void => {}
+                    Kind::Formation if self.is_closed(*k) => {}
+                    _ => todo.push(*k),
+                }
+            }
+        }
+        let mut map = HashMap::new();
+        for c in &order {
+            let copy = self.fresh();
+            map.insert(*c, copy);
+        }
+        let to = |c: usize| *map.get(&c).unwrap_or(&c);
+        for c in order {
+            let n = to(c);
+            match self.g.kind(c) {
+                Kind::Formation => {
+                    let attrs = self.g.attrs(c).to_vec();
+                    self.g.formation(n, &attrs);
+                }
+                Kind::Dispatch(a) => {
+                    let base = to(self.edge(c, PI)?);
+                    self.g.dispatch(n, base, a);
+                }
+                Kind::Application(a) => {
+                    let proto = to(self.edge(c, PI)?);
+                    let arg = to(self.edge(c, a)?);
+                    self.g.application(n, proto, a, arg);
+                }
+                Kind::Void => bail!("Can't copy c{c}, it is not an object"),
+            }
+            if let Some(d) = self.g.data(c) {
+                self.g.delta(n, &d);
+            }
+            if let Some(name) = self.g.atom(c).map(ToString::to_string) {
+                self.g.lambda(n, name.as_str());
+            }
+            let edges: Vec<(Label, usize)> = self.g.kids(c).map(|(a, k)| (*a, to(*k))).collect();
+            for (a, k) in edges {
+                self.g.put(n, a, k);
+            }
+        }
+        let r = to(f);
+        trace!("#copy: c{f} copied to c{r}, with {} cell(s)", map.len());
         Ok(r)
     }
 
-    /// Apply `v1` to `v2` and return a new vertex.
-    fn apply(&mut self, v1: u32, v2: u32) -> Result<u32> {
-        enter!(self, "#apply(ν{v1}, ν{v2}): entering...");
+    /// Remember that the attribute `a` of the closed formation `o` is
+    /// the formation `r`, if there is room for it.
+    fn memo(&mut self, o: usize, a: Label, r: usize) {
+        match self.g.kid(o, a) {
+            Some(k) if k == r => {}
+            Some(_) => self.g.put(o, a, r),
+            None if self.g.kids(o).count() < EDGES => self.g.put(o, a, r),
+            None => trace!("#memo: no room in c{o} to remember {a} ↦ c{r}"),
+        }
+    }
+
+    /// The formation `c` has a void attribute.
+    fn is_closed(&self, c: usize) -> bool {
+        self.g.kind(c) == Kind::Formation
+            && self.g.attrs(c).iter().all(|a| self.g.kid(c, *a).is_some())
+    }
+
+    /// The formation `c` declares `ρ` but has no kid there.
+    fn misses_rho(&self, c: usize) -> bool {
+        self.g.kind(c) == Kind::Formation
+            && self.g.attrs(c).contains(&RHO)
+            && self.g.kid(c, RHO).is_none()
+    }
+
+    /// Put an edge, making sure the cell has room for it.
+    fn link(&mut self, c: usize, a: Label, kid: usize) -> Result<()> {
+        if self.g.kid(c, a).is_none() && self.g.kids(c).count() >= EDGES {
+            bail!("The cell c{c} can't have more than {EDGES} edges, {a} doesn't fit");
+        }
+        self.g.put(c, a, kid);
+        Ok(())
+    }
+
+    /// Get the kid of `c` at the edge `a`, which must be there.
+    fn edge(&self, c: usize, a: Label) -> Result<usize> {
+        self.g
+            .kid(c, a)
+            .with_context(|| format!("There is no edge {a} in c{c}"))
+    }
+
+    /// Make sure the cell `c` exists.
+    fn ensure(&self, c: usize) -> Result<()> {
+        if c >= self.cap || self.g.kind(c) == Kind::Void {
+            bail!("The cell c{c} is absent");
+        }
+        Ok(())
+    }
+
+    /// Get the ID for a new cell, growing the graph if it is full.
+    fn fresh(&mut self) -> usize {
+        if self.next >= self.cap {
+            self.cap *= 2;
+            self.g = rebuilt(&self.g, self.cap);
+            debug!("#fresh: the graph grew to {} cells", self.cap);
+        }
+        let c = self.next;
+        self.next += 1;
+        c
+    }
+
+    /// Parse the label of an attribute.
+    fn label(s: &str) -> Result<Label> {
+        let a = Label::from_str(s).with_context(|| format!("Can't parse attribute '{s}'"))?;
+        if let Label::Alpha(_) = a {
+            bail!("The positional attribute {a} is not supported, use a named one");
+        }
+        Ok(a)
+    }
+
+    /// Run the function one level deeper, making sure the recursion
+    /// doesn't go too deep.
+    fn deeper<T>(&mut self, msg: String, f: impl FnOnce(&mut Self) -> Result<T>) -> Result<T> {
+        if self.depth >= MAX_DEPTH {
+            bail!("The recursion is too deep ({} levels) at {msg}", self.depth);
+        }
+        self.snapshot(&msg)?;
         self.depth += 1;
-        let nv = self.g.next_id();
-        self.g.add(nv)?;
-        self.pull(nv, v1)?;
-        self.push(nv, v2)?;
-        exit!(
-            self,
-            "#apply(ν{v1}, ν{v2}): copy ν{v1}+ν{v2} created as ν{nv}"
-        );
-        Ok(nv)
-    }
-
-    /// Pull into `v1` from `v2`.
-    fn pull(&mut self, v1: u32, v2: u32) -> Result<()> {
-        for (a, k) in self.g.kids(v2)?.into_iter() {
-            if a == "σ" || a == "β" || a == "π" {
-                continue;
-            }
-            self.up(v1, k, a)?;
-        }
-        Ok(())
-    }
-
-    /// Link.
-    fn up(&mut self, v1: u32, v2: u32, a: String) -> Result<()> {
-        if a == "λ" || a == "Δ" || a == "ρ" || self.nil(v2)? {
-            self.g.bind(v1, v2, a.as_str())?;
-        } else {
-            let nv = self.g.next_id();
-            self.g.add(nv)?;
-            self.g.bind(v1, nv, a.as_str())?;
-            self.g.bind(nv, v1, "ρ")?;
-            self.g.bind(nv, v1, "ψ")?;
-            self.g.bind(nv, v2, "π")?;
-        };
-        Ok(())
-    }
-
-    /// Push from `v2` to `v1`.
-    fn push(&mut self, v1: u32, v2: u32) -> Result<()> {
-        for (a, k) in self.g.kids(v2)?.into_iter() {
-            if a == "π" || a == "ψ" {
-                continue;
-            }
-            self.down(v1, k, a)?;
-        }
-        Ok(())
-    }
-
-    /// Link down.
-    fn down(&mut self, v1: u32, v2: u32, a: String) -> Result<()> {
-        let a1 = self.tie(v1, a)?;
-        self.g.bind(v1, v2, a1.as_str())?;
-        Ok(())
-    }
-
-    /// Tie an existing name with a new name.
-    fn tie(&mut self, v: u32, a: String) -> Result<String> {
-        if a == "ρ" || a == "σ" {
-            trace!("#tie(ν{v}, {a}): it's a direct tie");
-            return Ok(a);
-        }
-        if a == "Δ" && self.g.kid(v, a.as_str()).is_none() {
-            trace!("#tie(ν{v}, {a}): it's a new data");
-            return Ok(a);
-        }
-        if let Some(v1) = self.g.kid(v, a.as_str()) {
-            if self.nil(v1)? {
-                trace!("#tie(ν{v}, {a}): it's a nil");
-                return Ok(a);
-            }
-        }
-        if a.starts_with('α') {
-            let tail: String = a.chars().skip(1).collect::<Vec<_>>().into_iter().collect();
-            let i = usize::from_str(tail.as_str())?;
-            let a1 = self
-                .g
-                .kids(v)?
-                .into_iter()
-                .filter(|(aa, _)| aa.is_ascii())
-                .nth(i)
-                .unwrap();
-            trace!("#tie(ν{v}, {a}): the {i}th attribute is {}", a1.0);
-            return self.tie(v, a1.0);
-        }
-        Err(anyhow!("Can't tie to ν{v}.{a}"))
-    }
-
-    /// The vertex is a dead-end, a nil.
-    fn nil(&mut self, v: u32) -> Result<bool> {
-        let kids = self.g.kids(v)?;
-        return Ok(kids.len() == 1 && kids.iter().all(|(a, _)| a == "ρ"));
-    }
-
-    fn enter_it(&mut self, msg: String) -> Result<()> {
-        self.depth += 1;
-        if self.depth > MAX_RECURSION_DEPTH {
-            return Err(anyhow!("The recursion is too deep ({} levels)", self.depth));
-        }
-        self.snapshot(msg)?;
-        Ok(())
-    }
-
-    fn exit_it(&mut self, msg: String) -> Result<()> {
-        if self.depth > 0 {
-            self.depth -= 1;
-        }
-        self.snapshot(msg)?;
-        Ok(())
+        let r = f(self);
+        self.depth -= 1;
+        self.snapshot(&format!("{msg}: done"))?;
+        r
     }
 
     const COLORS: &'static str = "fillcolor=aquamarine3,style=filled,";
 
     /// Create a new snapshot (PDF file)
-    fn snapshot(&mut self, msg: String) -> Result<()> {
+    fn snapshot(&mut self, msg: &str) -> Result<()> {
         lazy_static! {
-            static ref DOT_LINE: Regex = Regex::new("^ +v([0-9]+)\\[.*$").unwrap();
+            static ref DOT_LINE: Regex = Regex::new("^ +c([0-9]+)\\[.*$").unwrap();
         }
         if self.snapshots.is_none() {
             return Ok(());
@@ -430,7 +551,7 @@ impl Universe {
                 .replace(Self::COLORS, "");
             debug!("Previous snapshot read from: {}", Self::fprint(b));
         }
-        let seen: Vec<u32> = before
+        let seen: Vec<usize> = before
             .split('\n')
             .map(|t| match &DOT_LINE.captures(t) {
                 Some(m) => m.get(1).unwrap().as_str().parse().unwrap(),
@@ -444,7 +565,7 @@ impl Universe {
             dot.split('\n')
                 .map(|t| match &DOT_LINE.captures(t) {
                     Some(m) => {
-                        let v = m.get(1).unwrap().as_str().parse::<u32>().unwrap();
+                        let v = m.get(1).unwrap().as_str().parse::<usize>().unwrap();
                         if seen.contains(&v) {
                             t.to_string()
                         } else {
@@ -514,7 +635,7 @@ impl Universe {
 }
 
 #[cfg(test)]
-use sodg::Script;
+use crate::deploy;
 
 #[cfg(test)]
 use std::process::Command;
@@ -523,54 +644,33 @@ use std::process::Command;
 use glob::glob;
 
 #[cfg(test)]
-fn rand(uni: &mut Universe, _: u32) -> Result<u32> {
-    let v = uni.add();
-    uni.bind(v, 0, "π/int");
-    let v2 = uni.add();
-    uni.bind(v, v2, "Δ");
-    uni.put(v2, Hex::from(rand::random::<i64>()));
-    Ok(v)
-}
+use std::sync::atomic::{AtomicI64, Ordering};
 
-#[test]
-fn generates_random_int() -> Result<()> {
-    let mut uni = Universe::empty();
-    let root = uni.add();
-    assert_eq!(0, root);
-    let v1 = uni.add();
-    uni.bind(root, v1, "int");
-    let v2 = uni.add();
-    uni.bind(root, v2, "rand");
-    uni.bind(root, v2, "x");
-    uni.register("rand", rand);
-    let lambda = uni.add();
-    uni.bind(v2, lambda, "λ");
-    uni.put(lambda, Hex::from_str_bytes("rand"));
-    let first = uni.dataize("Φ.x")?.to_i64()?;
-    let second = uni.dataize("Φ.x")?.to_i64()?;
-    assert_ne!(first, second);
-    Ok(())
+#[cfg(test)]
+static COUNTER: AtomicI64 = AtomicI64::new(0);
+
+#[cfg(test)]
+fn next(uni: &mut Universe, _: usize) -> Result<usize> {
+    let c = uni.formation(&[])?;
+    uni.delta(c, &Hex::from(COUNTER.fetch_add(1, Ordering::SeqCst)))?;
+    Ok(c)
 }
 
 #[cfg(test)]
-fn inc(uni: &mut Universe, v: u32) -> Result<u32> {
-    let rho = uni.dataize(format!("ν{v}.ρ").as_str())?.to_i64()?;
-    let v1 = uni.add();
-    let v2 = uni.add();
-    uni.bind(v1, v2, "Δ");
-    uni.put(v2, Hex::from(rho + 1));
-    Ok(v1)
+fn inc(uni: &mut Universe, c: usize) -> Result<usize> {
+    let rho = uni.dataize(format!("ν{c}.ρ").as_str())?.to_i64()?;
+    let r = uni.formation(&[])?;
+    uni.delta(r, &Hex::from(rho + 1))?;
+    Ok(r)
 }
 
 #[cfg(test)]
-fn times(uni: &mut Universe, v: u32) -> Result<u32> {
-    let rho = uni.dataize(format!("ν{v}.ρ").as_str())?.to_i64()?;
-    let x = uni.dataize(format!("ν{v}.x").as_str())?.to_i64()?;
-    let v1 = uni.add();
-    let v2 = uni.add();
-    uni.bind(v1, v2, "Δ");
-    uni.put(v2, Hex::from(rho * x));
-    Ok(v1)
+fn times(uni: &mut Universe, c: usize) -> Result<usize> {
+    let rho = uni.dataize(format!("ν{c}.ρ").as_str())?.to_i64()?;
+    let x = uni.dataize(format!("ν{c}.x").as_str())?.to_i64()?;
+    let r = uni.formation(&[])?;
+    uni.delta(r, &Hex::from(rho * x))?;
+    Ok(r)
 }
 
 #[cfg(test)]
@@ -588,45 +688,178 @@ fn sodg_scripts_in_dir(dir: &str) -> Vec<String> {
     paths
 }
 
+/// The kids, the Δ-asset, and the λ-asset of a cell.
+#[cfg(test)]
+type State = (Vec<(Label, usize)>, Option<String>, Option<String>);
+
+#[cfg(test)]
+fn state(uni: &Universe, c: usize) -> State {
+    let mut kids: Vec<(Label, usize)> = uni.g.kids(c).map(|(a, k)| (*a, *k)).collect();
+    kids.sort();
+    (
+        kids,
+        uni.g.data(c).map(|d| d.print()),
+        uni.g.atom(c).map(ToString::to_string),
+    )
+}
+
+/// The states of all abstract formations.
+#[cfg(test)]
+fn abstracts(uni: &Universe) -> Vec<(usize, State)> {
+    let mut all: Vec<(usize, State)> = uni
+        .g
+        .keys()
+        .into_iter()
+        .filter(|c| uni.g.kind(*c) == Kind::Formation && !uni.is_closed(*c))
+        .map(|c| (c, state(uni, c)))
+        .collect();
+    all.sort_by_key(|(c, _)| *c);
+    all
+}
+
+#[cfg(test)]
+const EXAMPLE: &str = "
+    F c0 int foo
+    F c1 x inc φ
+    F c2 ρ
+    λ c2 L_inc
+    P c1 inc c2
+    D c3 c1 x
+    P c1 φ c3
+    P c0 int c1
+    D c4 c0 int
+    F c5
+    Δ c5 00-00-00-00-00-00-00-29
+    A c6 c4 x c5
+    D c7 c6 inc
+    P c0 foo c7
+";
+
+#[test]
+fn dataizes_example_from_issue() -> Result<()> {
+    let mut uni = Universe::from_graph(deploy(EXAMPLE)?)?;
+    uni.register("L_inc", inc);
+    let before = uni.g.len();
+    assert_eq!(42, uni.dataize("Φ.foo")?.to_i64()?);
+    assert_eq!(before + 5, uni.g.len(), "{:?}", uni.g);
+    Ok(())
+}
+
+#[test]
+fn dataizes_example_twice() -> Result<()> {
+    let mut uni = Universe::from_graph(deploy(EXAMPLE)?)?;
+    uni.register("L_inc", inc);
+    assert_eq!(42, uni.dataize("Φ.foo")?.to_i64()?);
+    let before = uni.g.len();
+    assert_eq!(42, uni.dataize("Φ.foo")?.to_i64()?);
+    assert_eq!(before + 1, uni.g.len(), "{:?}", uni.g);
+    Ok(())
+}
+
+#[test]
+fn dataizes_with_low_level_api() -> Result<()> {
+    let mut uni = Universe::empty();
+    let root = uni.formation(&["foo"])?;
+    let int = uni.formation(&["x", "φ"])?;
+    let phi = uni.dispatch(int, "x")?;
+    uni.put(int, "φ", phi)?;
+    let data = uni.formation(&[])?;
+    uni.delta(data, &Hex::from(42_i64))?;
+    let app = uni.application(int, "x", data)?;
+    uni.put(root, "foo", app)?;
+    assert_eq!(42, uni.dataize("Φ.foo")?.to_i64()?);
+    Ok(())
+}
+
+#[test]
+fn grows_the_graph() -> Result<()> {
+    let mut uni = Universe::empty();
+    let root = uni.formation(&["foo"])?;
+    let mut prev = uni.formation(&[])?;
+    uni.delta(prev, &Hex::from(42_i64))?;
+    for _ in 0..100 {
+        let c = uni.formation(&["φ"])?;
+        uni.put(c, "φ", prev)?;
+        prev = c;
+    }
+    uni.put(root, "foo", prev)?;
+    assert_eq!(42, uni.dataize("Φ.foo")?.to_i64()?);
+    assert!(uni.cap > 100);
+    Ok(())
+}
+
+#[test]
+fn rejects_positional_attributes() {
+    assert!(Universe::empty().formation(&["α0"]).is_err());
+}
+
+#[test]
+fn rejects_too_many_edges() -> Result<()> {
+    let mut uni = Universe::empty();
+    let c = uni.formation(&[])?;
+    for i in 0..EDGES {
+        uni.put(c, format!("a{i}").as_str(), c)?;
+    }
+    assert!(uni.put(c, "boom", c).is_err());
+    Ok(())
+}
+
+#[test]
+fn generates_different_numbers() -> Result<()> {
+    let mut uni = Universe::empty();
+    let root = uni.formation(&["x"])?;
+    let x = uni.formation(&[])?;
+    uni.lambda(x, "L_next")?;
+    uni.put(root, "x", x)?;
+    uni.register("L_next", next);
+    let first = uni.dataize("Φ.x")?.to_i64()?;
+    let second = uni.dataize("Φ.x")?.to_i64()?;
+    assert_ne!(first, second);
+    Ok(())
+}
+
 #[test]
 fn find_absent_vertex() -> Result<()> {
-    let g = Sodg::empty();
-    let mut uni = Universe::from_graph(g);
-    uni.add();
+    let mut uni = Universe::empty();
+    uni.formation(&[])?;
     assert!(uni.dataize("Φ.foo").is_err());
     Ok(())
 }
 
 #[test]
 fn fnd_absent_vertex() -> Result<()> {
-    let g = Sodg::empty();
-    let mut uni = Universe::from_graph(g);
-    uni.add();
+    let mut uni = Universe::empty();
+    uni.formation(&[])?;
     assert!(uni.dataize("ν42.foo").is_err());
+    assert!(uni.dataize("ν4200000.foo").is_err());
     Ok(())
 }
 
 #[test]
+fn fails_in_empty_universe() {
+    assert!(Universe::empty().dataize("Φ.foo").is_err());
+}
+
+#[test]
 fn fails_on_phi_cycle() -> Result<()> {
-    let mut s = Script::from_str(
+    let g = deploy(
         "
-        ADD(ν0);
-        ADD($ν1);
-        BIND(ν0, $ν1, foo);
-        ADD($ν2);
-        BIND($ν1, $ν2, φ);
-        BIND($ν2, $ν1, φ);
+        F c0 foo
+        F c1 φ
+        F c2 φ
+        P c1 φ c2
+        P c2 φ c1
+        P c0 foo c1
         ",
-    );
-    let mut g = Sodg::empty();
-    s.deploy_to(&mut g)?;
-    let mut uni = Universe::from_graph(g);
+    )?;
+    let mut uni = Universe::from_graph(g)?;
     let err = uni.dataize("Φ.foo").unwrap_err();
     assert!(
         err.chain()
             .any(|e| e.to_string().contains("The recursion is too deep")),
-        "Unexpected error: {err}"
+        "Unexpected error: {err:?}"
     );
+    assert_eq!(0, uni.depth);
     Ok(())
 }
 
@@ -639,9 +872,7 @@ fn quick_tests() -> Result<()> {
             .get(1)
             .ok_or(anyhow!("Can't understand path"))?;
         trace!("\n\n#quick_tests: {name}");
-        let mut s = Script::from_str(fs::read_to_string(&path)?.as_str());
-        let mut g = Sodg::empty();
-        s.deploy_to(&mut g)?;
+        let g = deploy(fs::read_to_string(&path)?.as_str())?;
         let p = format!("target/surge/{}", name);
         let home = Path::new(p.as_str());
         if home.exists() {
@@ -650,11 +881,12 @@ fn quick_tests() -> Result<()> {
                 home.to_str().unwrap()
             ))?;
         }
-        let mut uni = Universe::from_graph(g).with_snapshots(home);
-        uni.register("inc", inc);
-        uni.register("times", times);
+        let mut uni = Universe::from_graph(g)?.with_snapshots(home);
+        uni.register("L_inc", inc);
+        uni.register("L_times", times);
+        let before = abstracts(&uni);
         let r = uni.dataize("Φ.foo");
-        uni.exit_it("The end".to_string())?;
+        uni.snapshot("The end")?;
         if r.is_err() {
             assert!(Command::new("make")
                 .current_dir(home)
@@ -666,6 +898,13 @@ fn quick_tests() -> Result<()> {
         }
         let hex = r.context(anyhow!("Failure in {path}"))?;
         assert_eq!(42, hex.to_i64()?, "Failure in {path}");
+        for (c, s) in before {
+            assert_eq!(
+                s,
+                state(&uni, c),
+                "The abstract object c{c} was modified in {path}"
+            );
+        }
     }
     Ok(())
 }
@@ -674,15 +913,20 @@ fn quick_tests() -> Result<()> {
 fn quick_errors() -> Result<()> {
     for path in sodg_scripts_in_dir("quick-errors") {
         trace!("#quick_errors: {path}");
-        let mut s = Script::from_str(fs::read_to_string(&path)?.as_str());
-        let mut g = Sodg::empty();
-        s.deploy_to(&mut g)?;
-        let mut uni = Universe::from_graph(g);
-        uni.register("inc", inc);
-        uni.register("times", times);
+        let r = deploy(fs::read_to_string(&path)?.as_str())
+            .and_then(Universe::from_graph)
+            .and_then(|mut uni| {
+                uni.register("L_inc", inc);
+                uni.register("L_times", times);
+                uni.dataize("Φ.foo")
+            });
         assert!(
-            uni.dataize("Φ.foo").is_err(),
+            r.is_err(),
             "A failure is expected in {path}, but it didn't happen"
+        );
+        trace!(
+            "#quick_errors: {path} failed as expected: {:#}",
+            r.unwrap_err()
         );
     }
     Ok(())

@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: Copyright (c) 2022-2026 Yegor Bugayenko
+# SPDX-License-Identifier: MIT
+
+# An object refers to its ρ and to itself, via ξ.
+#
+#   ⟦ a ↦ ⟦ ρ ↦ ∅, b ↦ ξ.ρ.c, e ↦ ξ ⟧, c ↦ ⟦ Δ ⤍ 00-00-00-00-00-00-00-2A ⟧, foo ↦ Φ.a.e.b ⟧
+#
+# The script below is printed by `phino sodg` 0.0.167.
+
+F c0 a c foo
+F c1 ρ b e
+D c2 c1 ρ
+D c3 c2 c
+P c1 b c3
+P c1 e c1
+P c0 a c1
+F c4
+Δ c4 00-00-00-00-00-00-00-2A
+P c0 c c4
+D c5 c0 a
+D c6 c5 e
+D c7 c6 b
+P c0 foo c7

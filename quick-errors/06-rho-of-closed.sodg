@@ -1,0 +1,17 @@
+# SPDX-FileCopyrightText: Copyright (c) 2022-2026 Yegor Bugayenko
+# SPDX-License-Identifier: MIT
+
+# An object refers to its ρ, which it does not declare.
+#
+#   ⟦ a ↦ ⟦ b ↦ ξ.ρ ⟧, foo ↦ Φ.a.b ⟧
+#
+# The script below is printed by `phino sodg` 0.0.167.
+
+F c0 a foo
+F c1 b
+D c2 c1 ρ
+P c1 b c2
+P c0 a c1
+D c3 c0 a
+D c4 c3 b
+P c0 foo c4

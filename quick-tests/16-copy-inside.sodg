@@ -1,0 +1,26 @@
+# SPDX-FileCopyrightText: Copyright (c) 2022-2026 Yegor Bugayenko
+# SPDX-License-Identifier: MIT
+
+# An application inside an object, which binds an attribute of the object.
+#
+#   ⟦ a ↦ ⟦ times ↦ ⟦ ρ ↦ ∅, x ↦ ∅, λ ⤍ L_times ⟧, Δ ⤍ 00-00-00-00-00-00-00-06, f ↦ ⟦ Δ ⤍ 00-00-00-00-00-00-00-07 ⟧, t ↦ ξ.times(x ↦ ξ.f) ⟧, foo ↦ Φ.a.t ⟧
+#
+# The script below is printed by `phino sodg` 0.0.167.
+
+F c0 a foo
+F c1 times f t
+F c2 ρ x
+λ c2 L_times
+P c1 times c2
+Δ c1 00-00-00-00-00-00-00-06
+F c3
+Δ c3 00-00-00-00-00-00-00-07
+P c1 f c3
+D c4 c1 times
+D c5 c1 f
+A c6 c4 x c5
+P c1 t c6
+P c0 a c1
+D c7 c0 a
+D c8 c7 t
+P c0 foo c8

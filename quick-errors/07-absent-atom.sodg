@@ -1,0 +1,13 @@
+# SPDX-FileCopyrightText: Copyright (c) 2022-2026 Yegor Bugayenko
+# SPDX-License-Identifier: MIT
+
+# An atom, which is not registered.
+#
+#   ⟦ foo ↦ ⟦ λ ⤍ L_absent ⟧ ⟧
+#
+# The script below is printed by `phino sodg` 0.0.167.
+
+F c0 foo
+F c1
+λ c1 L_absent
+P c0 foo c1

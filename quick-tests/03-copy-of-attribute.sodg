@@ -1,24 +1,22 @@
 # SPDX-FileCopyrightText: Copyright (c) 2022-2026 Yegor Bugayenko
 # SPDX-License-Identifier: MIT
 
-# v1/bar -> [ a/v3 -> [ Δ -> 42 ] ]
-# v6/foo -> v1.a()
+# An application of an abstract object, which is an attribute of another one.
+#
+#   ⟦ bar ↦ ⟦ a ↦ ⟦ y ↦ ∅, φ ↦ ξ.y ⟧ ⟧, foo ↦ Φ.bar.a(y ↦ ⟦ Δ ⤍ 00-00-00-00-00-00-00-2A ⟧) ⟧
+#
+# The script below is printed by `phino sodg` 0.0.167.
 
-ADD(0);
-
-ADD($v1);
-BIND(0, $v1, bar);
-ADD($v2);
-BIND($v1, $v2, a);
-ADD($v3);
-BIND($v2, $v3, Δ);
-PUT($v3, 00-00-00-00-00-00-00-2A);
-
-ADD($v4);
-BIND($v4, $v1, a);
-ADD($v5);
-BIND($v5, $v4, β);
-
-ADD($v6);
-BIND($v6, $v5, π);
-BIND(0, $v6, foo);
+F c0 bar foo
+F c1 a
+F c2 y φ
+D c3 c2 y
+P c2 φ c3
+P c1 a c2
+P c0 bar c1
+D c4 c0 bar
+D c5 c4 a
+F c6
+Δ c6 00-00-00-00-00-00-00-2A
+A c7 c5 y c6
+P c0 foo c7

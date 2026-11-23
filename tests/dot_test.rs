@@ -6,6 +6,7 @@ mod common;
 use crate::common::compiler::compile_one;
 use anyhow::Result;
 use predicates::prelude::predicate;
+use std::fs;
 use tempfile::TempDir;
 
 #[test]
@@ -15,12 +16,10 @@ fn prints_dot() -> Result<()> {
     let dot = tmp.path().join("first.dot");
     compile_one(
         "
-        ADD(ν0);
-        ADD($ν1);
-        BIND(ν0, $ν1, foo);
-        ADD($ν2);
-        BIND($ν1, $ν2, Δ);
-        PUT($ν2, d0-bf-d1-80-d0-b8-d0-b2-d0-b5-d1-82);
+        F c0 foo
+        F c1
+        Δ c1 d0-bf-d1-80-d0-b8-d0-b2-d0-b5-d1-82
+        P c0 foo c1
         ",
         bin.clone(),
     )?;
@@ -32,7 +31,24 @@ fn prints_dot() -> Result<()> {
         .arg(dot.as_os_str())
         .assert()
         .success();
-    assert!(dot.exists());
+    assert!(fs::read_to_string(dot)?.contains("c0 -> c1 [label=\"foo\"]"));
+    Ok(())
+}
+
+#[test]
+fn rejects_absent_root() -> Result<()> {
+    let tmp = TempDir::new()?;
+    let bin = tmp.path().join("first.reo");
+    compile_one("F c0", bin.clone())?;
+    assert_cmd::Command::cargo_bin("reo")
+        .unwrap()
+        .current_dir(tmp.path())
+        .arg("dot")
+        .arg("--root=7")
+        .arg(bin.as_os_str())
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("There is no cell c7"));
     Ok(())
 }
 
@@ -52,7 +68,7 @@ fn rejects_non_numeric_root() -> Result<()> {
     let tmp = TempDir::new()?;
     let bin = tmp.path().join("first.reo");
     let dot = tmp.path().join("first.dot");
-    compile_one("ADD(ν0);", bin.clone())?;
+    compile_one("F c0", bin.clone())?;
     assert_cmd::Command::cargo_bin("reo")
         .unwrap()
         .current_dir(tmp.path())

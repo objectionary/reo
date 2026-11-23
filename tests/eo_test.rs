@@ -13,22 +13,14 @@ use reo::Universe;
 fn all_apps() -> Result<Vec<String>> {
     let mut apps = Vec::new();
     for f in glob("eo-tests/**/*.eo")? {
-        let p = f?;
-        let path = p.as_path();
+        let path = f?;
         let app = path
+            .strip_prefix("eo-tests")?
+            .with_extension("")
             .to_str()
-            .context(format!("Can't get str from '{}'", path.display()))?
-            .splitn(2, "/")
-            .nth(1)
-            .context(format!("Can't take path from '{}'", path.display()))?
-            .split(".")
-            .collect::<Vec<&str>>()
-            .split_last()
-            .context(format!("Can't take split_last from '{}'", path.display()))?
-            .1
-            .join(".")
-            .replace("/", ".");
-        apps.push(app.to_string());
+            .with_context(|| format!("Can't get str from '{}'", path.display()))?
+            .replace('/', ".");
+        apps.push(app);
     }
     Ok(apps)
 }
@@ -36,17 +28,15 @@ fn all_apps() -> Result<Vec<String>> {
 #[test]
 #[ignore]
 fn deploys_and_runs_all_apps() -> Result<()> {
-    let mut uni = Universe::from_graph(load_runtime()?);
+    let mut uni = Universe::from_graph(load_runtime()?)?;
     register(&mut uni);
     for app in all_apps()? {
         debug!("App: {app}");
-        debug!(
-            "{}",
-            uni.slice(format!("ν0.{}", app).as_str()).unwrap().to_dot()
-        );
-        let expected = uni.dataize(format!("Φ.{}.expected", app).as_str()).unwrap();
-        let actual = uni.dataize(format!("Φ.{}", app).as_str()).unwrap();
-        assert_eq!(expected, actual, "{} failed", app);
+        let c = uni.find(format!("Φ.{app}").as_str())?;
+        debug!("{}", uni.slice(c)?.to_dot());
+        let expected = uni.dataize(format!("Φ.{app}.expected").as_str())?;
+        let actual = uni.dataize(format!("Φ.{app}").as_str())?;
+        assert_eq!(expected, actual, "{app} failed");
         debug!("Evaluated {app} as {actual}!");
     }
     Ok(())

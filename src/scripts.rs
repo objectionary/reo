@@ -5,14 +5,9 @@ use crate::Universe;
 use anyhow::Result;
 use sodg::Hex;
 
-/// Makes a copy of `org.eolang.int` in the Universe. It is assumed
-/// that it already exists there.
-pub fn copy_of_int(uni: &mut Universe, data: i64) -> Result<u32> {
-    let v = uni.add();
-    let int = uni.find("org.eolang.int")?;
-    uni.bind(v, int, "π");
-    let d = uni.add();
-    uni.put(d, Hex::from(data));
-    uni.bind(v, d, "Δ");
-    Ok(v)
+/// Makes a fresh closed formation with the integer in its Δ-asset.
+pub fn data_of_int(uni: &mut Universe, data: i64) -> Result<usize> {
+    let c = uni.formation(&[])?;
+    uni.delta(c, &Hex::from(data))?;
+    Ok(c)
 }

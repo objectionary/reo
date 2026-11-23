@@ -1,17 +1,18 @@
 # SPDX-FileCopyrightText: Copyright (c) 2022-2026 Yegor Bugayenko
 # SPDX-License-Identifier: MIT
 
-# v1 -> [ Δ -> 42 ]
-# v3/foo -> v1()
+# An application keeps the data of the object being copied.
+#
+#   ⟦ a ↦ ⟦ x ↦ ∅, Δ ⤍ 00-00-00-00-00-00-00-2A ⟧, foo ↦ Φ.a(x ↦ ⟦ Δ ⤍ 00-00-00-00-00-00-00-07 ⟧) ⟧
+#
+# The script below is printed by `phino sodg` 0.0.167.
 
-ADD(0);
-
-ADD($v1);
-ADD($v2);
-BIND($v1, $v2, Δ);
-PUT($v2, 00-00-00-00-00-00-00-2A);
-
-ADD($v3);
-BIND($v3, $v1, π);
-
-BIND(0, $v3, foo);
+F c0 a foo
+F c1 x
+Δ c1 00-00-00-00-00-00-00-2A
+P c0 a c1
+D c2 c0 a
+F c3
+Δ c3 00-00-00-00-00-00-00-07
+A c4 c2 x c3
+P c0 foo c4
