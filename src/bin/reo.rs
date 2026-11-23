@@ -417,7 +417,9 @@ pub fn main() -> Result<()> {
                 );
             }
             for v in ignore {
-                seen.insert(v);
+                if g.ids().contains(&v) {
+                    seen.insert(v);
+                }
             }
             println!("\nν{root}");
             seen.insert(root);
