@@ -619,7 +619,7 @@ impl Universe {
             lines
                 .clone()
                 .into_iter()
-                .skip(cmp::max(0i16, lines.len() as i16 - max) as usize)
+                .skip(lines.len().saturating_sub(max))
                 .collect::<Vec<&str>>()
                 .join("\n"),
         )?;
@@ -860,6 +860,17 @@ fn fails_on_phi_cycle() -> Result<()> {
         "Unexpected error: {err:?}"
     );
     assert_eq!(0, uni.depth);
+    Ok(())
+}
+
+#[test]
+fn keeps_only_last_lines_of_large_log() -> Result<()> {
+    let tmp = tempfile::TempDir::new()?;
+    fs::write(tmp.path().join("log.txt"), "x\n".repeat(40000))?;
+    let mut uni = Universe::empty().with_snapshots(tmp.path());
+    uni.snapshot("The end")?;
+    let log = fs::read_to_string(tmp.path().join("log-1.txt"))?;
+    assert_eq!(32, log.split('\n').count());
     Ok(())
 }
 
