@@ -29,7 +29,7 @@
 //! assert_eq!(42, uni.dataize("Φ.foo").unwrap().to_i64().unwrap());
 //! ```
 
-#![doc(html_root_url = "https://docs.rs/reo/0.0.0")]
+#![doc(html_root_url = "https://docs.rs/reo/0.1.0")]
 #![deny(warnings)]
 
 mod graph;

@@ -1,6 +1,6 @@
 [package]
 name = "reo"
-version = "0.0.0"
+version = "0.1.0"
 edition = "2021"
 repository = "https://github.com/objectionary/reo"
 description = "Graph-Based Virtual Machine for EO Programs"
