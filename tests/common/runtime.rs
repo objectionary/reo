@@ -7,16 +7,17 @@ use log::debug;
 use reo::Graph;
 use std::path::Path;
 
-// @todo #281:90min Generate the EO runtime in the new SODG language. The
-//  objects of EO must be compiled to 𝜑-expressions by a recent eo-maven-plugin
-//  and then to .sodg files by `phino sodg`, into target/eo/sodg/. The old
-//  build.rs, which ran Maven with test-pom.xml, was deleted, since the
-//  eo-maven-plugin 0.35.4 printed SODG scripts in the old ADD/BIND language,
-//  which REO doesn't understand anymore. Makefile and test-pom.xml still
-//  use it and must be changed too. Maybe reo::EDGES will have to grow,
-//  since packages, like org.eolang, have more objects than it allows.
-//  When the runtime is ready, the test below must stop skipping itself
-//  and deploys_and_runs_all_apps in tests/eo_test.rs must not be ignored.
+// @todo #285:90min Make REO deploy the .sodg files that `make` prints into
+//  target/eo/sodg/ with the help of eo-maven-plugin and `phino sodg`.
+//  Now REO rejects all of them: phino prints applications with positional
+//  attributes, like `α0`, which must be bound to the void attributes, like
+//  `v🌵x`; the unit tests of the EO runtime are printed as `p🌵...`
+//  attributes, which are often longer than 32 bytes and give formations
+//  more than reo::EDGES edges, so they must be dropped; and the atoms,
+//  like `L_number_plus`, must be implemented for 64-bit floats. When the
+//  runtime is ready, the test below and deploys_and_runs_all_apps in
+//  tests/eo_test.rs must not be ignored, and the cargo workflow must
+//  install Maven and phino and run `make` before `cargo test`.
 pub fn load_runtime() -> Result<Graph> {
     let pack = Path::new("target/runtime.reo");
     if !pack.exists() {
@@ -64,13 +65,8 @@ pub fn load_runtime() -> Result<Graph> {
 }
 
 #[test]
+#[ignore = "REO can't deploy the .sodg files of the EO runtime yet, see #285"]
 fn loads_runtime() -> Result<()> {
-    if !Path::new("target/runtime.reo").exists()
-        && glob("target/eo/sodg/**/*.sodg")?.next().is_none()
-    {
-        eprintln!("skipping loads_runtime: no EO fixtures present");
-        return Ok(());
-    }
     let g = load_runtime()?;
     assert!(!g.is_empty());
     Ok(())

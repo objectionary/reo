@@ -1,9 +1,0 @@
-# SPDX-FileCopyrightText: Copyright (c) 2022-2026 Yegor Bugayenko
-# SPDX-License-Identifier: MIT
-
-+package org.eolang.reo.simple
-
-# This is a simple object for testing of REO engine, used by eo_tests.rs.
-[] > sum
-  43 > expected
-  42.plus 1 > @
