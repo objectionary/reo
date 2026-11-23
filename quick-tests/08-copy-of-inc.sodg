@@ -1,30 +1,23 @@
 # SPDX-FileCopyrightText: Copyright (c) 2022-2026 Yegor Bugayenko
 # SPDX-License-Identifier: MIT
 
-# v1/integer -> [ v2/inc -> [ ρ -> v1, λ ] ]
-# v4 -> integer(Δ-> 41)
-# v7/foo -> v4.inc
+# An atom, which takes the data of its ρ, from an application.
+#
+#   ⟦ int ↦ ⟦ x ↦ ∅, inc ↦ ⟦ ρ ↦ ∅, λ ⤍ L_inc ⟧, φ ↦ ξ.x ⟧, foo ↦ Φ.int( x ↦ ⟦ Δ ⤍ 00-00-00-00-00-00-00-29 ⟧ ).inc ⟧
+#
+# The script below is printed by `phino sodg` 0.0.167.
 
-ADD(0);
-
-ADD($v1);
-BIND(0, $v1, integer);
-ADD($v2);
-BIND($v1, $v2, inc);
-BIND($v2, $v1, ρ);
-ADD($v3);
-BIND($v2, $v3, λ);
-PUT($v3, 69-6E-63);
-
-ADD($v4);
-BIND($v4, $v1, π);
-ADD($v5);
-BIND($v4, $v5, Δ);
-PUT($v5, 00-00-00-00-00-00-00-29);
-
-ADD($v6);
-BIND($v6, $v4, inc);
-ADD($v7);
-BIND($v7, $v6, β);
-
-BIND(0, $v7, foo);
+F c0 int foo
+F c1 x inc φ
+F c2 ρ
+λ c2 L_inc
+P c1 inc c2
+D c3 c1 x
+P c1 φ c3
+P c0 int c1
+D c4 c0 int
+F c5
+Δ c5 00-00-00-00-00-00-00-29
+A c6 c4 x c5
+D c7 c6 inc
+P c0 foo c7

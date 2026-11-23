@@ -1,32 +1,22 @@
 # SPDX-FileCopyrightText: Copyright (c) 2022-2026 Yegor Bugayenko
 # SPDX-License-Identifier: MIT
 
-# v1 -> [ λ->inc, ρ->v3 ]
-# v3 -> [ Δ -> 41 ]
-# v5 -> v1()
-# v6 -> v5()
-# v7/foo -> v6(ρ->v3)
+# An application of an application.
+#
+#   ⟦ a ↦ ⟦ x ↦ ∅, y ↦ ∅, φ ↦ ξ.y ⟧, foo ↦ Φ.a(x ↦ ⟦ Δ ⤍ 00-00-00-00-00-00-00-07 ⟧)(y ↦ ⟦ Δ ⤍ 00-00-00-00-00-00-00-2A ⟧) ⟧
+#
+# The script below is printed by `phino sodg` 0.0.167.
 
-ADD(0);
-
-ADD($v1);
-ADD($v2);
-BIND($v1, $v2, λ);
-PUT($v2, 69-6E-63);
-ADD($v3);
-BIND($v1, $v3, ρ);
-ADD($v4);
-BIND($v3, $v4, Δ);
-PUT($v4, 00-00-00-00-00-00-00-29);
-
-ADD($v5);
-BIND($v5, $v1, π);
-
-ADD($v6);
-BIND($v6, $v5, π);
-
-ADD($v7);
-BIND($v7, $v6, π);
-BIND($v7, $v3, ρ);
-
-BIND(0, $v7, foo);
+F c0 a foo
+F c1 x y φ
+D c2 c1 y
+P c1 φ c2
+P c0 a c1
+D c3 c0 a
+F c4
+Δ c4 00-00-00-00-00-00-00-07
+A c5 c3 x c4
+F c6
+Δ c6 00-00-00-00-00-00-00-2A
+A c7 c5 y c6
+P c0 foo c7

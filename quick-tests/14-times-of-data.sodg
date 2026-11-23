@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: Copyright (c) 2022-2026 Yegor Bugayenko
+# SPDX-License-Identifier: MIT
+
+# An atom, which takes the data of its ρ and of its argument.
+#
+#   ⟦ int ↦ ⟦ times ↦ ⟦ ρ ↦ ∅, x ↦ ∅, λ ⤍ L_times ⟧, Δ ⤍ 00-00-00-00-00-00-00-06 ⟧, foo ↦ Φ.int.times(x ↦ ⟦ Δ ⤍ 00-00-00-00-00-00-00-07 ⟧) ⟧
+#
+# The script below is printed by `phino sodg` 0.0.167.
+
+F c0 int foo
+F c1 times
+F c2 ρ x
+λ c2 L_times
+P c1 times c2
+Δ c1 00-00-00-00-00-00-00-06
+P c0 int c1
+D c3 c0 int
+D c4 c3 times
+F c5
+Δ c5 00-00-00-00-00-00-00-07
+A c6 c4 x c5
+P c0 foo c6

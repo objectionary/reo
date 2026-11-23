@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: Copyright (c) 2022-2026 Yegor Bugayenko
+# SPDX-License-Identifier: MIT
+
+# An application binds an attribute, which is not void.
+#
+#   ⟦ a ↦ ⟦ x ↦ ⟦ Δ ⤍ 00-00-00-00-00-00-00-2A ⟧ ⟧, foo ↦ Φ.a(x ↦ ⟦ Δ ⤍ 00-00-00-00-00-00-00-29 ⟧).x ⟧
+#
+# The script below is printed by `phino sodg` 0.0.167.
+
+F c0 a foo
+F c1 x
+F c2
+Δ c2 00-00-00-00-00-00-00-2A
+P c1 x c2
+P c0 a c1
+D c3 c0 a
+F c4
+Δ c4 00-00-00-00-00-00-00-29
+A c5 c3 x c4
+D c6 c5 x
+P c0 foo c6

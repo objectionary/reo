@@ -15,12 +15,10 @@ fn dataizes_simple_sodg() -> Result<()> {
     let bin = tmp.path().join("foo.reo");
     File::create(src.clone())?.write_all(
         "
-        ADD(0);
-        ADD($ν1);
-        BIND(0, $ν1, foo);
-        ADD($ν2);
-        BIND($ν1, $ν2, Δ);
-        PUT($ν2, ff-ff);
+        F c0 foo
+        F c1
+        Δ c1 ff-ff
+        P c0 foo c1
         "
         .as_bytes(),
     )?;

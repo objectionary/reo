@@ -6,17 +6,17 @@ use anyhow::{anyhow, Result};
 
 /// Register all known atoms in the Universe.
 pub fn register(uni: &mut Universe) {
-    uni.register("org.eolang.array$length", array_length);
-    uni.register("org.eolang.array$at", array_at);
+    uni.register("L_array_length", array_length);
+    uni.register("L_array_at", array_at);
 }
 
 /// EO atom `array.length`.
-pub fn array_length(_uni: &mut Universe, _v: u32) -> Result<u32> {
+pub fn array_length(_uni: &mut Universe, _c: usize) -> Result<usize> {
     Err(anyhow!("Not implemented yet"))
 }
 
 /// EO atom `array.at`.
-pub fn array_at(_uni: &mut Universe, _v: u32) -> Result<u32> {
+pub fn array_at(_uni: &mut Universe, _c: usize) -> Result<usize> {
     Err(anyhow!("Not implemented yet"))
 }
 

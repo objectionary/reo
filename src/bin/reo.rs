@@ -6,17 +6,15 @@ extern crate reo;
 use anyhow::Result;
 use anyhow::{anyhow, Context};
 use clap::builder::TypedValueParser;
-use clap::parser::ValuesRef;
 use clap::ErrorKind::EmptyValue;
-use clap::{crate_version, value_parser, AppSettings, Arg, ArgAction, Command};
+use clap::{crate_version, value_parser, AppSettings, Arg, ArgAction, ArgMatches, Command};
 use colored::Colorize;
 use itertools::Itertools;
-use log::{debug, info, warn, LevelFilter};
+use log::{debug, info, LevelFilter};
 use reo::org::eolang::register;
-use reo::Universe;
+use reo::{Graph, Universe};
 use simple_logger::SimpleLogger;
-use sodg::Script;
-use sodg::Sodg;
+use sodg::{Kind, Label};
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::Write;
@@ -74,7 +72,7 @@ pub fn main() -> Result<()> {
         .subcommand(
             Command::new("compile")
                 .setting(AppSettings::ColorNever)
-                .about("Compile .sodg files into binary .reo files")
+                .about("Compile .sodg files, printed by `phino sodg`, into binary .reo files")
                 .arg(
                     Arg::new("source")
                         .required(true)
@@ -146,7 +144,7 @@ pub fn main() -> Result<()> {
                         .short('r')
                         .required(false)
                         .default_value("0")
-                        .help("The ID of the root vertex")
+                        .help("The ID of the root cell")
                         .value_parser(value_parser!(u32))
                         .action(ArgAction::Set),
                 )
@@ -201,7 +199,7 @@ pub fn main() -> Result<()> {
                         .short('r')
                         .required(false)
                         .default_value("0")
-                        .help("The ID of the root vertex to print")
+                        .help("The ID of the root cell to print")
                         .value_parser(value_parser!(u32))
                         .action(ArgAction::Set),
                 )
@@ -253,77 +251,73 @@ pub fn main() -> Result<()> {
         Some(("compile", subs)) => {
             let src = subs
                 .get_one::<PathBuf>("source")
-                .context("Path of .sodg file is required")
-                .unwrap();
+                .context("Path of .sodg file is required")?;
             debug!("source: {}", src.display());
             if !src.exists() {
                 return Err(anyhow!("The file '{}' not found", src.display()));
             }
             let bin = subs
                 .get_one::<PathBuf>("target")
-                .context("Path of .reo file is required")
-                .unwrap();
+                .context("Path of .reo file is required")?;
             debug!("target: {}", bin.display());
             info!(
                 "Compiling SODG instructions from '{}' to '{}'",
                 src.display(),
                 bin.display()
             );
-            let mut g = Sodg::empty();
-            let mut s = Script::from_str(fs::read_to_string(src)?.as_str());
-            let ints = s
-                .deploy_to(&mut g)
-                .context(format!("Failed with '{}'", src.display()))?;
-            info!("Deployed {ints} instructions from {}", src.display());
+            let g = reo::deploy(fs::read_to_string(src)?.as_str())
+                .with_context(|| format!("Failed to compile '{}'", src.display()))?;
+            info!("Deployed {} cells from '{}'", g.len(), src.display());
             let size = g.save(bin)?;
             info!("The SODG saved to '{}' ({size} bytes)", bin.display());
-            print_metas(&mut g)?;
         }
         Some(("empty", subs)) => {
             let bin = subs
                 .get_one::<PathBuf>("target")
-                .context("Path of .reo file is required")
-                .unwrap();
+                .context("Path of .reo file is required")?;
             debug!("target: {}", bin.display());
-            let mut g = Sodg::empty();
-            g.add(0)?;
+            let mut g = Graph::empty(16);
+            g.formation(0, &[]);
             let size = g.save(bin)?;
             info!("Empty SODG saved to '{}' ({size} bytes)", bin.display());
         }
         Some(("merge", subs)) => {
             let target = subs
                 .get_one::<PathBuf>("target")
-                .context("Path of target .reo file is required")
-                .unwrap();
+                .context("Path of target .reo file is required")?;
             debug!("target: {}", target.display());
             if !target.exists() {
                 return Err(anyhow!("The file '{}' not found", target.display()));
             }
             let source = subs
                 .get_one::<PathBuf>("source")
-                .context("Path of source .reo file is required")
-                .unwrap();
+                .context("Path of source .reo file is required")?;
             debug!("source: {}", source.display());
             if !source.exists() {
                 return Err(anyhow!("The file '{}' not found", source.display()));
             }
-            info!("Merging into '{}':", target.display());
-            let mut g1 = Sodg::load(target)?;
-            print_metas(&mut g1)?;
-            info!("Merging from '{}':", source.display());
-            let mut g2 = Sodg::load(source)?;
-            print_metas(&mut g2)?;
-            let slice = g2.slice_some("ν0", |_, _, a| !a.starts_with('+'))?;
-            debug!("merging {} vertices...", slice.len());
-            g1.merge(&slice, 0, 0)?;
-            let size = g1.save(target)?;
-            info!("The SODG saved to '{}' ({size} bytes)", target.display());
+            let g1 = Graph::load(target)?;
+            info!("Merging into '{}' ({} cells)", target.display(), g1.len());
+            let g2 = Graph::load(source)?;
+            info!("Merging from '{}' ({} cells)", source.display(), g2.len());
+            let g = reo::merge(&g1, &g2).with_context(|| {
+                format!(
+                    "Failed to merge '{}' into '{}'",
+                    source.display(),
+                    target.display()
+                )
+            })?;
+            let size = g.save(target)?;
+            info!(
+                "The SODG of {} cells saved to '{}' ({size} bytes)",
+                g.len(),
+                target.display()
+            );
         }
         Some(("dataize", subs)) => {
             let bin = subs
                 .get_one::<PathBuf>("file")
-                .context("Path of .reo file is required")
-                .unwrap();
+                .context("Path of .reo file is required")?;
             debug!("bin: {}", bin.display());
             if !bin.exists() {
                 return Err(anyhow!("The file '{}' doesn't exist", bin.display()));
@@ -331,20 +325,19 @@ pub fn main() -> Result<()> {
             let object = subs
                 .get_one::<String>("object")
                 .context("Object name is required")?;
-            debug!("object: {}", object);
+            debug!("object: {object}");
             info!("Deserializing the binary file '{}'", bin.display());
-            let g = Sodg::load(bin.as_path())?;
+            let g = Graph::load(bin.as_path())?;
             info!(
                 "Deserialized {} bytes in {:?}",
                 fs::metadata(bin)?.len(),
                 start.elapsed()
             );
             info!("Dataizing the '{object}' object...");
-            let mut uni = Universe::from_graph(g);
+            let mut uni = Universe::from_graph(g)?;
             register(&mut uni);
-            let r = uni.dataize(format!("Φ.{}", object).as_str());
-            if subs.is_present("dump") {
-                let dump = subs.get_one::<PathBuf>("dump").unwrap();
+            let r = uni.dataize(format!("Φ.{object}").as_str());
+            if let Some(dump) = subs.get_one::<PathBuf>("dump") {
                 debug!("dump: {}", dump.display());
                 let size = uni.dump(dump)?;
                 info!("Dump saved to '{}' ({size} bytes)", dump.display());
@@ -356,96 +349,79 @@ pub fn main() -> Result<()> {
         Some(("dot", subs)) => {
             let bin = subs
                 .get_one::<PathBuf>("bin")
-                .context("Path of .reo file is required")
-                .unwrap();
+                .context("Path of .reo file is required")?;
             debug!("bin: {}", bin.display());
             if !bin.exists() {
                 return Err(anyhow!("The file '{}' doesn't exist", bin.display()));
             }
             info!("Deserializing the binary file '{}'", bin.display());
-            let g = Sodg::load(bin.as_path())?;
+            let g = Graph::load(bin.as_path())?;
             info!(
                 "Deserialized {} bytes in {:?}",
                 fs::metadata(bin)?.len(),
                 start.elapsed()
             );
-            let root: u32 = *subs.get_one::<u32>("root").unwrap();
-            let ignore: HashSet<u32> = HashSet::from_iter(
-                subs.get_many("ignore")
-                    .unwrap_or(ValuesRef::default())
-                    .cloned(),
-            );
-            let content = g
-                .slice_some(format!("ν{root}").as_str(), |_, v, _| !ignore.contains(&v))?
-                .to_dot();
+            let root = root_of(&g, subs)?;
+            let ignore: HashSet<usize> = ignored(subs).into_iter().collect();
+            let content = g.slice_some(root, |_, c, _| !ignore.contains(&c))?.to_dot();
             let mut out = match subs.get_one::<PathBuf>("dot") {
                 Some(f) => {
-                    let path = Path::new(f);
-                    info!("Printing to '{}' file...", path.display());
-                    Box::new(File::create(path).unwrap()) as Box<dyn Write>
+                    info!("Printing to '{}' file...", f.display());
+                    Box::new(File::create(f)?) as Box<dyn Write>
                 }
                 None => Box::new(io::stdout()) as Box<dyn Write>,
             };
-            let bytes = out.write(content.as_bytes())?;
-            info!("DOT graph saved, {bytes} bytes in {:?}", start.elapsed());
+            out.write_all(content.as_bytes())?;
+            info!(
+                "DOT graph saved, {} bytes in {:?}",
+                content.len(),
+                start.elapsed()
+            );
         }
         Some(("inspect", subs)) => {
             let bin = subs
                 .get_one::<PathBuf>("bin")
-                .context("Path of .reo file is required")
-                .unwrap();
+                .context("Path of .reo file is required")?;
             if !bin.exists() {
                 return Err(anyhow!("The file '{}' doesn't exist", bin.display()));
             }
             println!("File: {}", bin.display());
             println!("Size: {} bytes", fs::metadata(bin)?.len());
-            let mut g = Sodg::load(bin.as_path())?;
-            println!("Total vertices: {}", g.len());
-            println!("Metas:");
-            print_metas(&mut g)?;
-            let root = *subs.get_one::<u32>("root").unwrap();
-            let mut seen = HashSet::new();
-            let ignore: Vec<u32> = subs
-                .get_many("ignore")
-                .unwrap_or(ValuesRef::default())
-                .copied()
-                .collect();
+            let g = Graph::load(bin.as_path())?;
+            let keys: HashSet<usize> = g.keys().into_iter().collect();
+            println!("Total cells: {}", keys.len());
+            let root = root_of(&g, subs)?;
+            let ignore = ignored(subs);
             if !ignore.is_empty() {
                 println!(
                     "Ignoring: {}",
-                    ignore.iter().map(|v| format!("ν{}", v)).join(", ")
+                    ignore.iter().map(|c| format!("c{c}")).join(", ")
                 );
             }
-            for v in ignore {
-                if g.ids().contains(&v) {
-                    seen.insert(v);
-                }
-            }
-            println!("\nν{root}");
+            let mut seen: HashSet<usize> =
+                ignore.into_iter().filter(|c| keys.contains(c)).collect();
+            println!("\nc{root}{}", describe(&g, root));
             seen.insert(root);
-            inspect_v(&mut g, root, 1, &mut seen);
-            println!("Vertices just printed: {}", seen.len());
-            if seen.len() != g.ids().len() {
-                let mut missed = vec![];
-                for v in g.ids() {
-                    if seen.contains(&v) {
-                        continue;
-                    }
-                    missed.push(v);
-                }
-                missed.sort();
+            inspect_c(&g, root, 1, &mut seen);
+            println!("Cells just printed: {}", seen.len());
+            let mut missed: Vec<usize> =
+                keys.iter().copied().filter(|c| !seen.contains(c)).collect();
+            missed.sort_unstable();
+            if !missed.is_empty() {
                 println!(
                     "Missed {}: {}{}",
                     missed.len(),
-                    missed.iter().take(10).map(|v| format!("ν{}", v)).join(", "),
+                    missed.iter().take(10).map(|c| format!("c{c}")).join(", "),
                     if missed.len() > 10 { ", ..." } else { "" }
                 );
                 if missed.len() < 10 {
                     println!("Here they are:");
-                    for v in missed.into_iter().take(10) {
-                        seen.insert(v);
-                        println!("  ν{}", v);
-                        inspect_v(&mut g, v, 2, &mut seen);
+                    for c in missed {
+                        if !seen.insert(c) {
+                            continue;
+                        }
+                        println!("  c{c}{}", describe(&g, c));
+                        inspect_c(&g, c, 2, &mut seen);
                     }
                 }
             }
@@ -458,39 +434,59 @@ pub fn main() -> Result<()> {
     Ok(())
 }
 
-fn print_metas(g: &mut Sodg) -> Result<()> {
-    match g.kids(0) {
-        Ok(vec) => {
-            for (a, v) in vec {
-                if a.starts_with('+') {
-                    println!("  {a}: {}", g.data(v)?.to_utf8()?)
-                }
-            }
-        }
-        Err(e) => {
-            warn!("  {}", e)
-        }
+/// Take the ID of the root cell from the `--root` option and make
+/// sure the cell is in the graph.
+fn root_of(g: &Graph, subs: &ArgMatches) -> Result<usize> {
+    let root = *subs
+        .get_one::<u32>("root")
+        .context("The root is required")? as usize;
+    if !g.keys().contains(&root) {
+        return Err(anyhow!("There is no cell c{root} in the graph"));
     }
-    Ok(())
+    Ok(root)
 }
 
-fn inspect_v(g: &mut Sodg, v: u32, indent: usize, seen: &mut HashSet<u32>) {
-    let mut kids = g.kids(v).unwrap();
-    kids.sort_by(|a, b| a.0.cmp(&b.0.clone()));
-    for e in kids {
-        print!("{}", "  ".repeat(indent));
-        print!("{} -> ν{}", e.0, e.1);
-        if e.0 == "Δ" {
-            print!(" {}", g.data(e.1).unwrap().to_string().blue());
+/// Take the IDs of the cells from the `--ignore` options.
+fn ignored(subs: &ArgMatches) -> Vec<usize> {
+    subs.get_many::<u32>("ignore")
+        .map(|all| all.map(|c| *c as usize).collect())
+        .unwrap_or_default()
+}
+
+/// Print the kind and the assets of the cell, in one line.
+fn describe(g: &Graph, c: usize) -> String {
+    let mut parts = vec![match g.kind(c) {
+        Kind::Formation => format!("⟦{}⟧", g.attrs(c).iter().join(", ")),
+        Kind::Dispatch(a) => format!("π.{a}"),
+        Kind::Application(a) => format!("π({a} ↦ …)"),
+        Kind::Void => String::from("∅"),
+    }];
+    if let Some(d) = g.data(c) {
+        parts.push(format!("Δ ⤍ {}", d.to_string().blue()));
+    }
+    if let Some(a) = g.atom(c) {
+        parts.push(format!("λ ⤍ {}", a.yellow()));
+    }
+    format!(" {}", parts.join(" "))
+}
+
+/// Print the edges of the cell and, recursively, their kids,
+/// which were not seen yet.
+fn inspect_c(g: &Graph, c: usize, indent: usize, seen: &mut HashSet<usize>) {
+    let kids: Vec<(Label, usize)> = g.kids(c).map(|(a, k)| (*a, *k)).sorted().collect();
+    for (a, k) in kids {
+        let fresh = seen.insert(k);
+        println!(
+            "{}.{a} ➞ c{k}{}",
+            "  ".repeat(indent),
+            if fresh {
+                describe(g, k)
+            } else {
+                String::from(" …")
+            }
+        );
+        if fresh {
+            inspect_c(g, k, indent + 1, seen);
         }
-        if e.0 == "λ" {
-            print!(" {}", g.data(e.1).unwrap().to_utf8().unwrap().yellow());
-        }
-        println!();
-        if seen.contains(&e.1) {
-            continue;
-        }
-        seen.insert(e.1);
-        inspect_v(g, e.1, indent + 1, seen);
     }
 }

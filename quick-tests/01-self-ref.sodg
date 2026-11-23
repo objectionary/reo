@@ -1,18 +1,15 @@
 # SPDX-FileCopyrightText: Copyright (c) 2022-2026 Yegor Bugayenko
 # SPDX-License-Identifier: MIT
 
-# v1/foo/bar -> [ Δ -> 42 ]
-# v3 -> v1
+# An attribute refers to another attribute of the same object, via ξ.
+#
+#   ⟦ bar ↦ ⟦ Δ ⤍ 00-00-00-00-00-00-00-2A ⟧, foo ↦ ξ.bar ⟧
+#
+# The script below is printed by `phino sodg` 0.0.167.
 
-ADD(0);
-
-ADD($v1);
-BIND(0, $v1, bar);
-ADD($v2);
-BIND($v1, $v2, Δ);
-PUT($v2, 00-00-00-00-00-00-00-2A);
-
-BIND(0, $v1, foo);
-
-ADD($v3);
-BIND($v3, $v1, ε);
+F c0 bar foo
+F c1
+Δ c1 00-00-00-00-00-00-00-2A
+P c0 bar c1
+D c2 c0 bar
+P c0 foo c2

@@ -1,23 +1,19 @@
 # SPDX-FileCopyrightText: Copyright (c) 2022-2026 Yegor Bugayenko
 # SPDX-License-Identifier: MIT
 
-# v1/int -> [ v2/times -> [ ρ -> v1, λ ] ]
-# v4/foo -> v1.times()
+# An atom takes a void attribute.
+#
+#   ⟦ int ↦ ⟦ times ↦ ⟦ ρ ↦ ∅, x ↦ ∅, λ ⤍ L_times ⟧, Δ ⤍ 00-00-00-00-00-00-00-06 ⟧, foo ↦ Φ.int.times ⟧
+#
+# The script below is printed by `phino sodg` 0.0.167.
 
-ADD(0);
-ADD($v1);
-BIND(0, $v1, int);
-ADD($v2);
-BIND($v1, $v2, times);
-BIND($v2, $v1, ρ);
-ADD($v3);
-BIND($v2, $v3, λ);
-PUT($v3, 74-69-6D-65-73);
-
-ADD($v4);
-BIND($v4, $v1, β);
-BIND($v4, $v1, times);
-
-ADD($v5);
-BIND($v5, $v4, π);
-BIND(0, $v5, foo);
+F c0 int foo
+F c1 times
+F c2 ρ x
+λ c2 L_times
+P c1 times c2
+Δ c1 00-00-00-00-00-00-00-06
+P c0 int c1
+D c3 c0 int
+D c4 c3 times
+P c0 foo c4

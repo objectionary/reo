@@ -1,42 +1,20 @@
 # SPDX-FileCopyrightText: Copyright (c) 2022-2026 Yegor Bugayenko
 # SPDX-License-Identifier: MIT
 
-# v1 -> [ v2/x -> $.y, y -> ? ]
-# v7 -> [Δ -> 42]
-# v9 -> v1(y -> v7)
-# v11 -> v9.x
+# An attribute of a copy refers to another attribute of the copy, via ξ.
+#
+#   ⟦ a ↦ ⟦ x ↦ ξ.y, y ↦ ∅ ⟧, foo ↦ Φ.a(y ↦ ⟦ Δ ⤍ 00-00-00-00-00-00-00-2A ⟧).x ⟧
+#
+# The script below is printed by `phino sodg` 0.0.167.
 
-ADD(0);
-
-# v1 -> [ v2/x -> $.y, y -> ? ]
-ADD($v1);
-ADD($v2);
-BIND($v1, $v2, x);
-ADD($v3);
-BIND($v2, $v3, ε);
-ADD($v4);
-BIND($v3, $v4, β);
-ADD($v5);
-BIND($v4, $v5, y);
-BIND($v5, $v1, ξ);
-ADD($v6);
-BIND($v1, $v6, y);
-BIND($v6, $v1, ρ);
-
-# v7 -> [Δ -> 42]
-ADD($v7);
-ADD($v8);
-BIND($v7, $v8, Δ);
-PUT($v8, 00-00-00-00-00-00-00-2A);
-
-# v9 -> v1(y -> v7)
-ADD($v9);
-BIND($v9, $v1, π);
-BIND($v9, $v7, y);
-
-# v11 -> v9.x
-ADD($v10);
-BIND($v10, $v9, x);
-ADD($v11);
-BIND($v11, $v10, β);
-BIND(0, $v11, foo);
+F c0 a foo
+F c1 x y
+D c2 c1 y
+P c1 x c2
+P c0 a c1
+D c3 c0 a
+F c4
+Δ c4 00-00-00-00-00-00-00-2A
+A c5 c3 y c4
+D c6 c5 x
+P c0 foo c6

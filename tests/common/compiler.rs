@@ -26,12 +26,10 @@ fn simple_compilation() -> Result<()> {
     let first = tmp.path().join("first.reo");
     compile_one(
         "
-        ADD(ν0);
-        ADD($ν1);
-        BIND(ν0, $ν1, foo);
-        ADD($ν2);
-        BIND($ν1, $ν2, Δ);
-        PUT($ν2, d0-bf-d1-80-d0-b8-d0-b2-d0-b5-d1-82);
+        F c0 foo
+        F c1
+        Δ c1 d0-bf-d1-80-d0-b8-d0-b2-d0-b5-d1-82
+        P c0 foo c1
         ",
         first.clone(),
     )?;

@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: Copyright (c) 2022-2026 Yegor Bugayenko
+# SPDX-License-Identifier: MIT
+
+# A decorator refers to a void attribute.
+#
+#   ⟦ a ↦ ⟦ x ↦ ∅, φ ↦ ξ.x ⟧, foo ↦ Φ.a ⟧
+#
+# The script below is printed by `phino sodg` 0.0.167.
+
+F c0 a foo
+F c1 x φ
+D c2 c1 x
+P c1 φ c2
+P c0 a c1
+D c3 c0 a
+P c0 foo c3
