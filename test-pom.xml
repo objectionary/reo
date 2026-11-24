@@ -22,6 +22,8 @@
             <goals>
               <goal>register</goal>
               <goal>assemble</goal>
+              <goal>infer</goal>
+              <goal>dealpha</goal>
             </goals>
             <configuration>
               <sourcesDir>${project.basedir}/eo-tests</sourcesDir>

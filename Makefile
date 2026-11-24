@@ -2,8 +2,10 @@
 # SPDX-License-Identifier: MIT
 
 # The objects from eo-tests/, together with the objects of the EO runtime
-# they use, are compiled to XMIR by eo-maven-plugin, then to .sodg files
-# by `phino sodg`, then to binary .reo files by REO, and then merged into
+# they use, are compiled to XMIR by eo-maven-plugin, which also names their
+# positional arguments after the voids they land in (the dealpha goal,
+# which needs the infer goal before it), then to .sodg files by `phino
+# sodg`, then to binary .reo files by REO, and then merged into
 # target/runtime.reo, which tests/eo_test.rs dataizes.
 
 .ONESHELL:
@@ -15,7 +17,7 @@ SHELL = bash
 REO = target/debug/reo
 PHINO = phino
 
-XMIR = $(firstword $(wildcard target/eo/*-parse))
+XMIR = $(firstword $(wildcard target/eo/*-dealpha))
 XMIRS = $(shell find $(XMIR) -type f -name '*.xmir' 2>/dev/null)
 SODGS = $(patsubst $(XMIR)/%.xmir,target/eo/sodg/%.sodg,$(XMIRS))
 BINARIES = $(patsubst target/eo/sodg/%.sodg,target/eo/reo/%.reo,$(SODGS))
