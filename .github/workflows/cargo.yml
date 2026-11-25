@@ -11,13 +11,23 @@ concurrency:
   cancel-in-progress: true
 jobs:
   cargo:
-    timeout-minutes: 15
+    timeout-minutes: 30
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: 'temurin'
+          java-version: 25
+          cache: maven
+          cache-dependency-path: test-pom.xml
+      - uses: objectionary/phino@0.0.170
+        with:
+          version: 0.0.170
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
+      - run: make
       - run: cargo test -vv
       - run: target/debug/reo --help
       - run: cargo fmt --check
