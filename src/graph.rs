@@ -40,6 +40,17 @@ pub(crate) const RHO: Label = Label::Greek('ρ');
 /// assert!(reo::deploy("F c0 α0").is_err());
 /// ```
 ///
+/// The λ-asset `Package`, which `phino sodg` gives to a package, is
+/// not deployed, since for REO a package is just a formation. Otherwise,
+/// when the package `Φ.number` from `number/abs.sodg` is merged with
+/// the object `Φ.number` from `number.sodg`, the object gets the atom
+/// `Package` and can't be dataized:
+///
+/// ```
+/// let g = reo::deploy("F c0 number\nF c1 abs\nλ c1 Package\nP c0 number c1").unwrap();
+/// assert_eq!(None, g.atom(1));
+/// ```
+///
 /// # Errors
 ///
 /// If the script can't be parsed, uses positional attributes,
@@ -47,10 +58,27 @@ pub(crate) const RHO: Label = Label::Greek('ρ');
 pub fn deploy(txt: &str) -> Result<Graph> {
     check_edges(txt)?;
     let mut g = Graph::empty(capacity_for(txt));
-    let total = Script::from_str(txt).deploy_to(&mut g)?;
+    let total = Script::from_str(&without_packages(txt)).deploy_to(&mut g)?;
     debug!("Deployed {total} commands into {} cells", g.len());
     validate(&g)?;
     Ok(g)
+}
+
+/// Remove the commands `λ c Package` from the script, keeping the
+/// numbers of all other lines, so that errors still point to them.
+fn without_packages(txt: &str) -> String {
+    txt.lines()
+        .map(|line| {
+            let cmd = line.split_once('#').map_or(line, |(before, _)| before);
+            let parts: Vec<&str> = cmd.split_whitespace().collect();
+            if matches!(parts.as_slice(), ["λ", _, "Package"]) {
+                ""
+            } else {
+                line
+            }
+        })
+        .collect::<Vec<&str>>()
+        .join("\n")
 }
 
 /// Make sure the graph doesn't use positional attributes, like `α0`,
@@ -302,6 +330,32 @@ fn merges_graphs_with_dispatches_of_root() -> Result<()> {
     let mut uni = crate::Universe::from_graph(g)?;
     assert_eq!(42, uni.dataize("Φ.foo")?.to_i64()?);
     Ok(())
+}
+
+#[test]
+fn merges_package_into_object_of_the_same_name() -> Result<()> {
+    let object =
+        deploy("F c0 num\nF c1 φ\nF c2\nΔ c2 00-00-00-00-00-00-00-2A\nP c1 φ c2\nP c0 num c1")?;
+    let package =
+        deploy("F c0 num\nF c1 abs # the package\nλ c1 Package\nF c2\nP c1 abs c2\nP c0 num c1")?;
+    let mut empty = Graph::empty(MIN_CAPACITY);
+    empty.formation(0, &[]);
+    for g in [
+        merge(&merge(&empty, &object)?, &package)?,
+        merge(&merge(&empty, &package)?, &object)?,
+    ] {
+        let num = g.kid(0, Label::from_str("num")?).unwrap();
+        assert_eq!(None, g.atom(num));
+        let mut uni = crate::Universe::from_graph(g)?;
+        assert_eq!(42, uni.dataize("Φ.num")?.to_i64()?);
+    }
+    Ok(())
+}
+
+#[test]
+fn keeps_line_numbers_without_packages() {
+    let err = deploy("F c0 x\nλ c0 Package\nP c0 x").unwrap_err();
+    assert!(format!("{err:#}").contains("line no.3"), "{err:#}");
 }
 
 #[cfg(test)]

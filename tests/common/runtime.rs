@@ -12,13 +12,11 @@ use std::path::Path;
 //  Now REO compiles only a few of them, fibonacci among them. The unit
 //  tests of the EO runtime are printed as `p🌵...` and `n🌵...` attributes,
 //  which are often longer than 32 bytes, so they must be dropped, together
-//  with the cells only they refer to; and `phino sodg` prints packages,
-//  like `Φ.number` in `number/abs.sodg`, with `λ Package`, which `reo merge`
-//  puts on the object `Φ.number` itself, so no number can be dataized;
-//  and the dealpha goal leaves positional attributes in 15 objects of
-//  the runtime, like `directory`, `file`, and `i16`, which `phino sodg`
-//  refuses to print.
-//  When the first two are fixed, fibonacci is dataized to 13, as expected.
+//  with the cells only they refer to (objectionary/eo#10081); and the
+//  dealpha goal leaves positional attributes in 15 objects of the
+//  runtime, like `directory`, `file`, and `i16`, which `phino sodg`
+//  refuses to print. When the tests are dropped, fibonacci is dataized
+//  to 13, as expected.
 //  Then the test below and deploys_and_runs_all_apps in tests/eo_test.rs
 //  must not be ignored, and the cargo workflow must install Maven and
 //  phino and run `make` before `cargo test`.
