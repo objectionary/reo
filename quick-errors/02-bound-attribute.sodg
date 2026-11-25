@@ -5,7 +5,7 @@
 #
 #   ⟦ a ↦ ⟦ x ↦ ⟦ Δ ⤍ 00-00-00-00-00-00-00-2A ⟧ ⟧, foo ↦ Φ.a(x ↦ ⟦ Δ ⤍ 00-00-00-00-00-00-00-29 ⟧).x ⟧
 #
-# The script below is printed by `phino sodg` 0.0.167.
+# The script below is printed by `phino sodg` 0.0.169.
 
 F c0 a foo
 F c1 x

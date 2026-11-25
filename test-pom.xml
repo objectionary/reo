@@ -15,7 +15,7 @@
       <plugin>
         <groupId>org.eolang</groupId>
         <artifactId>eo-maven-plugin</artifactId>
-        <version>0.63.3</version>
+        <version>0.63.4</version>
         <executions>
           <execution>
             <id>compile</id>
