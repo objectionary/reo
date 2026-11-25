@@ -459,6 +459,7 @@ fn describe(g: &Graph, c: usize) -> String {
         Kind::Formation => format!("⟦{}⟧", g.attrs(c).iter().join(", ")),
         Kind::Dispatch(a) => format!("π.{a}"),
         Kind::Application(a) => format!("π({a} ↦ …)"),
+        Kind::Termination => String::from("⊥"),
         Kind::Void => String::from("∅"),
     }];
     if let Some(d) = g.data(c) {

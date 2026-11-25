@@ -248,6 +248,7 @@ impl Universe {
                 u.take(base, a)
             }
             Kind::Application(a) => u.apply(c, a),
+            Kind::Termination => Err(anyhow!("c{c} is ⊥, the termination is reached")),
             Kind::Void => Err(anyhow!("c{c} is not an object, it can't be evaluated")),
         })
     }
@@ -395,6 +396,7 @@ impl Universe {
                     let arg = to(self.edge(c, a)?);
                     self.g.application(n, proto, a, arg);
                 }
+                Kind::Termination => self.g.termination(n),
                 Kind::Void => bail!("Can't copy c{c}, it is not an object"),
             }
             if let Some(d) = self.g.data(c) {
@@ -753,6 +755,37 @@ fn dataizes_example_twice() -> Result<()> {
     let before = uni.g.len();
     assert_eq!(42, uni.dataize("Φ.foo")?.to_i64()?);
     assert_eq!(before + 1, uni.g.len(), "{:?}", uni.g);
+    Ok(())
+}
+
+#[cfg(test)]
+const TERMINATION: &str = "
+    F c0 foo bar
+    F c1 x err φ
+    T c2
+    P c1 err c2
+    D c3 c1 x
+    P c1 φ c3
+    F c4
+    Δ c4 00-00-00-00-00-00-00-2A
+    A c5 c1 x c4
+    P c0 foo c5
+    T c6
+    P c0 bar c6
+";
+
+#[test]
+fn dataizes_around_unreached_termination() -> Result<()> {
+    let mut uni = Universe::from_graph(deploy(TERMINATION)?)?;
+    assert_eq!(42, uni.dataize("Φ.foo")?.to_i64()?);
+    Ok(())
+}
+
+#[test]
+fn fails_on_reached_termination() -> Result<()> {
+    let mut uni = Universe::from_graph(deploy(TERMINATION)?)?;
+    let err = uni.dataize("Φ.bar").unwrap_err();
+    assert!(format!("{err:#}").contains("⊥"), "{err:#}");
     Ok(())
 }
 

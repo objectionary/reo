@@ -67,7 +67,7 @@ pub fn validate(g: &Graph) -> Result<()> {
         labels.extend(g.kids(c).map(|(a, _)| *a));
         match g.kind(c) {
             Kind::Dispatch(a) | Kind::Application(a) => labels.push(a),
-            Kind::Formation | Kind::Void => {}
+            Kind::Formation | Kind::Termination | Kind::Void => {}
         }
         if let Some(a) = labels.iter().find(|a| matches!(a, Label::Alpha(_))) {
             bail!("The positional attribute {a} of c{c} is not supported, use a named one");
@@ -92,6 +92,7 @@ pub(crate) fn rebuilt(g: &Graph, cap: usize) -> Graph {
             Kind::Application(a) => {
                 ng.application(c, g.kid(c, PI).unwrap_or(c), a, g.kid(c, a).unwrap_or(c))
             }
+            Kind::Termination => ng.termination(c),
             Kind::Void => {}
         }
         if let Some(d) = g.data(c) {
