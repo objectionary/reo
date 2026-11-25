@@ -2,7 +2,13 @@
 // SPDX-License-Identifier: MIT
 
 mod array;
+mod bytes;
+mod data;
+mod dataized;
 mod int;
+mod number;
+#[cfg(test)]
+mod tests;
 
 use crate::Universe;
 
@@ -10,4 +16,7 @@ use crate::Universe;
 pub fn register(uni: &mut Universe) {
     int::register(uni);
     array::register(uni);
+    number::register(uni);
+    bytes::register(uni);
+    dataized::register(uni);
 }

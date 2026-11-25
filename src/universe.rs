@@ -164,6 +164,23 @@ impl Universe {
         Ok(self.g.data(c))
     }
 
+    /// Find the object by locator and return the name of its first
+    /// void attribute, other than `ρ`, which is where a positional
+    /// argument lands, like in EO's `fallback "message"`.
+    ///
+    /// # Errors
+    ///
+    /// If the object can't be found or has no void attributes.
+    pub fn first_void(&mut self, loc: &str) -> Result<String> {
+        let c = self.find(loc)?;
+        self.g
+            .attrs(c)
+            .iter()
+            .find(|a| **a != RHO && self.g.kid(c, **a).is_none())
+            .map(ToString::to_string)
+            .with_context(|| format!("There are no void attributes in {loc}"))
+    }
+
     /// Dataize by locator, like `Φ.foo.bar` or `ν42.x`.
     ///
     /// The object is found by [`Universe::find`], and then its data

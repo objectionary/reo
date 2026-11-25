@@ -12,7 +12,7 @@ use std::collections::{HashMap, HashSet};
 /// A formation needs an edge per attribute, while a closed one may also
 /// get an edge per attribute memoized after it was found through `φ`
 /// or an atom.
-pub const EDGES: usize = 32;
+pub const EDGES: usize = 256;
 
 /// The graph of objects, which [`crate::Universe`] evaluates.
 pub type Graph = Sodg<EDGES>;
@@ -326,7 +326,8 @@ fn deploys_widest_formation() -> Result<()> {
 fn rejects_too_wide_formation() {
     let err = deploy(&wide(1..=EDGES + 1)).unwrap_err();
     assert!(
-        err.to_string().contains("The cell c0 has 33 edges"),
+        err.to_string()
+            .contains(&format!("The cell c0 has {} edges", EDGES + 1)),
         "Unexpected error: {err}"
     );
 }
@@ -337,7 +338,8 @@ fn rejects_too_wide_merge() -> Result<()> {
     let right = deploy("F c0 extra\nF c1\nP c0 extra c1")?;
     let err = merge(&left, &right).unwrap_err();
     assert!(
-        err.to_string().contains("The cell c0 would have 33 edges"),
+        err.to_string()
+            .contains(&format!("The cell c0 would have {} edges", EDGES + 1)),
         "Unexpected error: {err}"
     );
     assert_eq!(EDGES + 1, merge(&left, &left)?.len());
