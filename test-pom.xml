@@ -27,6 +27,37 @@
             </goals>
             <configuration>
               <sourcesDir>${project.basedir}/eo-tests</sourcesDir>
+              <!--
+              The names of eo-runtime that 'eo:infer' has to know, which
+              are the same as in the pom.xml of eo-runtime.
+              -->
+              <canon>
+                <kind>Φ.bytes</kind>
+                <kind>Φ.number</kind>
+                <kind>Φ.string</kind>
+              </canon>
+              <roots>
+                <root>Φ.tuple</root>
+                <root>Φ.map</root>
+                <root>Φ.set</root>
+              </roots>
+              <scalars>
+                <scalar>Φ.number</scalar>
+                <scalar>Φ.bytes</scalar>
+                <scalar>Φ.string</scalar>
+                <scalar>Φ.bool</scalar>
+                <scalar>Φ.true</scalar>
+                <scalar>Φ.false</scalar>
+                <scalar>Φ.i8</scalar>
+                <scalar>Φ.i16</scalar>
+                <scalar>Φ.i32</scalar>
+                <scalar>Φ.i64</scalar>
+                <scalar>Φ.u8</scalar>
+                <scalar>Φ.u16</scalar>
+                <scalar>Φ.u32</scalar>
+                <scalar>Φ.u64</scalar>
+                <scalar>Φ.dataized</scalar>
+              </scalars>
             </configuration>
           </execution>
         </executions>

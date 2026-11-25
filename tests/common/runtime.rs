@@ -9,18 +9,18 @@ use std::path::Path;
 
 // @todo #285:90min Make REO deploy the .sodg files that `make` prints into
 //  target/eo/sodg/ with the help of eo-maven-plugin and `phino sodg`.
-//  Now most of them are not even printed: the dealpha goal names most
-//  positional attributes after their voids, but leaves some, like `α0`
-//  in the recursive calls of `^.f` in fibonacci, and `phino sodg` refuses
-//  to print them. REO rejects most of the rest: the unit tests of the EO
-//  runtime are printed as `p🌵...` and `n🌵...` attributes, which are often
-//  longer than 32 bytes and give formations more than reo::EDGES edges,
-//  so they must be dropped; phino prints `⊥` with the `T` command, which
-//  sodg doesn't know; and the atoms, like `L_number_plus`, must be
-//  implemented for 64-bit floats. When the runtime is ready, the test
-//  below and deploys_and_runs_all_apps in tests/eo_test.rs must not be
-//  ignored, and the cargo workflow must install Maven and phino and run
-//  `make` before `cargo test`.
+//  Now REO compiles only a few of them, fibonacci among them. The unit
+//  tests of the EO runtime are printed as `p🌵...` and `n🌵...` attributes,
+//  which are often longer than 32 bytes and give formations more than
+//  reo::EDGES edges, so they must be dropped; phino prints `⊥` with the
+//  `T` command, which sodg doesn't know yet (objectionary/sodg.rs#327);
+//  the dealpha goal leaves a few positional attributes in the runtime,
+//  like in `directory` and `file`, and `phino sodg` refuses to print
+//  them; and the atoms, like `L_number_plus`, must be implemented for
+//  64-bit floats. When the runtime is ready, the test below and
+//  deploys_and_runs_all_apps in tests/eo_test.rs must not be ignored,
+//  and the cargo workflow must install Maven and phino and run `make`
+//  before `cargo test`.
 pub fn load_runtime() -> Result<Graph> {
     let pack = Path::new("target/runtime.reo");
     if !pack.exists() {

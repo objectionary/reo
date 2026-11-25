@@ -14,7 +14,7 @@
       x.lt 2
       1
       plus.
-        ^.f
+        Q.fibonacci.f
           x.minus 1
-        ^.f
+        Q.fibonacci.f
           x.minus 2
