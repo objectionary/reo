@@ -1,0 +1,11 @@
+# This is a simple object for testing of REO engine, used by eo_test.rs:
+# it calculates "2 + 3 + 4" and expects it to be equal to 9.
+
++spdx SPDX-FileCopyrightText: Copyright (c) 2022-2026 Yegor Bugayenko
++spdx SPDX-License-Identifier: MIT
+
+[] > sum
+  9 > expected
+  plus. > @
+    2.plus 3
+    4
