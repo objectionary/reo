@@ -13,12 +13,14 @@ use std::sync::Mutex;
 static BUILDING: Mutex<()> = Mutex::new(());
 
 // @todo #285:60min Make `phino sodg` print all objects of the EO runtime.
-//  Now `make` skips 15 of 166 of them, like `directory`, `file`, and `i16`,
-//  since the dealpha goal of eo-maven-plugin leaves positional arguments
-//  in them, which `phino sodg` refuses to print. Fibonacci doesn't need
-//  them, but other programs in eo-tests/ will. When all objects are
-//  printed, the `else` branch of the .sodg rule in the Makefile, which
-//  skips them, must be removed.
+//  Now `make` skips 78 of 156 of them, like `u64`, `tuple`, and `map`,
+//  since the dealpha goal of eo-maven-plugin 0.63.5 leaves 1307 positional
+//  arguments in them, which `phino sodg` refuses to print. With 0.63.4 it
+//  left only 260, in 15 of 166 objects: in `u64`, for example, 0.63.4 named
+//  the argument of `as-bytes.size.eq 8` as `v🌵b`, while 0.63.5 leaves it
+//  as `α0` (objectionary/eo#10083). Fibonacci doesn't need them, but other programs in eo-tests/
+//  will. When all objects are printed, the `else` branch of the .sodg rule
+//  in the Makefile, which skips them, must be removed.
 
 /// Load target/runtime.reo, building it from the .sodg files in
 /// target/eo/sodg/, which `make` prints, if it is not there yet.

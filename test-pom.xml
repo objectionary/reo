@@ -27,7 +27,6 @@
             </goals>
             <configuration>
               <sourcesDir>${project.basedir}/eo-tests</sourcesDir>
-              <parse.tests>false</parse.tests>
             </configuration>
           </execution>
         </executions>
