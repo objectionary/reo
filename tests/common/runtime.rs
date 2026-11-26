@@ -18,9 +18,10 @@ static BUILDING: Mutex<()> = Mutex::new(());
 //  arguments in them, which `phino sodg` refuses to print. With 0.63.4 it
 //  left only 260, in 15 of 166 objects: in `u64`, for example, 0.63.4 named
 //  the argument of `as-bytes.size.eq 8` as `v🌵b`, while 0.63.5 leaves it
-//  as `α0` (objectionary/eo#10083). Fibonacci doesn't need them, but other programs in eo-tests/
-//  will. When all objects are printed, the `else` branch of the .sodg rule
-//  in the Makefile, which skips them, must be removed.
+//  as `α0` (objectionary/eo#10083). Fibonacci doesn't need them, but
+//  other programs in eo-tests/ will. When all objects are printed, the
+//  `else` branch of the .sodg rule in the Makefile, which skips them, must
+//  be removed.
 
 /// Load target/runtime.reo, building it from the .sodg files in
 /// target/eo/sodg/, which `make` prints, if it is not there yet.
