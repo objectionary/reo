@@ -31,7 +31,7 @@
               The unit tests stay in the XMIR, since phino drops them later,
               with its drop-tests option, in the Makefile.
               -->
-              <parseTests>true</parseTests>
+              <parse.tests>true</parse.tests>
             </configuration>
           </execution>
         </executions>
