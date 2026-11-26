@@ -27,7 +27,11 @@
             </goals>
             <configuration>
               <sourcesDir>${project.basedir}/eo-tests</sourcesDir>
-              <parse.tests>false</parse.tests>
+              <!--
+              The unit tests stay in the XMIR, since phino drops them later,
+              with its drop-tests option, in the Makefile.
+              -->
+              <parse.tests>true</parse.tests>
             </configuration>
           </execution>
         </executions>
