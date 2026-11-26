@@ -64,7 +64,7 @@ impl Universe {
             next: self.next,
             atoms: self.atoms.clone(),
             depth: self.depth,
-            snapshots: Some(p.as_os_str().to_str().unwrap().to_string()),
+            snapshots: Some(p.to_path_buf()),
         }
     }
 
@@ -526,36 +526,26 @@ impl Universe {
             return Ok(());
         }
         let p = self.snapshots.clone().unwrap();
-        let home = Path::new(&p);
-        fs::create_dir_all(home)
-            .context(anyhow!("Can't create directory {}", home.to_str().unwrap()))?;
+        let home = p.as_path();
+        fs::create_dir_all(home).context(anyhow!("Can't create directory {}", home.display()))?;
         let total = fs::read_dir(home)
-            .context(anyhow!("Can't list files in {}", home.to_str().unwrap()))?
+            .context(anyhow!("Can't list files in {}", home.display()))?
             .filter(|f| {
                 f.as_ref()
                     .unwrap()
                     .path()
-                    .as_os_str()
-                    .to_str()
-                    .unwrap()
-                    .ends_with(".dot")
+                    .extension()
+                    .is_some_and(|e| e == "dot")
             })
             .count();
-        debug!(
-            "{total} snapshot files already in {}",
-            home.to_str().unwrap()
-        );
+        debug!("{total} snapshot files already in {}", home.display());
         if total == 0 {
-            fs::copy("surge-make/Makefile", home.join("Makefile")).context(anyhow!(
-                "Can't copy Makefile to '{}'",
-                home.to_str().unwrap()
-            ))?;
-            fs::copy("surge-make/doc.tex", home.join("doc.tex")).context(anyhow!(
-                "Can't copy doc.tex to '{}'",
-                home.to_str().unwrap()
-            ))?;
+            fs::copy("surge-make/Makefile", home.join("Makefile"))
+                .context(anyhow!("Can't copy Makefile to '{}'", home.display()))?;
+            fs::copy("surge-make/doc.tex", home.join("doc.tex"))
+                .context(anyhow!("Can't copy doc.tex to '{}'", home.display()))?;
             fs::write(home.join("list.tex"), b"").context(anyhow!("Can't write empty list.tex"))?;
-            debug!("Snapshot dir created: {}", home.to_str().unwrap());
+            debug!("Snapshot dir created: {}", home.display());
         }
         let pos = total + 1;
         let mut before = String::new();
@@ -565,7 +555,7 @@ impl Universe {
             before = fs::read_to_string(b.clone())
                 .context(anyhow!(
                     "Can't read previous {fname} file from '{}'",
-                    home.to_str().unwrap()
+                    home.display()
                 ))?
                 .replace(Self::COLORS, "");
             debug!("Previous snapshot read from: {}", Self::fprint(b));
@@ -602,7 +592,7 @@ impl Universe {
                 let m = Self::fprint(dot_file.clone());
                 fs::remove_file(dot_file.clone()).context(anyhow!(
                     "Can't remove previous .dot file {}",
-                    dot_file.to_str().unwrap()
+                    dot_file.display()
                 ))?;
                 debug!("Similar dot file removed: {m}");
             }
@@ -612,7 +602,7 @@ impl Universe {
                 .open(home.join("list.tex"))
                 .context(anyhow!(
                     "Can't open {}/list.tex for appending",
-                    home.to_str().unwrap()
+                    home.display()
                 ))?;
             writeln!(list, "\\graph{{{pos}}}")?;
         }
@@ -620,10 +610,7 @@ impl Universe {
             .append(true)
             .create(true)
             .open(home.join("log.txt"))
-            .context(anyhow!(
-                "Can't open {}/log.txt for writing",
-                home.to_str().unwrap()
-            ))?;
+            .context(anyhow!("Can't open {}/log.txt for writing", home.display()))?;
         writeln!(
             log,
             "{}{}",
@@ -649,7 +636,7 @@ impl Universe {
     /// Turn file name into a better visible string, for logs.
     fn fprint(f: PathBuf) -> String {
         let size = f.metadata().unwrap().len();
-        format!("{} ({size} bytes)", f.to_str().unwrap())
+        format!("{} ({size} bytes)", f.display())
     }
 }
 
@@ -910,6 +897,19 @@ fn fails_on_phi_cycle() -> Result<()> {
         "Unexpected error: {err:?}"
     );
     assert_eq!(0, uni.depth);
+    Ok(())
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn takes_snapshots_in_non_utf8_directory() -> Result<()> {
+    use std::ffi::OsString;
+    use std::os::unix::ffi::OsStringExt;
+    let tmp = tempfile::TempDir::new()?;
+    let home = tmp.path().join(OsString::from_vec(b"\xffsnap".to_vec()));
+    let mut uni = Universe::empty().with_snapshots(&home);
+    uni.snapshot("The end")?;
+    assert!(home.join("1.dot").exists());
     Ok(())
 }
 
