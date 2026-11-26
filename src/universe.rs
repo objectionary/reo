@@ -534,11 +534,14 @@ impl Universe {
             .filter(|f| {
                 f.as_ref()
                     .unwrap()
-                    .path()
-                    .as_os_str()
+                    .file_name()
                     .to_str()
-                    .unwrap()
-                    .ends_with(".dot")
+                    .and_then(|n| n.strip_suffix(".dot"))
+                    .is_some_and(|n| {
+                        !n.is_empty()
+                            && !n.starts_with('0')
+                            && n.bytes().all(|b| b.is_ascii_digit())
+                    })
             })
             .count();
         debug!(
@@ -910,6 +913,18 @@ fn fails_on_phi_cycle() -> Result<()> {
         "Unexpected error: {err:?}"
     );
     assert_eq!(0, uni.depth);
+    Ok(())
+}
+
+#[test]
+fn numbers_snapshots_past_unrelated_dot_file() -> Result<()> {
+    let tmp = tempfile::TempDir::new()?;
+    for name in ["notes.dot", "0.dot", "01.dot"] {
+        fs::write(tmp.path().join(name), "digraph notes {}")?;
+    }
+    let mut uni = Universe::empty().with_snapshots(tmp.path());
+    uni.snapshot("The end")?;
+    assert!(tmp.path().join("1.dot").exists());
     Ok(())
 }
 
