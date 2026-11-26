@@ -5,7 +5,7 @@
 #
 #   ⟦ int ↦ ⟦ times ↦ ⟦ ρ ↦ ∅, x ↦ ∅, λ ⤍ L_times ⟧, Δ ⤍ 00-00-00-00-00-00-00-06 ⟧, foo ↦ Φ.int.times(x ↦ ⟦ Δ ⤍ 00-00-00-00-00-00-00-07 ⟧) ⟧
 #
-# The script below is printed by `phino sodg` 0.0.167.
+# The script below is printed by `phino sodg` 0.0.169.
 
 F c0 int foo
 F c1 times

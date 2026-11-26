@@ -5,12 +5,15 @@
 # they use, are compiled to XMIR by eo-maven-plugin, which also names their
 # positional arguments after the voids they land in (the dealpha goal,
 # which needs the infer goal before it), then to .sodg files by `phino
-# sodg`, then to binary .reo files by REO, and then merged into
-# target/runtime.reo, which tests/eo_test.rs dataizes.
+# sodg --drop-tests`, which leaves out their unit tests, then to binary
+# .reo files by REO, and then merged into target/runtime.reo, which
+# tests/eo_test.rs dataizes. The objects that phino can't print, for
+# example, because the dealpha goal left a positional argument in them,
+# are skipped with a warning.
 
 .ONESHELL:
 .SHELLFLAGS := -e -o pipefail -c
-.PHONY: all clean test
+.PHONY: all clean sodgs test
 .SECONDARY:
 
 SHELL = bash
@@ -20,10 +23,14 @@ PHINO = phino
 XMIR = $(firstword $(wildcard target/eo/*-dealpha))
 XMIRS = $(shell find $(XMIR) -type f -name '*.xmir' 2>/dev/null)
 SODGS = $(patsubst $(XMIR)/%.xmir,target/eo/sodg/%.sodg,$(XMIRS))
-BINARIES = $(patsubst target/eo/sodg/%.sodg,target/eo/reo/%.reo,$(SODGS))
+PRINTED = $(shell find target/eo/sodg -type f -name '*.sodg' 2>/dev/null)
+BINARIES = $(patsubst target/eo/sodg/%.sodg,target/eo/reo/%.reo,$(PRINTED))
 
 all: target/eo-foreign.csv
+	$(MAKE) sodgs
 	$(MAKE) target/runtime.reo
+
+sodgs: $(SODGS)
 
 test:
 	cargo test
@@ -42,8 +49,12 @@ $(REO):
 
 target/eo/sodg/%.sodg: $(XMIR)/%.xmir
 	mkdir -p $(@D)
-	$(PHINO) sodg --input xmir $< > $@.tmp
-	mv $@.tmp $@
+	if $(PHINO) sodg --input xmir --drop-tests $< > $@.tmp; then
+	  mv $@.tmp $@
+	else
+	  rm -f $@.tmp
+	  echo "WARNING: phino can't print $<, it is skipped"
+	fi
 
 target/eo/reo/%.reo: target/eo/sodg/%.sodg $(REO)
 	mkdir -p $(@D)

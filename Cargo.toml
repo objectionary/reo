@@ -24,7 +24,7 @@ log = "0.4.21"
 predicates = "3.1.0"
 regex = "1.10.4"
 serial_test = "4.0.0"
-sodg = "0.2.0"
+sodg = "0.3.0"
 simple_logger = "4.3.3"
 
 [dev-dependencies]

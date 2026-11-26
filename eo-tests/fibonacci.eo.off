@@ -1,12 +1,12 @@
 # This is a simple object for testing of REO engine, used by eo_test.rs:
-# it calculates the 6th Fibonacci number with the help of the
-# recursive "f" object and expects it to be equal to 8.
+# it calculates "f 6" with the help of the recursive "f" object,
+# where "f 0" and "f 1" are both 1, and expects it to be equal to 13.
 
 +spdx SPDX-FileCopyrightText: Copyright (c) 2022-2026 Yegor Bugayenko
 +spdx SPDX-License-Identifier: MIT
 
 [] > fibonacci
-  8 > expected
+  13 > expected
   f 6 > @
 
   [x] > f
@@ -14,7 +14,7 @@
       x.lt 2
       1
       plus.
-        ^.f
+        Q.fibonacci.f
           x.minus 1
-        ^.f
+        Q.fibonacci.f
           x.minus 2

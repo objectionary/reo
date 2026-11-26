@@ -5,7 +5,7 @@
 #
 #   ⟦ int ↦ ⟦ v ↦ ∅, inc ↦ ⟦ ρ ↦ ∅, λ ⤍ L_inc ⟧, times ↦ ⟦ ρ ↦ ∅, x ↦ ∅, λ ⤍ L_times ⟧, φ ↦ ξ.v ⟧, six ↦ Φ.int(v ↦ ⟦ Δ ⤍ 00-00-00-00-00-00-00-06 ⟧), foo ↦ Φ.six.times(x ↦ Φ.six.inc) ⟧
 #
-# The script below is printed by `phino sodg` 0.0.167.
+# The script below is printed by `phino sodg` 0.0.169.
 
 F c0 int six foo
 F c1 v inc times φ

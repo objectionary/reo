@@ -5,7 +5,7 @@
 #
 #   ⟦ a ↦ ⟦ b ↦ ξ.ρ ⟧, foo ↦ Φ.a.b ⟧
 #
-# The script below is printed by `phino sodg` 0.0.167.
+# The script below is printed by `phino sodg` 0.0.169.
 
 F c0 a foo
 F c1 b

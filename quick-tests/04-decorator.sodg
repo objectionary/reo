@@ -5,7 +5,7 @@
 #
 #   ⟦ bar ↦ ⟦ Δ ⤍ 00-00-00-00-00-00-00-2A ⟧, foo ↦ ⟦ φ ↦ Φ.bar ⟧ ⟧
 #
-# The script below is printed by `phino sodg` 0.0.167.
+# The script below is printed by `phino sodg` 0.0.169.
 
 F c0 bar foo
 F c1

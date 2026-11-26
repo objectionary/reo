@@ -26,7 +26,6 @@ fn all_apps() -> Result<Vec<String>> {
 }
 
 #[test]
-#[ignore = "REO can't deploy the .sodg files of the EO runtime yet, see #285"]
 fn deploys_and_runs_all_apps() -> Result<()> {
     let mut uni = Universe::from_graph(load_runtime()?)?;
     register(&mut uni);

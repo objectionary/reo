@@ -12,7 +12,7 @@ use std::collections::{HashMap, HashSet};
 /// A formation needs an edge per attribute, while a closed one may also
 /// get an edge per attribute memoized after it was found through `φ`
 /// or an atom.
-pub const EDGES: usize = 32;
+pub const EDGES: usize = 256;
 
 /// The graph of objects, which [`crate::Universe`] evaluates.
 pub type Graph = Sodg<EDGES>;
@@ -40,6 +40,17 @@ pub(crate) const RHO: Label = Label::Greek('ρ');
 /// assert!(reo::deploy("F c0 α0").is_err());
 /// ```
 ///
+/// The λ-asset `Package`, which `phino sodg` gives to a package, is
+/// not deployed, since for REO a package is just a formation. Otherwise,
+/// when the package `Φ.number` from `number/abs.sodg` is merged with
+/// the object `Φ.number` from `number.sodg`, the object gets the atom
+/// `Package` and can't be dataized:
+///
+/// ```
+/// let g = reo::deploy("F c0 number\nF c1 abs\nλ c1 Package\nP c0 number c1").unwrap();
+/// assert_eq!(None, g.atom(1));
+/// ```
+///
 /// # Errors
 ///
 /// If the script can't be parsed, uses positional attributes,
@@ -47,10 +58,27 @@ pub(crate) const RHO: Label = Label::Greek('ρ');
 pub fn deploy(txt: &str) -> Result<Graph> {
     check_edges(txt)?;
     let mut g = Graph::empty(capacity_for(txt));
-    let total = Script::from_str(txt).deploy_to(&mut g)?;
+    let total = Script::from_str(&without_packages(txt)).deploy_to(&mut g)?;
     debug!("Deployed {total} commands into {} cells", g.len());
     validate(&g)?;
     Ok(g)
+}
+
+/// Remove the commands `λ c Package` from the script, keeping the
+/// numbers of all other lines, so that errors still point to them.
+fn without_packages(txt: &str) -> String {
+    txt.lines()
+        .map(|line| {
+            let cmd = line.split_once('#').map_or(line, |(before, _)| before);
+            let parts: Vec<&str> = cmd.split_whitespace().collect();
+            if matches!(parts.as_slice(), ["λ", _, "Package"]) {
+                ""
+            } else {
+                line
+            }
+        })
+        .collect::<Vec<&str>>()
+        .join("\n")
 }
 
 /// Make sure the graph doesn't use positional attributes, like `α0`,
@@ -67,7 +95,7 @@ pub fn validate(g: &Graph) -> Result<()> {
         labels.extend(g.kids(c).map(|(a, _)| *a));
         match g.kind(c) {
             Kind::Dispatch(a) | Kind::Application(a) => labels.push(a),
-            Kind::Formation | Kind::Void => {}
+            Kind::Formation | Kind::Termination | Kind::Void => {}
         }
         if let Some(a) = labels.iter().find(|a| matches!(a, Label::Alpha(_))) {
             bail!("The positional attribute {a} of c{c} is not supported, use a named one");
@@ -92,6 +120,7 @@ pub(crate) fn rebuilt(g: &Graph, cap: usize) -> Graph {
             Kind::Application(a) => {
                 ng.application(c, g.kid(c, PI).unwrap_or(c), a, g.kid(c, a).unwrap_or(c))
             }
+            Kind::Termination => ng.termination(c),
             Kind::Void => {}
         }
         if let Some(d) = g.data(c) {
@@ -303,6 +332,32 @@ fn merges_graphs_with_dispatches_of_root() -> Result<()> {
     Ok(())
 }
 
+#[test]
+fn merges_package_into_object_of_the_same_name() -> Result<()> {
+    let object =
+        deploy("F c0 num\nF c1 φ\nF c2\nΔ c2 00-00-00-00-00-00-00-2A\nP c1 φ c2\nP c0 num c1")?;
+    let package =
+        deploy("F c0 num\nF c1 abs # the package\nλ c1 Package\nF c2\nP c1 abs c2\nP c0 num c1")?;
+    let mut empty = Graph::empty(MIN_CAPACITY);
+    empty.formation(0, &[]);
+    for g in [
+        merge(&merge(&empty, &object)?, &package)?,
+        merge(&merge(&empty, &package)?, &object)?,
+    ] {
+        let num = g.kid(0, Label::from_str("num")?).unwrap();
+        assert_eq!(None, g.atom(num));
+        let mut uni = crate::Universe::from_graph(g)?;
+        assert_eq!(42, uni.dataize("Φ.num")?.to_i64()?);
+    }
+    Ok(())
+}
+
+#[test]
+fn keeps_line_numbers_without_packages() {
+    let err = deploy("F c0 x\nλ c0 Package\nP c0 x").unwrap_err();
+    assert!(format!("{err:#}").contains("line no.3"), "{err:#}");
+}
+
 #[cfg(test)]
 fn wide(attrs: std::ops::RangeInclusive<usize>) -> String {
     let mut txt = String::from("F c0");
@@ -325,7 +380,8 @@ fn deploys_widest_formation() -> Result<()> {
 fn rejects_too_wide_formation() {
     let err = deploy(&wide(1..=EDGES + 1)).unwrap_err();
     assert!(
-        err.to_string().contains("The cell c0 has 33 edges"),
+        err.to_string()
+            .contains(&format!("The cell c0 has {} edges", EDGES + 1)),
         "Unexpected error: {err}"
     );
 }
@@ -336,7 +392,8 @@ fn rejects_too_wide_merge() -> Result<()> {
     let right = deploy("F c0 extra\nF c1\nP c0 extra c1")?;
     let err = merge(&left, &right).unwrap_err();
     assert!(
-        err.to_string().contains("The cell c0 would have 33 edges"),
+        err.to_string()
+            .contains(&format!("The cell c0 would have {} edges", EDGES + 1)),
         "Unexpected error: {err}"
     );
     assert_eq!(EDGES + 1, merge(&left, &left)?.len());
