@@ -7,6 +7,13 @@ use log::debug;
 use reo::Graph;
 use std::path::Path;
 use std::sync::Mutex;
+<<<<<<< Updated upstream
+=======
+
+/// Only one test at a time may build target/runtime.reo, while others
+/// wait for it, instead of loading it half-built.
+static BUILDING: Mutex<()> = Mutex::new(());
+>>>>>>> Stashed changes
 
 /// Only one test at a time may build target/runtime.reo, while others
 /// wait for it, instead of loading it half-built.
