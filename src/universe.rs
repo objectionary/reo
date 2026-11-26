@@ -546,12 +546,20 @@ impl Universe {
             home.to_str().unwrap()
         );
         if total == 0 {
-            fs::copy("surge-make/Makefile", home.join("Makefile")).context(anyhow!(
-                "Can't copy Makefile to '{}'",
+            fs::write(
+                home.join("Makefile"),
+                include_bytes!("../surge-make/Makefile"),
+            )
+            .context(anyhow!(
+                "Can't write Makefile to '{}'",
                 home.to_str().unwrap()
             ))?;
-            fs::copy("surge-make/doc.tex", home.join("doc.tex")).context(anyhow!(
-                "Can't copy doc.tex to '{}'",
+            fs::write(
+                home.join("doc.tex"),
+                include_bytes!("../surge-make/doc.tex"),
+            )
+            .context(anyhow!(
+                "Can't write doc.tex to '{}'",
                 home.to_str().unwrap()
             ))?;
             fs::write(home.join("list.tex"), b"").context(anyhow!("Can't write empty list.tex"))?;
